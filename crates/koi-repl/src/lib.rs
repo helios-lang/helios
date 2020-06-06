@@ -1,3 +1,4 @@
-pub fn say_hello() {
-    println!("Hello, world!");
+/// Starts a new REPL session.
+pub fn start() {
+    unimplemented!()
 }

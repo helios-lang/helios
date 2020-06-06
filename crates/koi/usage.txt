@@ -1,10 +1,7 @@
-Koi compiler
-
 USAGE: koi [OPTIONS] COMMAND
 
 OPTIONS:
   -h, --help      Print help infomration
-  -q, --quiet     Don't print to output
   -V, --version   Print version info
 
 COMMAND:

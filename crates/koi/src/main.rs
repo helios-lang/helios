@@ -11,13 +11,21 @@ fn print_version() {
 }
 
 fn main() {
-    let mut quiet_mode = false;
     let mut args = std::env::args();
 
     match (args.next(), args.next(), args.next()) {
-        (_, Some(ref opt), _) if opt == "-h" || opt == "--help" => print_usage(),
-        (_, Some(ref opt), _) if opt == "-q" || opt == "--quiet" => quiet_mode = true,
-        (_, Some(ref opt), _) if opt == "-V" || opt == "--version" => print_version(),
+        (_, Some(ref opt), _) if opt == "-h" || opt == "--help" =>
+            print_usage(),
+        (_, Some(ref opt), _) if opt == "-V" || opt == "--version" =>
+            print_version(),
+        (_, Some(ref cmd), Some(ref file_name)) if cmd == "build" =>
+            koi_build::build(file_name),
+        (_, Some(ref cmd), None) if cmd == "build" => {
+            eprintln!("ERROR: Missing argument for command `build`.\n");
+            print_usage();
+        },
+        (_, Some(ref cmd), _) if cmd == "ide" => koi_ide::run(),
+        (_, Some(ref cmd), _) if cmd == "repl" => koi_repl::start(),
         _ => print_usage()
     }
 }
