@@ -1,0 +1,13 @@
+Koi compiler
+
+USAGE: koi [OPTIONS] COMMAND
+
+OPTIONS:
+  -h, --help      Print help infomration
+  -q, --quiet     Don't print to output
+  -V, --version   Print version info
+
+COMMAND:
+  build <file>    Compile the given file
+  ide             Start the Koi language server for IDE support
+  repl            Start a new REPL session
