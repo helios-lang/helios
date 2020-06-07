@@ -1,23 +1,21 @@
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
-use koi_driver::Driver;
+use koi_driver::{Ast, Source, tokenize};
 use std::collections::VecDeque;
 use std::sync::mpsc::Sender;
+
 pub struct Receiver {
     responder_channel: Sender<LspResponse>,
+    tokens: Option<Ast>,
 }
 
 impl Receiver {
     pub fn with(responder_channel: Sender<LspResponse>) -> Self {
-        Receiver { responder_channel }
+        Receiver { responder_channel, tokens: None }
     }
-}
 
-impl Actor for Receiver {
-    type InMessage = LspMessage;
-
-    fn poll_messages(&mut self, messages: &mut VecDeque<Self::InMessage>) {
-        match messages.pop_front().expect("Failed to get next message") {
+    fn process_message(&mut self, message: LspMessage) {
+        match message {
             LspMessage::InitializeRequest { id, .. } => {
                 self.responder_channel
                     .clone()
@@ -33,53 +31,86 @@ impl Actor for Receiver {
             LspMessage::ExitNotification => {
                 // The client has asked us to exit now
             },
-            LspMessage::TextDocumentDidOpenNotification { .. } => {
+            LspMessage::TextDocumentDidOpenNotification { params, .. } => {
                 // A text document has been opened
+                match params.text_document.uri.to_file_path() {
+                    Ok(path) => match Source::file(path) {
+                        Ok(source) => {
+                            let tokens = tokenize(source);
+                            // tokens.iter().for_each(|token| eprintln!("{:?}", token));
+                            self.tokens = Some(tokens);
+                        },
+                        Err(error) => eprintln!("Failed to load file from source: {}", error)
+                    },
+                    Err(_) => eprintln!("Failed to convert `{}` to file path.", params.text_document.uri)
+                }
             },
             LspMessage::TextDocumentDidChangeNotification { .. } => {
                 // The text document has been modified
             },
-            LspMessage::TextDocumentDidSaveNotification { .. } => {
-                // The text document was saved
+            LspMessage::TextDocumentDidSaveNotification { params } => {
+                match params.text_document.uri.to_file_path() {
+                    Ok(path) => match Source::file(path) {
+                        Ok(source) => {
+                            let tokens = tokenize(source);
+                            // tokens.iter().for_each(|token| eprintln!("{:?}", token));
+                            self.tokens = Some(tokens);
+                        },
+                        Err(error) => eprintln!("Failed to load file from source: {}", error)
+                    },
+                    Err(_) => eprintln!("Failed to convert `{}` to file path.", params.text_document.uri)
+                }
             },
             LspMessage::TextDocumentCompletionRequest { .. } => {
                 // A completion request has been sent
             },
             LspMessage::TextDocumentHoverRequest { id, params } => {
-                eprintln!("::: {}", params.text_document.uri);
-                let driver = Driver::with(params.text_document.uri.as_str());
-                let text = match driver.tokenize_source() {
-                    Ok(_) => "???".to_string(),
-                    Err(mut diagnostics) => match diagnostics.pop() {
-                        Some(diagnostic) => diagnostic.code,
-                        None => "???".to_string()
-                    },
-                };
-
-                self.responder_channel
-                    .clone()
-                    .send(LspResponse::HoverResult {
-                        id,
-                        params: lsp_types::Hover {
-                            contents: lsp_types::HoverContents::Scalar(
-                                lsp_types::MarkedString::from_language_code(
-                                    "koi".to_string(),
-                                    text
-                                )
-                            ),
-                            range: Some(
-                                lsp_types::Range::new(
-                                    params.position,
-                                    lsp_types::Position::new(
-                                        params.position.line,
-                                        params.position.character + 5
-                                    )
-                                )
-                            )
+                if let Some(tokens) = &self.tokens {
+                    for token in tokens {
+                        if
+                            (params.position.line as usize) == token.line
+                            && (params.position.character as usize) >= token.range.start && (params.position.character as usize) < token.range.end
+                        {
+                            self.responder_channel
+                                .clone()
+                                .send(LspResponse::HoverResult {
+                                    id,
+                                    params: lsp_types::Hover {
+                                        contents: lsp_types::HoverContents::Scalar(
+                                            lsp_types::MarkedString::from_language_code(
+                                                "koi".to_string(),
+                                                format!("{:?}", token.kind)
+                                            )
+                                        ),
+                                        range: Some(
+                                            lsp_types::Range::new(
+                                                lsp_types::Position::new(
+                                                    token.line as u64,
+                                                    token.range.start as u64
+                                                ),
+                                                lsp_types::Position::new(
+                                                    token.line as u64,
+                                                    token.range.end as u64
+                                                )
+                                            )
+                                        )
+                                    }
+                                })
+                                .expect("Failed to send `HoverRequest` message to Responder.")
                         }
-                    })
-                    .expect("Failed to send `HoverResult` message to responder");
+                    }
+                }
             }
+        }
+    }
+}
+
+impl Actor for Receiver {
+    type InMessage = LspMessage;
+
+    fn poll_messages(&mut self, messages: &mut VecDeque<Self::InMessage>) {
+        if let Some(message) = messages.pop_front() {
+            self.process_message(message);
         }
     }
 }

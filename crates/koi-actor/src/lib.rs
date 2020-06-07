@@ -11,11 +11,11 @@ pub trait Actor {
     fn poll_messages(&mut self, messages: &mut VecDeque<Self::InMessage>);
 }
 
-pub struct Process<Message: Send + 'static> {
+pub struct Stream<Message: Send + 'static> {
     pub channel: Sender<Message>,
 }
 
-pub fn spawn<A: Actor + Send + 'static>(mut actor: A) -> Process<A::InMessage> {
+pub fn spawn<A: Actor + Send + 'static>(mut actor: A) -> Stream<A::InMessage> {
     let (actor_tx, actor_rx) = channel();
     let mut message_queue = VecDeque::new();
 
@@ -30,7 +30,7 @@ pub fn spawn<A: Actor + Send + 'static>(mut actor: A) -> Process<A::InMessage> {
         }
     });
 
-    Process { channel: actor_tx }
+    Stream { channel: actor_tx }
 }
 
 fn push_pending_messages<T>(rx: &Receiver<T>, queue: &mut VecDeque<T>) -> Result<(), TryRecvError> {
