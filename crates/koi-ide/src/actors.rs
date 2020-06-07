@@ -45,8 +45,30 @@ impl Actor for Receiver {
             LspMessage::TextDocumentCompletionRequest { .. } => {
                 // A completion request has been sent
             },
-            LspMessage::TextDocumentHoverRequest { .. } => {
-                // A hover request has been sent
+            LspMessage::TextDocumentHoverRequest { id, params } => {
+                self.responder_channel
+                    .clone()
+                    .send(LspResponse::HoverResult {
+                        id,
+                        params: lsp_types::Hover {
+                            contents: lsp_types::HoverContents::Scalar(
+                                lsp_types::MarkedString::from_language_code(
+                                    "koi".to_string(),
+                                    "type unknown".to_string()
+                                )
+                            ),
+                            range: Some(
+                                lsp_types::Range::new(
+                                    params.position,
+                                    lsp_types::Position::new(
+                                        params.position.line,
+                                        params.position.character + 5
+                                    )
+                                )
+                            )
+                        }
+                    })
+                    .expect("Failed to send `HoverResult` message to responder");
             }
         }
     }
@@ -84,8 +106,8 @@ impl Actor for Responder {
             LspResponse::CompletionList { .. } => {
                 // Unimplemented...
             },
-            LspResponse::HoverResult { .. } => {
-                // Unimplemented...
+            LspResponse::HoverResult { id, params: result } => {
+                send_jsonrpc_response(id, result);
             }
         }
     }
