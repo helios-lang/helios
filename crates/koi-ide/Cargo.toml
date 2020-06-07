@@ -7,3 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+koi-actor = { version = "0.1.0", path = "../koi-actor" }
+koi-driver = { version = "0.1.0", path = "../koi-driver" }
+serde = { version = "1.0.111", features = ["derive"] }
+serde_json = "1.0.53"
+lsp-types = "0.74.2"
