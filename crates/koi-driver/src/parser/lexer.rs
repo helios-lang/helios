@@ -88,12 +88,15 @@ impl<'a> Lexer<'a> {
                     self.symbol('/')
                 }
             },
+            // '\''=> unimplemented!("character literal"),
+            '"' => self.string(),
             c if is_symbol(c) => self.symbol(c),
             c if is_identifier_start(c) => self.identifier(c),
             c @ '0'..='9' => self.number(c),
             c => TokenKind::Unknown(c)
         };
 
+        // eprintln!("{:?}", self.cursor.pos);
         Some(Token::with(token_kind, current_char..self.character, self.line, current_char))
     }
 }
@@ -217,6 +220,16 @@ impl<'a> Lexer<'a> {
 
         vec
     }
+
+    /// Checks if the given character reoccurs for a given time.
+    fn is_reoccuring(&mut self, c: char, occurence: usize) -> bool {
+        let mut found = 0;
+        while self.peek() == c {
+            self.next_char();
+            found += 1;
+        }
+        found == occurence
+    }
 }
 
 impl<'a> Lexer<'a> {
@@ -261,16 +274,17 @@ impl<'a> Lexer<'a> {
     fn keyword_or_identifier(&mut self, string: String) -> TokenKind {
         match &*string {
             "and"   => TokenKind::Keyword(Keyword::And),
+            "def"    => TokenKind::Keyword(Keyword::Def),
             "do"    => TokenKind::Keyword(Keyword::Do),
             "else"  => TokenKind::Keyword(Keyword::Else),
             "false" => TokenKind::Keyword(Keyword::False),
-            "fun"   => TokenKind::Keyword(Keyword::Fun),
             "if"    => TokenKind::Keyword(Keyword::If),
             "let"   => TokenKind::Keyword(Keyword::Let),
-            "mut"   => TokenKind::Keyword(Keyword::Mut),
+            "match"   => TokenKind::Keyword(Keyword::Match),
             "or"    => TokenKind::Keyword(Keyword::Or),
             "then"  => TokenKind::Keyword(Keyword::Then),
             "true"  => TokenKind::Keyword(Keyword::True),
+            "using"  => TokenKind::Keyword(Keyword::Using),
             _       => TokenKind::Identifier(string)
         }
     }
@@ -350,11 +364,88 @@ impl<'a> Lexer<'a> {
 
     /// Matches any character that is a valid symbol.
     fn symbol(&mut self, symbol: char) -> TokenKind {
-        if self.peek() == '=' {
-            self.next_char();
-            TokenKind::Symbol(Symbol::from_char_with_equal(symbol))
-        } else {
-            TokenKind::Symbol(Symbol::from_char(symbol))
+        match self.peek() {
+            '=' => {
+                self.next_char();
+                TokenKind::Symbol(Symbol::from_char_with_equal(symbol))
+            },
+            '?' => {
+                if self.is_reoccuring('?', 2) {
+                    TokenKind::Keyword(Keyword::Unimplemented)
+                } else {
+                    TokenKind::Symbol(Symbol::Question)
+                }
+            },
+            _ => TokenKind::Symbol(Symbol::from_char(symbol))
         }
+    }
+
+    /// Consumes all the characters found within quotation marks (`"`).
+    ///
+    /// Simple escape sequences are recognised and are dealt accordingly. These
+    /// sequences include `\\n`, `\\`, `\"`, `\t`, `\n`, and `\r`. Any other
+    /// escape sequence is invalid, thus this method will panic.
+    ///
+    /// String interpolation is currently unsupported.
+    fn string(&mut self) -> TokenKind {
+        let mut ignore_whitespace = false;
+        let mut string_content = Vec::new();
+
+        while let Some(c) = self.next_char() {
+            match c {
+                // We reached the end of the string.
+                '"' => {
+                    let content = string_content.iter().collect();
+                    return TokenKind::Literal(
+                        Literal::Str { content, terminated: true }
+                    );
+                },
+                // We are at the start of an escape sequence.
+                '\\' => match self.peek() {
+                    // Keep the next character if it is a backslash or a double
+                    // quote character.
+                    '\\' | '"' => {
+                        string_content.push(self.next_char().unwrap())
+                    },
+                    // If it is a valid escape code character, we'll insert an
+                    // actual unicode character as if it was present on the
+                    // string we're building.
+                    e @ 't' | e @ 'n' | e @ 'r' | e @ '\n' => {
+                        if e == 't' {
+                            string_content.push('\u{0009}');
+                        } else if e == 'n' {
+                            string_content.push('\u{000A}');
+                        } else if e == 'r' {
+                            string_content.push('\u{000D}')
+                        } else if e == '\n' {
+                            ignore_whitespace = true;
+                        }
+                        self.next_char();
+                    },
+                    // Otherwise we found an invalid escape sequence. We'll
+                    // panic here.
+                    c => {
+                        eprintln! {
+                            "Invalid escape sequence `\\{character}`. The \
+                            character `{character}` cannot be escaped.",
+                            character=c
+                        };
+                        std::process::exit(1);
+                    }
+                }
+                // Whitespace characters are ignored if followed by a `\` and a
+                // newline character.
+                ' ' | '\n' | '\t' | '\r' if ignore_whitespace => (),
+                // We push any other character into the vector to be part of the
+                // string.
+                c => {
+                    ignore_whitespace = false;
+                    string_content.push(c)
+                }
+            }
+        }
+
+        let content = string_content.iter().collect();
+        TokenKind::Literal(Literal::Str { content, terminated: false })
     }
 }

@@ -56,20 +56,19 @@ pub enum TokenKind {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Keyword {
     And,
+    Def,
     Do,
     Else,
-    Export,
     False,
-    Fun,
     If,
-    Import,
     Let,
     Match,
-    Mut,
     Not,
     Or,
     Then,
     True,
+    Unimplemented,
+    Using,
     With,
 }
 

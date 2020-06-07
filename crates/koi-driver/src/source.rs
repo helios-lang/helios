@@ -6,10 +6,10 @@ use std::vec::IntoIter;
 pub const EOF_CHAR: char = '\0';
 
 #[allow(dead_code)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Position {
     line: u32,
-    column: u32,
+    character: u32,
     offset: usize,
 }
 
@@ -58,14 +58,14 @@ impl<'a> BufRead for Source<'a> {
 #[allow(dead_code)]
 pub struct Cursor<'a> {
     source: Source<'a>,
-    pos: Position,
     chars: IntoIter<char>,
+    pub pos: Position,
 }
 
 impl<'a> Cursor<'a> {
     pub fn with(source: Source<'a>) -> Self {
         let chars = Vec::new().into_iter();
-        let mut cursor = Self { source, pos: Position::default(), chars };
+        let mut cursor = Self { source, chars, pos: Position::default() };
 
         cursor.advance_line();
         cursor
@@ -73,7 +73,11 @@ impl<'a> Cursor<'a> {
 
     pub fn advance(&mut self) -> Option<char> {
         match self.chars.next() {
-            Some(c) => Some(c),
+            Some(c) => {
+                self.pos.character += 1;
+                self.pos.offset += 1;
+                Some(c)
+            },
             None => {
                 self.advance_line();
                 self.chars.next()
@@ -95,5 +99,8 @@ impl<'a> Cursor<'a> {
         let mut buffer = String::new();
         self.source.read_line(&mut buffer).expect("Failed to read line");
         self.chars = buffer.chars().collect::<Vec<_>>().into_iter();
+        self.pos.line += 1;
+        self.pos.offset += 1;
+        self.pos.character = 0;
     }
 }
