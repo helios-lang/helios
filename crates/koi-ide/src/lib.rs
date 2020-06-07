@@ -106,7 +106,7 @@ impl<T> JsonRpcNotification<T> {
 pub fn run() {
     let responder = koi_actor::spawn(Responder);
     let receiver = koi_actor::spawn(Receiver::with(responder.channel));
-    println!("Established connection");
+    eprintln!("Established connection");
     start(receiver.channel);
 }
 
@@ -129,7 +129,7 @@ pub fn start(receiver: Sender<LspMessage>) {
 fn send_message(receiver: &Sender<LspMessage>, msg: &str) {
     match deserialize_message(msg) {
         Ok(msg) => receiver.send(msg).expect("Failed to send"),
-        Err(err) => println!("*** [WARN] received unsupported message: {}", err)
+        Err(err) => eprintln!("*** [WARN] received unsupported message: {}", err)
     }
 }
 
@@ -141,7 +141,7 @@ fn deserialize_message(value: &str) -> serde_json::Result<LspMessage> {
     std::io::stdin().read_exact(&mut buffer).unwrap();
     let buffer_string = String::from_utf8(buffer).unwrap();
 
-    println!("--> {}", buffer_string.as_str().trim());
+    eprintln!("--> {}", buffer_string.as_str().trim());
 
     serde_json::from_str::<LspMessage>(&buffer_string)
 }
@@ -154,7 +154,7 @@ pub fn send_jsonrpc_response<T, U>(id: U, result: T)
         serde_json::to_string(&response)
             .expect("Failed to serialize JSON RPC response.");
 
-    println!("<-- {}", response);
+    eprintln!("<-- {}", response);
 
     print!("Content-Length: {}\r\n\r\n", response.len());
     print!("{}", response);
