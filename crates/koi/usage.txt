@@ -1,7 +1,7 @@
 USAGE: koi [OPTIONS] COMMAND
 
 OPTIONS:
-  -h, --help      Print help infomration
+  -h, --help      Print help information
   -V, --version   Print version info
 
 COMMAND:
