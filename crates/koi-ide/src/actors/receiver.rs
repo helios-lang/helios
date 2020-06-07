@@ -1,8 +1,8 @@
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
+use koi_driver::Driver;
 use std::collections::VecDeque;
 use std::sync::mpsc::Sender;
-
 pub struct Receiver {
     responder_channel: Sender<LspResponse>,
 }
@@ -46,6 +46,16 @@ impl Actor for Receiver {
                 // A completion request has been sent
             },
             LspMessage::TextDocumentHoverRequest { id, params } => {
+                eprintln!("::: {}", params.text_document.uri);
+                let driver = Driver::with(params.text_document.uri.as_str());
+                let text = match driver.tokenize_source() {
+                    Ok(_) => "???".to_string(),
+                    Err(mut diagnostics) => match diagnostics.pop() {
+                        Some(diagnostic) => diagnostic.code,
+                        None => "???".to_string()
+                    },
+                };
+
                 self.responder_channel
                     .clone()
                     .send(LspResponse::HoverResult {
@@ -54,7 +64,7 @@ impl Actor for Receiver {
                             contents: lsp_types::HoverContents::Scalar(
                                 lsp_types::MarkedString::from_language_code(
                                     "koi".to_string(),
-                                    "type unknown".to_string()
+                                    text
                                 )
                             ),
                             range: Some(
@@ -69,45 +79,6 @@ impl Actor for Receiver {
                         }
                     })
                     .expect("Failed to send `HoverResult` message to responder");
-            }
-        }
-    }
-}
-
-pub struct Responder;
-
-impl Actor for Responder {
-    type InMessage = LspResponse;
-
-    fn poll_messages(&mut self, messages: &mut VecDeque<Self::InMessage>) {
-        use super::{send_jsonrpc_response, Capabilities};
-
-        match messages.pop_front().expect("Failed to get next message") {
-            LspResponse::InitializeResult { id } => {
-                use lsp_types::*;
-                let capabilities = ServerCapabilities {
-                    text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                        TextDocumentSyncKind::Incremental,
-                    )),
-                    hover_provider: Some(true),
-                    completion_provider: Some(CompletionOptions {
-                        resolve_provider: Some(true),
-                        trigger_characters: Some(vec![".".to_string()]),
-                        work_done_progress_options: WorkDoneProgressOptions {
-                            work_done_progress: Some(false)
-                        }
-                    }),
-                    rename_provider: Some(RenameProviderCapability::Simple(true)),
-                    ..ServerCapabilities::default()
-                };
-
-                send_jsonrpc_response(id, Capabilities { capabilities });
-            },
-            LspResponse::CompletionList { .. } => {
-                // Unimplemented...
-            },
-            LspResponse::HoverResult { id, params: result } => {
-                send_jsonrpc_response(id, result);
             }
         }
     }
