@@ -1,7 +1,7 @@
 pub mod lexer;
 pub mod token;
 
-use crate::source::{Source};
+use crate::source::Source;
 use lexer::Lexer;
 use token::Token;
 

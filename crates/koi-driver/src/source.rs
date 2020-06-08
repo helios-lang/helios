@@ -1,16 +1,38 @@
 use std::fs::File;
+use std::fmt::{self, Display};
 use std::io::{self, BufRead, BufReader, Read};
 use std::path::Path;
 use std::vec::IntoIter;
 
 pub const EOF_CHAR: char = '\0';
 
-#[allow(dead_code)]
-#[derive(Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Position {
-    line: u32,
-    character: u32,
-    offset: usize,
+    pub line: usize,
+    pub character: usize,
+}
+
+impl Position {
+    pub fn new(line: usize, character: usize) -> Self {
+        Self { line, character }
+    }
+
+    pub fn advance(&mut self) {
+        eprintln!("[Advance]");
+        self.character += 1;
+    }
+
+    pub fn advance_line(&mut self) {
+        eprintln!("[Advance Line]");
+        self.line += 1;
+        self.character = 0;
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{}:{}]", self.line, self.character)
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -74,12 +96,12 @@ impl<'a> Cursor<'a> {
     pub fn advance(&mut self) -> Option<char> {
         match self.chars.next() {
             Some(c) => {
-                self.pos.character += 1;
-                self.pos.offset += 1;
+                self.pos.advance();
                 Some(c)
             },
             None => {
                 self.advance_line();
+                // self.pos.advance_line();
                 self.chars.next()
             }
         }
@@ -99,8 +121,6 @@ impl<'a> Cursor<'a> {
         let mut buffer = String::new();
         self.source.read_line(&mut buffer).expect("Failed to read line");
         self.chars = buffer.chars().collect::<Vec<_>>().into_iter();
-        self.pos.line += 1;
-        self.pos.offset += 1;
-        self.pos.character = 0;
+        // self.pos.advance_line();
     }
 }

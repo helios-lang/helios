@@ -1,6 +1,6 @@
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
-use koi_driver::{Ast, Source, tokenize};
+use koi_driver::{Ast, Position, Source, tokenize};
 use std::collections::VecDeque;
 use std::sync::mpsc::Sender;
 
@@ -68,8 +68,12 @@ impl Receiver {
                 if let Some(tokens) = &self.tokens {
                     for token in tokens {
                         if
-                            (params.position.line as usize) == token.line
-                            && (params.position.character as usize) >= token.range.start && (params.position.character as usize) < token.range.end
+                            token.range.contains(
+                                &Position::new(
+                                    params.position.line as usize,
+                                    params.position.character as usize
+                                )
+                            )
                         {
                             self.responder_channel
                                 .clone()
@@ -85,12 +89,12 @@ impl Receiver {
                                         range: Some(
                                             lsp_types::Range::new(
                                                 lsp_types::Position::new(
-                                                    token.line as u64,
-                                                    token.range.start as u64
+                                                    token.range.start.line as u64,
+                                                    token.range.start.character as u64
                                                 ),
                                                 lsp_types::Position::new(
-                                                    token.line as u64,
-                                                    token.range.end as u64
+                                                    token.range.end.line as u64,
+                                                    token.range.end.character as u64
                                                 )
                                             )
                                         )

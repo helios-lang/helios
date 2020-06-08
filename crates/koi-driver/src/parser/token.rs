@@ -1,22 +1,21 @@
 #![allow(dead_code)]
 
+use crate::source::Position;
 use std::ops::Range;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
-    pub range: Range<usize>,
-    pub line: usize,
-    pub character: usize,
+    pub range: Range<Position>,
 }
 
 impl Token {
-    pub fn with(kind: TokenKind, range: Range<usize>, line: usize, character: usize) -> Self {
+    pub fn with(kind: TokenKind, range: Range<Position>) -> Self {
         assert!(
             range.end >= range.start,
             format!("Invalid range `{}..{}`", range.start, range.end)
         );
-        Self { kind, range, line, character }
+        Self { kind, range }
     }
 }
 

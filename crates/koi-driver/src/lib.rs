@@ -3,7 +3,7 @@ mod parser;
 mod source;
 
 pub use diagnostic::Diagnostic;
-pub use source::Source;
+pub use source::{Position, Source};
 pub use parser::Ast;
 
 type Result<T> = std::result::Result<T, Vec<Diagnostic>>;
