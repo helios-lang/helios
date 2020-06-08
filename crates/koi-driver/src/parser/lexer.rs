@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::source::{Cursor, Source};
+use crate::source::{Cursor, Position, Source};
 use crate::parser::token::*;
 
 /// Checks if the given character is a valid start of an identifier.
@@ -59,25 +59,26 @@ impl Default for LexerMode {
 
 pub struct Lexer<'a> {
     cursor: Cursor<'a>,
-    line: usize,
-    character: usize,
     did_advance_line: bool,
 }
 
 impl<'a> Lexer<'a> {
     pub fn with(source: Source<'a>) -> Self {
-        Self { cursor: Cursor::with(source), line: 0, character: 0, did_advance_line: false }
+        Self { cursor: Cursor::with(source), did_advance_line: false }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
+        let mut old_pos = self.cursor.pos;
+        let next_char = self.next_char()?;
+
         if self.did_advance_line {
             self.did_advance_line = false;
-            self.line += 1;
-            self.character = 0;
+            eprintln!("  [DID ADVANCE LINE]");
+            old_pos = Position::new(self.cursor.pos.line, 0);
         }
 
-        let current_char = self.character;
-        let next_char = self.next_char()?;
+        eprintln!("  [OLD: {}]", old_pos);
+
         let token_kind = match next_char {
             ' ' | '\t' => self.whitespace(),
             '\n' | '\r' => self.newline(),
@@ -96,19 +97,19 @@ impl<'a> Lexer<'a> {
             c => TokenKind::Unknown(c)
         };
 
-        // eprintln!("{:?}", self.cursor.pos);
-        Some(Token::with(token_kind, current_char..self.character, self.line, current_char))
+        let token = Token::with(token_kind, old_pos..self.cursor.pos);
+        eprintln!("{:?}", token);
+        // eprintln!("[Advanced {} times]", self.cursor.pos.character - old_pos.character);
+        Some(token)
     }
 }
 
 impl<'a> Lexer<'a> {
     /// Moves to the next character in the iterator.
     fn next_char(&mut self) -> Option<char> {
+        eprintln!("  [NEXT CHAR]");
         match self.cursor.advance() {
-            Some(c) => {
-                self.character += 1;
-                Some(c)
-            },
+            Some(c) => Some(c),
             None => None
         }
     }
@@ -239,8 +240,12 @@ impl<'a> Lexer<'a> {
     }
 
     fn newline(&mut self) -> TokenKind {
+        // for _ in 0..self.consume_while(is_newline) {
+        //     self.cursor.advance();
+        // }
         self.consume_while(is_newline);
         self.did_advance_line = true;
+        // self.cursor.pos.advance_line();
         TokenKind::Newline
     }
 
@@ -274,17 +279,17 @@ impl<'a> Lexer<'a> {
     fn keyword_or_identifier(&mut self, string: String) -> TokenKind {
         match &*string {
             "and"   => TokenKind::Keyword(Keyword::And),
-            "def"    => TokenKind::Keyword(Keyword::Def),
+            "def"   => TokenKind::Keyword(Keyword::Def),
             "do"    => TokenKind::Keyword(Keyword::Do),
             "else"  => TokenKind::Keyword(Keyword::Else),
             "false" => TokenKind::Keyword(Keyword::False),
             "if"    => TokenKind::Keyword(Keyword::If),
             "let"   => TokenKind::Keyword(Keyword::Let),
-            "match"   => TokenKind::Keyword(Keyword::Match),
+            "match" => TokenKind::Keyword(Keyword::Match),
             "or"    => TokenKind::Keyword(Keyword::Or),
             "then"  => TokenKind::Keyword(Keyword::Then),
             "true"  => TokenKind::Keyword(Keyword::True),
-            "using"  => TokenKind::Keyword(Keyword::Using),
+            "using" => TokenKind::Keyword(Keyword::Using),
             _       => TokenKind::Identifier(string)
         }
     }
