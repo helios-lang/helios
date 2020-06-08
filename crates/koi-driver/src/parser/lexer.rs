@@ -69,8 +69,8 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Option<Token> {
         let next_char = self.next_char()?;
 
-        // Because we already advanced to the next character, it's position is
-        // one less than the current character position.
+        // Because we've already advanced to the next character, it's position
+        // is one less than our current character's position.
         // TODO: There must be a more elegant way to do this?
         let old_pos = Position::new(
             self.cursor.pos.line,
