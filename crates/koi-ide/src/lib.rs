@@ -13,42 +13,51 @@ use std::sync::mpsc::Sender;
 #[serde(tag = "method")]
 pub enum LspMessage {
     #[serde(rename = "initialize")]
+    /// The client is listening for the server to respond.
     InitializeRequest {
         id: usize,
         params: lsp_types::InitializeParams,
     },
 
     #[serde(rename = "initialized")]
+    /// The connection has been successfully initialized.
     InitializedNotification,
 
     #[serde(rename = "shutdown")]
+    /// The client has asked us to shutdown.
     ShutdownRequest,
 
     #[serde(rename = "exit")]
+    /// The client has asked us to exit now.
     ExitNotification,
 
     #[serde(rename = "textDocument/didOpen")]
+    /// A text document has been opened.
     TextDocumentDidOpenNotification {
         params: lsp_types::DidOpenTextDocumentParams
     },
 
     #[serde(rename = "textDocument/didChange")]
+    /// The text document has been modified.
     TextDocumentDidChangeNotification {
         params: lsp_types::DidChangeTextDocumentParams,
     },
 
     #[serde(rename = "textDocument/didSave")]
+    /// The text document has been saved.
     TextDocumentDidSaveNotification {
         params: lsp_types::DidSaveTextDocumentParams,
     },
 
     #[serde(rename = "textDocument/completion")]
+    /// A completion request has been sent.
     TextDocumentCompletionRequest {
         id: usize,
         params: lsp_types::CompletionParams,
     },
 
     #[serde(rename = "textDocument/hover")]
+    /// A hover request has been sent.
     TextDocumentHoverRequest {
         id: usize,
         params: lsp_types::TextDocumentPositionParams,
