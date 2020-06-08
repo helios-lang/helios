@@ -91,36 +91,39 @@ impl Receiver {
             },
             LspMessage::TextDocumentHoverRequest { id, params } => {
                 match self.database.get(params.text_document.uri.as_str()) {
-                    Some((_, tokens)) => {
-                        for token in tokens {
-                            if token.range.contains(&Position::new(params.position.line as usize, params.position.character as usize)) {
-                                self.responder_channel
-                                    .clone()
-                                    .send(LspResponse::HoverResult {
-                                        id,
-                                        params: lsp_types::Hover {
-                                            contents: lsp_types::HoverContents::Scalar(
-                                                lsp_types::MarkedString::from_language_code(
-                                                    "koi".to_string(),
-                                                    format!("{:?}", token.kind)
-                                                )
-                                            ),
-                                            range: Some(
-                                                lsp_types::Range::new(
-                                                    lsp_types::Position::new(
-                                                        token.range.start.line as u64,
-                                                        token.range.start.character as u64
+                    Some((_, tokens)) => for token in tokens {
+                        if token.range.contains(
+                            &Position::new(
+                                params.position.line as usize,
+                                params.position.character as usize
+                            )
+                        ) {
+                            self.responder_channel
+                                .clone()
+                                .send(LspResponse::HoverResult {
+                                    id,
+                                    params: lsp_types::Hover {
+                                        contents: lsp_types::HoverContents::Scalar(
+                                            lsp_types::MarkedString::from_language_code(
+                                                "koi".to_string(),
+                                                format!("{:?}", token.kind)
+                                            )
+                                        ),
+                                        range: Some(
+                                            lsp_types::Range::new(
+                                                lsp_types::Position::new(
+                                                    token.range.start.line as u64,
+                                                    token.range.start.character as u64
                                                 ),
-                                                    lsp_types::Position::new(
-                                                        token.range.end.line as u64,
-                                                        token.range.end.character as u64
-                                                    )
+                                                lsp_types::Position::new(
+                                                    token.range.end.line as u64,
+                                                    token.range.end.character as u64
                                                 )
                                             )
-                                        }
-                                    })
-                                    .expect("Failed to send `HoverRequest` message to Responder.")
-                            }
+                                        )
+                                    }
+                                })
+                                .expect("Failed to send `HoverRequest` message to Responder.")
                         }
                     },
                     None => {
