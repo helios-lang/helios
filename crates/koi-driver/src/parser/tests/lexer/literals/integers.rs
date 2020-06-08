@@ -195,3 +195,51 @@ fn test_octal_integer_literals() {
     let s = Source::stream(&mut s);
     test_integer!(s, NumericBase::Octal, std::i32::MAX, number.len());
 }
+
+#[test]
+fn test_hexadecimal_integer_literals() {
+    let number = "0x0";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 0, number.len());
+
+    let number = "0xf";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 15, number.len());
+
+    let number = "0x10";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 16, number.len());
+
+    let number = "0xff";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 255, number.len());
+
+    let number = "0x100";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 256, number.len());
+
+    let number = "0x1_000";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 4096, number.len());
+
+    let number = "0x1_000_000";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 16777216, number.len());
+
+    let number = "0xf_0f0_f0f";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, 252645135, number.len());
+
+    let number = "0x7FFFFFFF";
+    let mut s = read_from_string(number);
+    let s = Source::stream(&mut s);
+    test_integer!(s, NumericBase::Hexadecimal, std::i32::MAX, number.len());
+}
