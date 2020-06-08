@@ -80,8 +80,8 @@ pub enum NumericBase {
     /// The octal base system (radix = 8). Number literals in octal base start
     /// with `0o`, for example `0b07`.
     Octal,
-    /// The binary base system (radix = 16). Number literals in hexadecimal base
-    /// start with `0x`, for example `0b0f`.
+    /// The hexadecimal base system (radix = 16). Number literals in hexadecimal
+    /// base start with `0x`, for example `0x0f`.
     Hexadecimal,
     /// The decimal base system (radix = 10). This is the default base.
     Decimal,
