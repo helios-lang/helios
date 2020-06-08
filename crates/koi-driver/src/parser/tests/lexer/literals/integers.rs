@@ -1,10 +1,7 @@
 use crate::parser::token::*;
 use crate::parser::lexer::*;
 use crate::source::{Position, Source};
-
-fn read_from_string(s: &str) -> &[u8] {
-    s.as_bytes()
-}
+use super::read_from_string;
 
 macro_rules! test_integer {
     ($source:expr, $base:expr, $value:expr, $size:expr) => {
