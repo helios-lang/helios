@@ -2,25 +2,16 @@
 
 use crate::source::{Cursor, Position, Source};
 use crate::parser::token::*;
+use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier.
-///
-/// _TODO: Should we allow any Unicode character suitable for identifiers?_
 fn is_identifier_start(c: char) -> bool {
-    ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || c == '_'
+    c.is_xid_start() || c == '_'
 }
 
 /// Checks if the given character is a valid continuation of an identifier.
-///
-/// _TODO: Should we allow hyphens (`-`) in identifiers?_
 fn is_identifier_continue(c: char) -> bool {
-    ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || ('0' <= c && c <= '9')
-        || c == '_'
-        || c == '-'
+    c.is_xid_continue()
 }
 
 /// Checks if the given character is a newline or carriage return character
