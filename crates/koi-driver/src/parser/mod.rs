@@ -1,6 +1,9 @@
 pub mod lexer;
 pub mod token;
 
+#[cfg(test)]
+mod tests;
+
 use crate::source::Source;
 use lexer::Lexer;
 use token::Token;

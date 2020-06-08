@@ -35,8 +35,9 @@ impl Display for Position {
 
 #[derive(Copy, Clone)]
 pub enum SourceType {
-    Stdin,
     File,
+    Stdin,
+    Stream,
 }
 
 pub struct Source<'a> {
@@ -44,18 +45,21 @@ pub struct Source<'a> {
     input: Box<dyn BufRead + 'a>,
 }
 
+// #[allow(dead_code)]
 impl<'a> Source<'a> {
-    #[allow(dead_code)]
     pub fn stdin(stdin: &'a io::Stdin) -> io::Result<Self> {
         Ok(Self { source_type: SourceType::Stdin, input: Box::new(stdin.lock()) })
     }
 
-    #[allow(dead_code)]
     pub fn file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         File::open(path).map(|file| Self {
             source_type: SourceType::File,
             input: Box::new(BufReader::new(file)),
         })
+    }
+
+    pub fn stream(input: &'a mut dyn BufRead) -> io::Result<Self> {
+        Ok(Self { source_type: SourceType::Stream, input: Box::new(input) })
     }
 }
 
