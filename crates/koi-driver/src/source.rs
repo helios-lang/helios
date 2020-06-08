@@ -18,12 +18,10 @@ impl Position {
     }
 
     pub fn advance(&mut self) {
-        // eprintln!("[Advance]");
         self.character += 1;
     }
 
     pub fn advance_line(&mut self) {
-        // eprintln!("[Advance Line]");
         self.line += 1;
         self.character = 0;
     }
@@ -77,7 +75,6 @@ impl<'a> BufRead for Source<'a> {
     }
 }
 
-#[allow(dead_code)]
 pub struct Cursor<'a> {
     source: Source<'a>,
     chars: IntoIter<char>,
@@ -97,72 +94,35 @@ impl<'a> Cursor<'a> {
         cursor
     }
 
-    /// * If we still have characters left in our line, we'll return it.
-    /// * Otherwise, if we are at the end of the line (None), then we'll advance
-    ///   to the next line. Then we should return the next character.
-    /// * If there are no more lines left (we're at the end of the file),
-    ///   then we'll return None.
+    /// Advances to the next character in the `Cursor` iterator.
+    ///
+    /// * If we still have characters left in the line, we'll return the next
+    ///   character in queue.
+    ///
+    /// * If we received `None` (which means we reached the end of the line),
+    ///   then we'll ask our `source` to give us the next line.
+    ///
+    /// * If we are given a new line (and thus the file still has contents in to
+    ///   be processed), then we'll return the next character in our new queue.
+    ///
+    /// * Otherwise, we have reached the end of the file, and thus we return
+    ///   `None`.
     pub fn advance(&mut self) -> Option<char> {
-        if let Some(c) = self.chars.next() {
-            eprintln!("    [SOME {:?} @ {}]", c, self.pos);
-            self.pos.advance();
-            Some(c)
-        } else {
-            eprintln!("    [NEXT LINE]");
-            match self.advance_line() {
+        match self.chars.next() {
+            Some(c) => {
+                self.pos.advance();
+                Some(c)
+            },
+            None => match self.advance_line() {
                 Some(line) => {
-                    eprintln!("      [FOUND LINE]");
-                    self.pos.advance_line();
                     self.chars = line;
+                    self.pos.advance_line();
                     self.advance()
                 },
                 None => None
             }
         }
-
-        // match self.chars.next() {
-        //     Some(c) => {
-        //         self.pos.advance();
-        //         Some(c)
-        //     },
-        //     None => {
-        //         self.advance_line();
-        //         self.advance()
-        //     }
-        // }
     }
-
-    // pub fn _advance(&mut self) -> Option<char> {
-    //     match self.chars.next() {
-    //         Some(c) => {
-    //             eprint!("[CURSOR] => ");
-    //             self.pos.advance();
-    //             Some(c)
-    //         },
-    //         None => {
-    //             eprint!("[NONE] => ");
-    //             self.advance_line();
-    //             match self.advance() {
-    //                 Some(c) => {
-    //                     eprint!("[RECURSE] => ");
-    //                     Some(c)
-    //                 },
-    //                 None => None
-    //             }
-    //             // self.pos.advance_line();
-    //             // match self.chars.next() {
-    //             //     Some(c) => {
-    //             //         eprint!("[NEW GOT: {}]", c);
-    //             //         Some(c)
-    //             //     },
-    //             //     None => {
-    //             //         eprint!("[NONE!]");
-    //             //         None
-    //             //     }
-    //             // }
-    //         }
-    //     }
-    // }
 
     pub fn source_len(&self) -> usize {
         self.chars.len()
@@ -174,20 +134,11 @@ impl<'a> Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    // fn advance_line(&mut self) {
-    //     let mut buffer = String::new();
-    //     self.source.read_line(&mut buffer).expect("Failed to read line");
-    //     self.chars = buffer.chars().collect::<Vec<_>>().into_iter();
-    // }
-
     fn advance_line(&mut self) -> Option<IntoIter<char>> {
         let mut buffer = String::new();
         match self.source.read_line(&mut buffer){
-            Ok(bytes) => if bytes == 0 {
-                None
-            } else {
-                Some(buffer.chars().collect::<Vec<_>>().into_iter())
-            },
+            Ok(bytes) if bytes == 0 => None,
+            Ok(_) => Some(buffer.chars().collect::<Vec<_>>().into_iter()),
             Err(error) => {
                 eprintln!("Failed to read line: {}", error);
                 None

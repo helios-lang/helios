@@ -59,29 +59,27 @@ impl Default for LexerMode {
 
 pub struct Lexer<'a> {
     cursor: Cursor<'a>,
-    did_advance_line: bool,
 }
 
 impl<'a> Lexer<'a> {
     pub fn with(source: Source<'a>) -> Self {
-        Self { cursor: Cursor::with(source), did_advance_line: false }
+        Self { cursor: Cursor::with(source) }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        let mut old_pos = self.cursor.pos;
         let next_char = self.next_char()?;
 
-        if self.did_advance_line {
-            self.did_advance_line = false;
-            eprintln!("  [DID ADVANCE LINE]");
-            old_pos = Position::new(self.cursor.pos.line, 0);
-        }
-
-        eprintln!("  [OLD: {}]", old_pos);
+        // Because we already advanced to the next character, it's position is
+        // one less than the current character position.
+        // TODO: There must be a more elegant way to do this?
+        let old_pos = Position::new(
+            self.cursor.pos.line,
+            self.cursor.pos.character - 1
+        );
 
         let token_kind = match next_char {
             ' ' | '\t' => self.whitespace(),
-            '\n' | '\r' => self.newline(),
+            '\n'| '\r' => self.newline(),
             '/' => {
                 if self.peek() == '/' {
                     self.line_comment()
@@ -97,17 +95,13 @@ impl<'a> Lexer<'a> {
             c => TokenKind::Unknown(c)
         };
 
-        let token = Token::with(token_kind, old_pos..self.cursor.pos);
-        eprintln!("{:?}", token);
-        // eprintln!("[Advanced {} times]", self.cursor.pos.character - old_pos.character);
-        Some(token)
+        Some(Token::with(token_kind, old_pos..self.cursor.pos))
     }
 }
 
 impl<'a> Lexer<'a> {
     /// Moves to the next character in the iterator.
     fn next_char(&mut self) -> Option<char> {
-        eprintln!("  [NEXT CHAR]");
         match self.cursor.advance() {
             Some(c) => Some(c),
             None => None
@@ -240,12 +234,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn newline(&mut self) -> TokenKind {
-        // for _ in 0..self.consume_while(is_newline) {
-        //     self.cursor.advance();
-        // }
         self.consume_while(is_newline);
-        self.did_advance_line = true;
-        // self.cursor.pos.advance_line();
         TokenKind::Newline
     }
 
