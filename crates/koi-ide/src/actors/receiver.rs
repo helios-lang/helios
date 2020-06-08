@@ -32,10 +32,7 @@ impl Receiver {
         let key = url.to_string();
         match self.database.get(&key) {
             Some((cached_version, _)) => {
-                if cached_version == &version {
-                    eprintln!("ALREADY CACHED");
-                } else {
-                    eprintln!("REPLACING");
+                if cached_version != &version {
                     match self.generate_tokens(url) {
                         Ok(tokens) => {
                             self.database.insert(key, (version, tokens));
@@ -47,7 +44,6 @@ impl Receiver {
                 }
             },
             None => {
-                eprintln!("CACHING");
                 match self.generate_tokens(url) {
                     Ok(tokens) => {
                         self.database.insert(key, (version, tokens));
@@ -84,7 +80,7 @@ impl Receiver {
                 // The text document has been modified
             },
             LspMessage::TextDocumentDidSaveNotification { params } => {
-                self.cache_tokens(params.text_document.uri, None);
+                self.cache_tokens(params.text_document.uri, params.text_document.version);
             },
             LspMessage::TextDocumentCompletionRequest { .. } => {
                 // A completion request has been sent

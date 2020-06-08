@@ -10,6 +10,12 @@ use std::io::prelude::Write;
 use std::sync::mpsc::Sender;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VersionedDidSaveTextDocumentParams {
+    text_document: lsp_types::VersionedTextDocumentIdentifier,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "method")]
 pub enum LspMessage {
     #[serde(rename = "initialize")]
@@ -46,7 +52,7 @@ pub enum LspMessage {
     #[serde(rename = "textDocument/didSave")]
     /// The text document has been saved.
     TextDocumentDidSaveNotification {
-        params: lsp_types::DidSaveTextDocumentParams,
+        params: VersionedDidSaveTextDocumentParams,
     },
 
     #[serde(rename = "textDocument/completion")]
