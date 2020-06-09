@@ -48,6 +48,9 @@ pub enum TokenKind {
     /// End of file token.
     Eof,
 
+    /// Indicates that the current token is erroneous or invalid.
+    Error,
+
     /// An unknown token. An error may be raised if such a token is encountered.
     Unknown(char),
 }

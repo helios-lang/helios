@@ -2,6 +2,7 @@
 
 use crate::source::{Cursor, Position, Source};
 use crate::parser::token::*;
+use std::fmt::{self, Display};
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -40,16 +41,6 @@ fn is_symbol(c: char) -> bool {
 /// Checks if the given character is a whitespace character.
 fn is_whitespace(c: char) -> bool {
     c == ' ' ||  c == '\t'
-}
-
-pub enum LexerMode {
-    Normal,
-}
-
-impl Default for LexerMode {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 pub struct Lexer<'a> {
@@ -387,22 +378,25 @@ impl<'a> Lexer<'a> {
     /// Consumes all the characters found within quotation marks (`"`).
     ///
     /// Simple escape sequences are recognised and are dealt accordingly. These
-    /// sequences include `\\n`, `\\`, `\"`, `\t`, `\n`, and `\r`. Any other
-    /// escape sequence is invalid, thus this method will panic.
-    ///
-    /// String interpolation is currently unsupported.
+    /// sequences include `\↵`, `\\`, `\"`, `\t`, `\n`, and `\r`. Any other
+    /// escape sequence is invalid, and thus will return `TokenKind::Error`.
     fn string(&mut self) -> TokenKind {
         let mut ignore_whitespace = false;
+        let mut is_error = false;
         let mut string_content = Vec::new();
 
         while let Some(c) = self.next_char() {
             match c {
                 // We reached the end of the string.
                 '"' => {
-                    let content = string_content.iter().collect();
-                    return TokenKind::Literal(
-                        Literal::Str { content, terminated: true }
-                    );
+                    if is_error {
+                        return TokenKind::Error;
+                    } else {
+                        let content = string_content.iter().collect();
+                        return TokenKind::Literal(
+                            Literal::Str { content, terminated: true }
+                        );
+                    }
                 },
                 // We are at the start of an escape sequence.
                 '\\' => match self.peek() {
@@ -431,13 +425,14 @@ impl<'a> Lexer<'a> {
                     },
                     // Otherwise we found an invalid escape sequence. We'll
                     // panic here.
-                    c => {
-                        eprintln! {
-                            "Invalid escape sequence `\\{character}`. The \
-                            character {character:?} cannot be escaped.",
-                            character=c
-                        };
-                        std::process::exit(1);
+                    _ => {
+                        // eprintln! {
+                        //     "Invalid escape sequence `\\{character}`. The \
+                        //     character {character:?} cannot be escaped.",
+                        //     character=c
+                        // };
+                        is_error = true;
+                        string_content.push(self.next_char().unwrap());
                     }
                 }
                 // Whitespace characters are ignored if followed by a `\` and a
@@ -452,7 +447,12 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        let content = string_content.iter().collect();
-        TokenKind::Literal(Literal::Str { content, terminated: false })
+        // We are here if the string literal is unterminated
+        if is_error {
+            TokenKind::Error
+        } else {
+            let content = string_content.iter().collect();
+            TokenKind::Literal(Literal::Str { content, terminated: false })
+        }
     }
 }
