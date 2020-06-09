@@ -4,12 +4,16 @@ use crate::source::{Cursor, Position, Source};
 use crate::parser::token::*;
 use unicode_xid::UnicodeXID;
 
-/// Checks if the given character is a valid start of an identifier.
+/// Checks if the given character is a valid start of an identifier. A valid
+/// start of an identifier is any Unicode code point that satisfies the
+/// `XID_Start` property.
 fn is_identifier_start(c: char) -> bool {
     c.is_xid_start() || c == '_'
 }
 
 /// Checks if the given character is a valid continuation of an identifier.
+/// A valid continuation of an identifier is any Unicode code point that
+/// satisfies the `XID_Continue` property.
 fn is_identifier_continue(c: char) -> bool {
     c.is_xid_continue()
 }
