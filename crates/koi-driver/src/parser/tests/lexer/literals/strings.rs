@@ -33,17 +33,6 @@ fn test_string_literals() {
     test_string!(r#""Hello\nworld!""#, "Hello\nworld!".to_string());
     test_string!(r#""\\\n\t\r""#, "\\\n\t\r".to_string());
 
-    let string = r#""a\b\c\de""#;
-    create_test! {
-        string,
-        vec! {
-            Token::with(
-                TokenKind::Error,
-                Position::new(0, 0)..Position::new(0, string.len())
-            )
-        }
-    }
-
     create_test! {
 r#""This is the first line. \
 This is the second line. \
@@ -81,6 +70,29 @@ r#""\
                     terminated: true,
                 }),
                 Position::new(0, 0)..Position::new(4, 1)
+            )
+        }
+    }
+}
+
+#[test]
+fn test_invalid_string_literals() {
+    create_test! {
+        r#""a\b\c\de""#,
+        vec! {
+            Token::with(
+                TokenKind::Error,
+                Position::new(0, 0)..Position::new(0, 10)
+            )
+        }
+    }
+
+    create_test! {
+    r#""Hello. \World""#,
+        vec! {
+            Token::with(
+                TokenKind::Error,
+                Position::new(0, 0)..Position::new(0, 15)
             )
         }
     }

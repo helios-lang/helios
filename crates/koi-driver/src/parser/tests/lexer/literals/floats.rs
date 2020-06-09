@@ -31,6 +31,5 @@ fn test_float_literals() {
     test_float!("1.1", FloatValue::Value(1.1));
     test_float!("10.01", FloatValue::Value(10.01));
     test_float!("100_000.000_001", FloatValue::Value(100_000.000_001));
-    // Close to std::f64::MAX
     test_float!("1.7976931348623157", FloatValue::Value(1.7976931348623157));
 }
