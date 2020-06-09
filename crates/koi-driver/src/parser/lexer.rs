@@ -2,7 +2,6 @@
 
 use crate::source::{Cursor, Position, Source};
 use crate::parser::token::*;
-use std::fmt::{self, Display};
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
