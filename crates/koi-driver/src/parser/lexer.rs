@@ -270,6 +270,7 @@ impl<'a> Lexer<'a> {
             "if"    => TokenKind::Keyword(Keyword::If),
             "let"   => TokenKind::Keyword(Keyword::Let),
             "match" => TokenKind::Keyword(Keyword::Match),
+            "not"   => TokenKind::Keyword(Keyword::Not),
             "or"    => TokenKind::Keyword(Keyword::Or),
             "then"  => TokenKind::Keyword(Keyword::Then),
             "true"  => TokenKind::Keyword(Keyword::True),
@@ -399,18 +400,21 @@ impl<'a> Lexer<'a> {
                     '\\' | '"' => {
                         string_content.push(self.next_char().unwrap())
                     },
+                    // The next character is a line feed, and thus we need to
+                    // ignore all whitespace characters that follow.
+                    '\n' => {
+                        ignore_whitespace = true;
+                    },
                     // If it is a valid escape code character, we'll insert an
                     // actual unicode character as if it was present on the
                     // string we're building.
-                    e @ 't' | e @ 'n' | e @ 'r' | e @ '\n' => {
+                    e @ 't' | e @ 'n' | e @ 'r' => {
                         if e == 't' {
                             string_content.push('\u{0009}');
                         } else if e == 'n' {
                             string_content.push('\u{000A}');
                         } else if e == 'r' {
-                            string_content.push('\u{000D}')
-                        } else if e == '\n' {
-                            ignore_whitespace = true;
+                            string_content.push('\u{000D}');
                         }
                         self.next_char();
                     },
@@ -426,7 +430,7 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 // Whitespace characters are ignored if followed by a `\` and a
-                // newline character.
+                // line feed character.
                 ' ' | '\n' | '\t' | '\r' if ignore_whitespace => (),
                 // We push any other character into the vector to be part of the
                 // string.
