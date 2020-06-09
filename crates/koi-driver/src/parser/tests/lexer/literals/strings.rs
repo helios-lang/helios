@@ -104,7 +104,7 @@ fn test_invalid_string_literals() {
     }
 
     create_test! {
-    r#""Hello. \World""#,
+        r#""Hello. \World""#,
         vec! {
             Token::with(
                 TokenKind::Error,
