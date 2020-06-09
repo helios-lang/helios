@@ -269,6 +269,7 @@ impl<'a> Lexer<'a> {
             "or"    => TokenKind::Keyword(Keyword::Or),
             "then"  => TokenKind::Keyword(Keyword::Then),
             "true"  => TokenKind::Keyword(Keyword::True),
+            "type"  => TokenKind::Keyword(Keyword::Type),
             "using" => TokenKind::Keyword(Keyword::Using),
             "with"  => TokenKind::Keyword(Keyword::With),
             _       => TokenKind::Identifier(string)

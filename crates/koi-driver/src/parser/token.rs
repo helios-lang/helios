@@ -66,6 +66,7 @@ pub enum Keyword {
     Or,
     Then,
     True,
+    Type,
     Unimplemented,
     Using,
     With,
