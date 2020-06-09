@@ -76,6 +76,22 @@ r#""\
 }
 
 #[test]
+fn test_unterminated_string_literals() {
+    create_test!(
+        r#""Hello, world!"#,
+        vec! {
+            Token::with(
+                TokenKind::Literal(Literal::Str {
+                    content: "Hello, world!".to_string(),
+                    terminated: false,
+                }),
+                Position::new(0, 0)..Position::new(0, 14)
+            )
+        }
+    );
+}
+
+#[test]
 fn test_invalid_string_literals() {
     create_test! {
         r#""a\b\c\de""#,
