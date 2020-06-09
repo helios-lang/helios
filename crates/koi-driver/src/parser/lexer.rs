@@ -343,15 +343,26 @@ impl<'a> Lexer<'a> {
 
         if fractional_part.is_empty() {
             let string: String = integer_part[..].into_iter().collect();
-            let parsed = i32::from_str_radix(&*string, radix)
-                             .expect("Failed to parse integer");
-            TokenKind::Literal(Literal::Int { base, value: parsed })
+            let parsed = i32::from_str_radix(&*string, radix);
+            let value = match parsed {
+                Ok(value) => IntValue::Value(value),
+                // It should be fine to assume we overflowed here
+                _ => IntValue::Overflowed
+            };
+
+            TokenKind::Literal(Literal::Int { base, value })
         } else {
             let all = [&integer_part[..], &fractional_part[..]].concat();
             let string: String = all[..].into_iter().collect();
-            let parsed: f64 = string.parse().expect("Failed to parse float");
+            let parsed = string.parse();
+            let value = match parsed {
+                Ok(value) => FloatValue::Value(value),
+                // It should be fine to assume we overflowed here
+                _ => FloatValue::Overflowed
+            };
+
             // TODO: We should only allow floats to be in decimal base
-            TokenKind::Literal(Literal::Float { base, value: parsed })
+            TokenKind::Literal(Literal::Float { base, value })
         }
     }
 

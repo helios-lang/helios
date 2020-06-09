@@ -89,24 +89,45 @@ pub enum NumericBase {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum IntValue {
+    Overflowed,
+    Value(i32),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum FloatValue {
+    Overflowed,
+    Value(f64),
+}
+
+#[derive(Clone, Debug, PartialEq)]
 // TODO: See issue #1: Representing overflowed numeric literals
 pub enum Literal {
     Bool(bool),
     Char(char),
-    Float { base: NumericBase, value: f64 },
-    Int { base: NumericBase, value: i32 },
+    Float { base: NumericBase, value: FloatValue },
+    Int { base: NumericBase, value: IntValue },
     Str { content: String, terminated: bool },
 }
 
 impl Literal {
     pub fn description(&self) -> String {
-        use Literal::*;
         match self {
-            Bool(b)             => format!("{}", b),
-            Char(c)             => format!("{}", c),
-            Float { value, .. } => format!("{}", value),
-            Int { value, .. }   => format!("{}", value),
-            Str { content, .. } => content.clone()
+            Literal::Bool(b) => format!("{}", b),
+            Literal::Char(c) => format!("{}", c),
+            Literal::Float { value, .. } => {
+                match value {
+                    FloatValue::Value(value) => format!("{}", value),
+                    _ => "<<invalid-float>>".to_string()
+                }
+            }
+            Literal::Int { value, .. } => {
+                match value {
+                    IntValue::Value(value) => format!("{}", value),
+                    _ => "<<invalid-integer>>".to_string()
+                }
+            }
+            Literal::Str { content, .. } => content.clone(),
         }
     }
 }
