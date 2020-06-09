@@ -1,6 +1,6 @@
 use crate::parser::token::*;
 use crate::parser::lexer::*;
-use crate::source::{Position, Source};
+use crate::source::Position;
 use super::read_from_string;
 
 macro_rules! test_string {
@@ -39,28 +39,13 @@ macro_rules! test_string {
 
 #[test]
 fn test_string_literals() {
-    let string = r#""""#;
-    let mut s = read_from_string(string);
-    let s = Source::stream(&mut s);
-    test_string!(s, "".to_string(), string.len());
+    create_test!(r#""""#, test_string, "".to_string());
 
-    let string = r#""          ""#;
-    let mut s = read_from_string(string);
-    let s = Source::stream(&mut s);
-    test_string!(s, "          ".to_string(), string.len());
+    create_test!(r#""          ""#, test_string, "          ".to_string());
 
-    let string = r#""Hello, world!""#;
-    let mut s = read_from_string(string);
-    let s = Source::stream(&mut s);
-    test_string!(s, "Hello, world!".to_string(), string.len());
+    create_test!(r#""Hello, world!""#, test_string, "Hello, world!".to_string());
 
-    let string = r#""Hello\nWorld""#;
-    let mut s = read_from_string(string);
-    let s = Source::stream(&mut s);
-    test_string!(s, "Hello\nWorld".to_string(), string.len());
+    create_test!(r#""Hello\nWorld""#, test_string, "Hello\nWorld".to_string());
 
-    let string = r#""\\\n\t\r""#;
-    let mut s = read_from_string(string);
-    let s = Source::stream(&mut s);
-    test_string!(s, "\\\n\t\r".to_string(), string.len());
+    create_test!(r#""\\\n\t\r""#, test_string, "\\\n\t\r".to_string());
 }
