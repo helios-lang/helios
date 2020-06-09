@@ -423,7 +423,7 @@ impl<'a> Lexer<'a> {
                     c => {
                         eprintln! {
                             "Invalid escape sequence `\\{character}`. The \
-                            character `{character}` cannot be escaped.",
+                            character {character:?} cannot be escaped.",
                             character=c
                         };
                         std::process::exit(1);
