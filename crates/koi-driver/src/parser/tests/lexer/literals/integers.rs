@@ -4,7 +4,7 @@ use crate::source::{Position, Source};
 use super::read_from_string;
 
 macro_rules! test_integer {
-    ($source:expr, $base:expr, $value:expr, $size:expr) => {
+    ($source:expr, $value:expr, $base:expr, $size:expr) => {
         match $source {
             Ok(source) => {
                 let mut tokens = Vec::new();
@@ -39,207 +39,295 @@ macro_rules! test_integer {
 
 #[test]
 fn test_decimal_integer_literals() {
-    let number = "0";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 0, number.len());
+    create_numeric_test! {
+        "0",
+        test_integer,
+        IntValue::Value(0),
+        NumericBase::Decimal
+    }
 
-    let number = "9";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 9, number.len());
+    create_numeric_test! {
+        "9",
+        test_integer,
+        IntValue::Value(9),
+        NumericBase::Decimal
+    }
 
-    let number = "10";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 10, number.len());
+    create_numeric_test! {
+        "10",
+        test_integer,
+        IntValue::Value(10),
+        NumericBase::Decimal
+    }
 
-    let number = "99";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 99, number.len());
+    create_numeric_test! {
+        "99",
+        test_integer,
+        IntValue::Value(99),
+        NumericBase::Decimal
+    }
 
-    let number = "100";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 100, number.len());
+    create_numeric_test! {
+        "100",
+        test_integer,
+        IntValue::Value(100),
+        NumericBase::Decimal
+    }
 
-    let number = "1_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 1_000, number.len());
+    create_numeric_test! {
+        "1_000",
+        test_integer,
+        IntValue::Value(1_000),
+        NumericBase::Decimal
+    }
 
-    let number = "1_000_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 1_000_000, number.len());
+    create_numeric_test! {
+        "1_000_000",
+        test_integer,
+        IntValue::Value(1_000_000),
+        NumericBase::Decimal
+    }
 
-    let number = "9_090_909";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 9_090_909, number.len());
+    create_numeric_test! {
+        "9_090_909",
+        test_integer,
+        IntValue::Value(9_090_909),
+        NumericBase::Decimal
+    }
 
-    let number = "1234567890";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, 1234567890, number.len());
+    create_numeric_test! {
+        "1234567890",
+        test_integer,
+        IntValue::Value(1234567890),
+        NumericBase::Decimal
+    }
 
-    let number = "2147483647";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Decimal, std::i32::MAX, number.len());
+    create_numeric_test! {
+        "2147483647",
+        test_integer,
+        IntValue::Value(2147483647),
+        NumericBase::Decimal
+    }
 }
 
 #[test]
 fn test_binary_integer_literals() {
-    let number = "0b0";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 0, number.len());
+    create_numeric_test! {
+        "0b0",
+        test_integer,
+        IntValue::Value(0),
+        NumericBase::Binary
+    }
 
-    let number = "0b1";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 1, number.len());
+    create_numeric_test! {
+        "0b1",
+        test_integer,
+        IntValue::Value(1),
+        NumericBase::Binary
+    }
 
-    let number = "0b10";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 2, number.len());
+    create_numeric_test! {
+        "0b10",
+        test_integer,
+        IntValue::Value(2),
+        NumericBase::Binary
+    }
 
-    let number = "0b11";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 3, number.len());
+    create_numeric_test! {
+        "0b11",
+        test_integer,
+        IntValue::Value(3),
+        NumericBase::Binary
+    }
 
-    let number = "0b100";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 4, number.len());
+    create_numeric_test! {
+        "0b100",
+        test_integer,
+        IntValue::Value(4),
+        NumericBase::Binary
+    }
 
-    let number = "0b1_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 8, number.len());
+    create_numeric_test! {
+        "0b1_000",
+        test_integer,
+        IntValue::Value(8),
+        NumericBase::Binary
+    }
 
-    let number = "0b1_000_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 64, number.len());
+    create_numeric_test! {
+        "0b1_000_000",
+        test_integer,
+        IntValue::Value(64),
+        NumericBase::Binary
+    }
 
-    let number = "0b1_010_101";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 85, number.len());
+    create_numeric_test! {
+        "0b1_010_101",
+        test_integer,
+        IntValue::Value(85),
+        NumericBase::Binary
+    }
 
-    let number = "0b101010101";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, 341, number.len());
+    create_numeric_test! {
+        "0b101010101",
+        test_integer,
+        IntValue::Value(341),
+        NumericBase::Binary
+    }
 
-    let number = "0b1111111111111111111111111111111";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Binary, std::i32::MAX, number.len());
+    create_numeric_test! {
+        "0b1111111111111111111111111111111",
+        test_integer,
+        IntValue::Value(std::i32::MAX),
+        NumericBase::Binary
+    }
 }
 
 #[test]
 fn test_octal_integer_literals() {
-    let number = "0o0";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 0, number.len());
+    create_numeric_test! {
+        "0o0",
+        test_integer,
+        IntValue::Value(0),
+        NumericBase::Octal
+    }
 
-    let number = "0o7";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 7, number.len());
+    create_numeric_test! {
+        "0o7",
+        test_integer,
+        IntValue::Value(7),
+        NumericBase::Octal
+    }
 
-    let number = "0o10";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 8, number.len());
+    create_numeric_test! {
+        "0o10",
+        test_integer,
+        IntValue::Value(8),
+        NumericBase::Octal
+    }
 
-    let number = "0o77";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 63, number.len());
+    create_numeric_test! {
+        "0o77",
+        test_integer,
+        IntValue::Value(63),
+        NumericBase::Octal
+    }
 
-    let number = "0o100";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 64, number.len());
+    create_numeric_test! {
+        "0o100",
+        test_integer,
+        IntValue::Value(64),
+        NumericBase::Octal
+    }
 
-    let number = "0o1_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 512, number.len());
+    create_numeric_test! {
+        "0o1_000",
+        test_integer,
+        IntValue::Value(512),
+        NumericBase::Octal
+    }
 
-    let number = "0o1_000_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 262144, number.len());
+    create_numeric_test! {
+        "0o1_000_000",
+        test_integer,
+        IntValue::Value(262144),
+        NumericBase::Octal
+    }
 
-    let number = "0o7_070_707";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 1864135, number.len());
+    create_numeric_test! {
+        "0o7_070_707",
+        test_integer,
+        IntValue::Value(1864135),
+        NumericBase::Octal
+    }
 
-    let number = "0o1234567";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, 342391, number.len());
+    create_numeric_test! {
+        "0o1234567",
+        test_integer,
+        IntValue::Value(342391),
+        NumericBase::Octal
+    }
 
-    let number = "0o17777777777";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Octal, std::i32::MAX, number.len());
+    create_numeric_test! {
+        "0o17777777777",
+        test_integer,
+        IntValue::Value(std::i32::MAX),
+        NumericBase::Octal
+    }
 }
 
 #[test]
 fn test_hexadecimal_integer_literals() {
-    let number = "0x0";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 0, number.len());
+    create_numeric_test! {
+        "0x0",
+        test_integer,
+        IntValue::Value(0),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0xf";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 15, number.len());
+    create_numeric_test! {
+        "0xf",
+        test_integer,
+        IntValue::Value(15),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0x10";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 16, number.len());
+    create_numeric_test! {
+        "0x10",
+        test_integer,
+        IntValue::Value(16),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0xff";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 255, number.len());
+    create_numeric_test! {
+        "0xff",
+        test_integer,
+        IntValue::Value(255),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0x100";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 256, number.len());
+    create_numeric_test! {
+        "0x100",
+        test_integer,
+        IntValue::Value(256),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0x1_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 4096, number.len());
+    create_numeric_test! {
+        "0x1_000",
+        test_integer,
+        IntValue::Value(4096),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0x1_000_000";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 16777216, number.len());
+    create_numeric_test! {
+        "0x1_000_000",
+        test_integer,
+        IntValue::Value(16777216),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0xf_0f0_f0f";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, 252645135, number.len());
+    create_numeric_test! {
+        "0xf_0f0_f0f",
+        test_integer,
+        IntValue::Value(252645135),
+        NumericBase::Hexadecimal
+    }
 
-    let number = "0x7FFFFFFF";
-    let mut s = read_from_string(number);
-    let s = Source::stream(&mut s);
-    test_integer!(s, NumericBase::Hexadecimal, std::i32::MAX, number.len());
+    create_numeric_test! {
+        "0x7FFFFFFF",
+        test_integer,
+        IntValue::Value(std::i32::MAX),
+        NumericBase::Hexadecimal
+    }
+}
+
+#[test]
+fn test_overflowed_integer_literals() {
+    create_numeric_test! {
+        "2147483648",
+        test_integer,
+        IntValue::Overflowed,
+        NumericBase::Decimal
+    }
 }
