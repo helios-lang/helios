@@ -56,7 +56,7 @@ impl Receiver {
         }
     }
 
-    fn send_hover_request(&self, id: usize, params: lsp_types::TextDocumentPositionParams) {
+    fn send_hover_response(&self, id: usize, params: lsp_types::TextDocumentPositionParams) {
         if let Some((_, tokens)) = self.database.get(params.text_document.uri.as_str()) {
             for token in tokens {
                 if token.range.contains(&Position::new(
@@ -143,7 +143,7 @@ impl Receiver {
                 // A completion request has been sent
             },
             LspMessage::TextDocumentHoverRequest { id, params } => {
-                self.send_hover_request(id, params);
+                self.send_hover_response(id, params);
             }
         }
     }
