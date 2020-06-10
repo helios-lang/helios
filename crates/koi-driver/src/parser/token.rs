@@ -112,6 +112,7 @@ pub enum Literal {
     Float { base: NumericBase, value: FloatValue },
     Int { base: NumericBase, value: IntValue },
     Str { content: String, terminated: bool },
+    MultiLineStr { fragments: Vec<String>, terminated: bool },
 }
 
 impl Literal {
@@ -119,19 +120,16 @@ impl Literal {
         match self {
             Literal::Bool(b) => format!("{}", b),
             Literal::Char(c) => format!("{}", c),
-            Literal::Float { value, .. } => {
-                match value {
-                    FloatValue::Value(value) => format!("{}", value),
-                    _ => "<<invalid-float>>".to_string()
-                }
+            Literal::Float { value, .. } => match value {
+                FloatValue::Value(value) => format!("{}", value),
+                _ => "<<invalid-float>>".to_string()
             }
-            Literal::Int { value, .. } => {
-                match value {
-                    IntValue::Value(value) => format!("{}", value),
-                    _ => "<<invalid-integer>>".to_string()
-                }
+            Literal::Int { value, .. } => match value {
+                IntValue::Value(value) => format!("{}", value),
+                _ => "<<invalid-integer>>".to_string()
             }
             Literal::Str { content, .. } => content.clone(),
+            Literal::MultiLineStr { fragments, .. } => fragments.join("\n")
         }
     }
 }
