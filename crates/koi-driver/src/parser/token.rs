@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::source::Position;
+use crate::parser::lexer::LexerError;
 use std::ops::Range;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -36,11 +37,11 @@ pub enum TokenKind {
     /// the code.
     Symbol(Symbol),
 
-    /// A line comment starting with two slashes (`//`).
+    /// A line comment starting with two forward slashes (`//`).
     LineComment { is_doc_comment: bool },
 
-    /// Any whitespace character (e.g. a new-line character).
-    Whitespace,
+    /// Any whitespace character (e.g. a space character).
+    Whitespace { kind: WhitespaceKind, count: usize },
 
     /// A newline character (`\n` or `\r`).
     Newline,
@@ -49,7 +50,7 @@ pub enum TokenKind {
     Eof,
 
     /// Indicates that the current token is erroneous or invalid.
-    Error,
+    Error(LexerError),
 
     /// An unknown token. An error may be raised if such a token is encountered.
     Unknown(char),
@@ -256,4 +257,10 @@ impl Symbol {
             _ => panic!("Not a valid compound token: `{}=`", c)
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum WhitespaceKind {
+    Space,
+    Tab,
 }

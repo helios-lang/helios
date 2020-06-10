@@ -1,7 +1,7 @@
-#![allow(dead_code)]
-
 use crate::source::{Cursor, Position, Source};
 use crate::parser::token::*;
+use std::error::Error;
+use std::fmt::{self, Display};
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -37,10 +37,25 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
-/// Checks if the given character is a whitespace character.
-fn is_whitespace(c: char) -> bool {
-    c == ' ' ||  c == '\t'
+#[derive(Clone, Debug, PartialEq)]
+pub enum LexerError {
+    InvalidStringLiteralEscapeChar(char),
+    EmptyCharacterLiteral,
 }
+
+impl Display for LexerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::InvalidStringLiteralEscapeChar(c) =>
+                format!("invalid escape character: {:?}", c),
+            Self::EmptyCharacterLiteral =>
+                format!("empty character literal")
+        };
+        write!(f, "{}", message)
+    }
+}
+
+impl Error for LexerError {}
 
 pub struct Lexer<'a> {
     cursor: Cursor<'a>,
@@ -63,7 +78,7 @@ impl<'a> Lexer<'a> {
         );
 
         let token_kind = match next_char {
-            ' ' | '\t' => self.whitespace(),
+            ' ' | '\t' => self.whitespace(next_char),
             '\n'| '\r' => self.newline(),
             '/' => {
                 if self.peek() == '/' {
@@ -213,9 +228,14 @@ impl<'a> Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    fn whitespace(&mut self) -> TokenKind {
-        self.consume_while(is_whitespace);
-        TokenKind::Whitespace
+    fn whitespace(&mut self, whitespace_char: char) -> TokenKind {
+        if whitespace_char == ' ' {
+            let count = 1 + self.consume_while(|c| c == ' ');
+            TokenKind::Whitespace { kind: WhitespaceKind::Space, count }
+        } else {
+            let count = 1 + self.consume_while(|c| c == '\t');
+            TokenKind::Whitespace { kind: WhitespaceKind::Tab, count }
+        }
     }
 
     fn newline(&mut self) -> TokenKind {
@@ -381,15 +401,15 @@ impl<'a> Lexer<'a> {
     /// escape sequence is invalid, and thus will return `TokenKind::Error`.
     fn string(&mut self) -> TokenKind {
         let mut ignore_whitespace = false;
-        let mut is_error = false;
+        let mut error = None::<LexerError>;
         let mut string_content = Vec::new();
 
         while let Some(c) = self.next_char() {
             match c {
                 // We reached the end of the string.
                 '"' => {
-                    if is_error {
-                        return TokenKind::Error;
+                    if let Some(error) = error {
+                        return TokenKind::Error(error);
                     } else {
                         let content = string_content.iter().collect();
                         return TokenKind::Literal(
@@ -424,13 +444,11 @@ impl<'a> Lexer<'a> {
                     },
                     // Otherwise we found an invalid escape sequence. We'll
                     // panic here.
-                    _ => {
-                        // eprintln! {
-                        //     "Invalid escape sequence `\\{character}`. The \
-                        //     character {character:?} cannot be escaped.",
-                        //     character=c
-                        // };
-                        is_error = true;
+                    c => {
+                        // We'll only keep the first error
+                        if error == None {
+                            error = Some(LexerError::InvalidStringLiteralEscapeChar(c));
+                        }
                         string_content.push(self.next_char().unwrap());
                     }
                 }
@@ -447,8 +465,8 @@ impl<'a> Lexer<'a> {
         }
 
         // We are here if the string literal is unterminated
-        if is_error {
-            TokenKind::Error
+        if let Some(error) = error {
+            TokenKind::Error(error)
         } else {
             let content = string_content.iter().collect();
             TokenKind::Literal(Literal::Str { content, terminated: false })
