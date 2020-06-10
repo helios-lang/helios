@@ -4,7 +4,7 @@ mod source;
 
 pub use diagnostic::Diagnostic;
 pub use source::{Position, Source};
-pub use parser::Ast;
+pub use parser::{Ast, token};
 
 type Result<T> = std::result::Result<T, Vec<Diagnostic>>;
 

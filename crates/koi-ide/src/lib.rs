@@ -77,12 +77,12 @@ pub enum LspResponse {
 
     CompletionList {
         id: usize,
-        params: lsp_types::CompletionParams,
+        params: Option<lsp_types::CompletionParams>,
     },
 
     HoverResult {
         id: usize,
-        params: lsp_types::Hover,
+        params: Option<lsp_types::Hover>,
     },
 }
 
@@ -96,11 +96,11 @@ struct JsonRpcResponse<T> {
     jsonrpc: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<usize>,
-    result: T,
+    result: Option<T>,
 }
 
 impl<T> JsonRpcResponse<T> {
-    pub fn new<U: Into<Option<usize>>>(id: U, result: T) -> Self {
+    pub fn new<U: Into<Option<usize>>>(id: U, result: Option<T>) -> Self {
         Self { jsonrpc: "2.0".to_string(), id: id.into(), result }
     }
 }
@@ -164,7 +164,7 @@ fn deserialize_message(value: &str) -> serde_json::Result<LspMessage> {
 pub fn send_jsonrpc_response<T, U>(id: U, result: T)
     where T: Serialize, U: Into<Option<usize>>
 {
-    let response = JsonRpcResponse::new(id, result);
+    let response = JsonRpcResponse::new(id, result.into());
     let response =
         serde_json::to_string(&response)
             .expect("Failed to serialize JSON RPC response.");

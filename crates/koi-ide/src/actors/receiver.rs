@@ -1,6 +1,6 @@
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
-use koi_driver::{Ast, Position, Source, tokenize};
+use koi_driver::{Ast, Position, Source, token, tokenize};
 use lsp_types::Url;
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::Sender;
@@ -56,6 +56,63 @@ impl Receiver {
         }
     }
 
+    fn send_hover_request(&self, id: usize, params: lsp_types::TextDocumentPositionParams) {
+        if let Some((_, tokens)) = self.database.get(params.text_document.uri.as_str()) {
+            for token in tokens {
+                if token.range.contains(&Position::new(
+                    params.position.line as usize,
+                    params.position.character as usize
+                )) {
+                    use token::TokenKind;
+                    match token.kind {
+                        TokenKind::Keyword(_)
+                        | TokenKind::Symbol(_)
+                        | TokenKind::Whitespace { .. }
+                        | TokenKind::Newline
+                        | TokenKind::Eof => {
+                            self.responder_channel
+                                .clone()
+                                .send(LspResponse::HoverResult {
+                                    id, params: None
+                                })
+                                .expect("Failed to send `HoverRequest` message to Responder.")
+                        },
+                        _ => {
+                            self.responder_channel
+                                .clone()
+                                .send(LspResponse::HoverResult {
+                                    id,
+                                    params: Some(lsp_types::Hover {
+                                        contents: lsp_types::HoverContents::Scalar(
+                                            lsp_types::MarkedString::from_language_code(
+                                                "koi".to_string(),
+                                                format!("{:?}", token.kind)
+                                            )
+                                        ),
+                                        range: Some(
+                                            lsp_types::Range::new(
+                                                lsp_types::Position::new(
+                                                    token.range.start.line as u64,
+                                                    token.range.start.character as u64
+                                                ),
+                                                lsp_types::Position::new(
+                                                    token.range.end.line as u64,
+                                                    token.range.end.character as u64
+                                                )
+                                            )
+                                        )
+                                    })
+                                })
+                                .expect("Failed to send `HoverRequest` message to Responder.")
+                        }
+                    }
+                }
+            }
+        } else {
+            eprintln!("Error: No AST has been cached for the given file url.");
+        }
+    }
+
     fn process_message(&mut self, message: LspMessage) {
         match message {
             LspMessage::InitializeRequest { id, .. } => {
@@ -86,46 +143,7 @@ impl Receiver {
                 // A completion request has been sent
             },
             LspMessage::TextDocumentHoverRequest { id, params } => {
-                match self.database.get(params.text_document.uri.as_str()) {
-                    Some((_, tokens)) => for token in tokens {
-                        if token.range.contains(
-                            &Position::new(
-                                params.position.line as usize,
-                                params.position.character as usize
-                            )
-                        ) {
-                            self.responder_channel
-                                .clone()
-                                .send(LspResponse::HoverResult {
-                                    id,
-                                    params: lsp_types::Hover {
-                                        contents: lsp_types::HoverContents::Scalar(
-                                            lsp_types::MarkedString::from_language_code(
-                                                "koi".to_string(),
-                                                format!("{:?}", token.kind)
-                                            )
-                                        ),
-                                        range: Some(
-                                            lsp_types::Range::new(
-                                                lsp_types::Position::new(
-                                                    token.range.start.line as u64,
-                                                    token.range.start.character as u64
-                                                ),
-                                                lsp_types::Position::new(
-                                                    token.range.end.line as u64,
-                                                    token.range.end.character as u64
-                                                )
-                                            )
-                                        )
-                                    }
-                                })
-                                .expect("Failed to send `HoverRequest` message to Responder.")
-                        }
-                    },
-                    None => {
-                        eprintln!("Error: No AST has been cached for the given file url.");
-                    }
-                }
+                self.send_hover_request(id, params);
             }
         }
     }
