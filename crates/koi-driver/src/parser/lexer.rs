@@ -127,7 +127,7 @@ impl<'a> Lexer<'a> {
         self.peek_at(0)
     }
 
-    /// Peaks the next character at the given index without consuming it.
+    /// Peeks the character at the given index without consuming it.
     fn peek_at(&self, n: usize) -> char {
         self.cursor.nth(n)
     }
@@ -220,16 +220,6 @@ impl<'a> Lexer<'a> {
         }
 
         vec
-    }
-
-    /// Checks if the given character reoccurs for a given time.
-    fn is_reoccuring(&mut self, c: char, occurence: usize) -> bool {
-        let mut found = 0;
-        while self.peek() == c {
-            self.next_char();
-            found += 1;
-        }
-        found == occurence
     }
 }
 
@@ -390,7 +380,10 @@ impl<'a> Lexer<'a> {
                 TokenKind::Symbol(Symbol::from_char_with_equal(symbol))
             },
             '?' => {
-                if self.is_reoccuring('?', 2) {
+                if (self.peek(), self.peek_at(1)) == ('?', '?') {
+                    // Consume the next two question marks
+                    self.next_char();
+                    self.next_char();
                     TokenKind::Keyword(Keyword::Unimplemented)
                 } else {
                     TokenKind::Symbol(Symbol::Question)
