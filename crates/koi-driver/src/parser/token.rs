@@ -108,7 +108,7 @@ pub enum FloatValue {
 // TODO: See issue #1: Representing overflowed numeric literals
 pub enum Literal {
     Bool(bool),
-    Char(char),
+    Char { character: char, terminated: bool },
     Float { base: NumericBase, value: FloatValue },
     Int { base: NumericBase, value: IntValue },
     Str { content: String, terminated: bool },
@@ -120,7 +120,7 @@ impl Literal {
     pub fn description(&self) -> String {
         match self {
             Literal::Bool(b) => format!("{}", b),
-            Literal::Char(c) => format!("{}", c),
+            Literal::Char { character, .. } => format!("{}", character),
             Literal::Float { value, .. } => match value {
                 FloatValue::Value(value) => format!("{}", value),
                 _ => "<<invalid-float>>".to_string()

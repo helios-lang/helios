@@ -1,3 +1,4 @@
+mod characters;
 mod integers;
 mod floats;
 mod strings;

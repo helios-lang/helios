@@ -97,7 +97,7 @@ fn test_invalid_string_literals() {
         r#""a\b\c\de""#,
         vec! {
             Token::with(
-                TokenKind::Error(LexerError::InvalidStringLiteralEscapeChar('b')),
+                TokenKind::Error(LexerError::UnknownEscapeChar('b')),
                 Position::new(0, 0)..Position::new(0, 10)
             )
         }
@@ -107,7 +107,7 @@ fn test_invalid_string_literals() {
         r#""Hello. \World""#,
         vec! {
             Token::with(
-                TokenKind::Error(LexerError::InvalidStringLiteralEscapeChar('W')),
+                TokenKind::Error(LexerError::UnknownEscapeChar('W')),
                 Position::new(0, 0)..Position::new(0, 15)
             )
         }

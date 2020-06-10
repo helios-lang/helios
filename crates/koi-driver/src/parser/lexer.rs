@@ -39,17 +39,38 @@ fn is_symbol(c: char) -> bool {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
-    InvalidStringLiteralEscapeChar(char),
-    EmptyCharacterLiteral,
+    UnknownEscapeChar(char),
+    MultipleCodepointsInCharLiteral,
+    EmptyCharLiteral,
+    MultiLineSpanningChar
+}
+
+impl LexerError {
+    pub fn message(&self) -> String {
+        self.to_string()
+    }
+
+    pub fn code(&self) -> String {
+        match self {
+            Self::UnknownEscapeChar(_) => "E0015".to_string(),
+            Self::MultipleCodepointsInCharLiteral => "E0016".to_string(),
+            Self::EmptyCharLiteral => "E0017".to_string(),
+            Self::MultiLineSpanningChar => "E0018".to_string(),
+        }
+    }
 }
 
 impl Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let message = match self {
-            Self::InvalidStringLiteralEscapeChar(c) =>
-                format!("invalid escape character: {:?}", c),
-            Self::EmptyCharacterLiteral =>
-                format!("empty character literal")
+            Self::UnknownEscapeChar(c) =>
+                format!("unknown escape character: {:?}", c),
+            Self::MultipleCodepointsInCharLiteral =>
+                "character literals can only contain one codepoint".to_string(),
+            Self::EmptyCharLiteral =>
+                "empty character literal".to_string(),
+            Self::MultiLineSpanningChar =>
+                "character literal cannot span multiple lines".to_string(),
         };
         write!(f, "{}", message)
     }
@@ -102,7 +123,7 @@ impl<'a> Lexer<'a> {
                 }
             },
             '"' => self.string(),
-            // '\''=> unimplemented!("character literal"),
+            '\''=> self.character(),
             c if is_symbol(c) => self.symbol(c),
             c if is_identifier_start(c) => self.identifier(c),
             c @ '0'..='9' => self.number(c),
@@ -393,6 +414,73 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn character(&mut self) -> TokenKind {
+        let mut error = None::<LexerError>;
+        let mut content = Vec::new();
+
+        while let Some(c) = self.next_char() {
+            match c {
+                // We reached the end of the character
+                '\'' => {
+                    if let Some(error) = error {
+                        return TokenKind::Error(error);
+                    } else if content.len() > 1 {
+                        return TokenKind::Error(
+                            LexerError::MultipleCodepointsInCharLiteral);
+                    } else if let Some(character) = content.pop() {
+                        return TokenKind::Literal(
+                            Literal::Char { character, terminated: true }
+                        );
+                    } else {
+                        return TokenKind::Error(LexerError::EmptyCharLiteral);
+                    }
+                },
+                // We are at the start of an escape sequence
+                '\\' => match self.peek() {
+                    // ... TODO: Unicode escapes ...
+                    e @ '\'' | e @ 'n' | e @ 'r' | e @ 't' | e @ '0' => {
+                        if e == '\'' {
+                            content.push('\'');
+                        } else if e == 'n' {
+                            content.push('\u{000A}');
+                        } else if e == 'r' {
+                            content.push('\u{000D}');
+                        } else if e == 't' {
+                            content.push('\u{0009}');
+                        } else {
+                            content.push('\u{0000}');
+                        }
+                        self.next_char();
+                    }
+                    c => {
+                        // We'll only keep the first error
+                        if error == None {
+                            error = Some(LexerError::UnknownEscapeChar(c));
+                        }
+                        content.push(self.next_char().unwrap());
+                    }
+                },
+                '\n' => {
+                    if error == None {
+                        error = Some(LexerError::MultiLineSpanningChar);
+                    }
+                },
+                c => content.push(c)
+            }
+        }
+
+        // We are here if the character literal is unterminated
+        if let Some(error) = error {
+            TokenKind::Error(error)
+        } else if content.len() > 1 {
+            TokenKind::Error(LexerError::MultipleCodepointsInCharLiteral)
+        } else if let Some(character) = content.pop() {
+            TokenKind::Literal(Literal::Char { character, terminated: false })
+        } else {
+            TokenKind::Error(LexerError::EmptyCharLiteral)
+        }
+    }
+
     /// Consumes a string literal.
     ///
     /// The lexer will consume all the characters found between (and including)
@@ -433,13 +521,14 @@ impl<'a> Lexer<'a> {
                     // If it is a valid escape code character, we'll insert an
                     // actual unicode character as if it was present on the
                     // string we're building
-                    e @ 't' | e @ 'n' | e @ 'r' => {
-                        if e == 't' {
-                            string_content.push('\u{0009}');
-                        } else if e == 'n' {
+                    // ... TODO: Unicode escapes ...
+                    e @ 'n' | e @ 'r' | e @ 't' => {
+                        if e == 'n' {
                             string_content.push('\u{000A}');
                         } else if e == 'r' {
                             string_content.push('\u{000D}');
+                        } else if e == 't' {
+                            string_content.push('\u{0009}');
                         }
                         self.next_char();
                     },
@@ -448,7 +537,7 @@ impl<'a> Lexer<'a> {
                     c => {
                         // We'll only keep the first error
                         if error == None {
-                            error = Some(LexerError::InvalidStringLiteralEscapeChar(c));
+                            error = Some(LexerError::UnknownEscapeChar(c));
                         }
                         string_content.push(self.next_char().unwrap());
                     }
