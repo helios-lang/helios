@@ -152,11 +152,7 @@ impl<'a> Lexer<'a> {
 
     /// Consumes the input while the given `predicate` holds true, building a
     /// `Vec<char>` for all the characters eaten.
-    fn consume_build<F>(
-        &mut self,
-        first_char: char,
-        predicate: F
-    ) -> Vec<char>
+    fn consume_build<F>(&mut self, first_char: char, predicate: F) -> Vec<char>
         where F: Fn(char) -> bool
     {
         let mut vec = Vec::new();
@@ -173,11 +169,7 @@ impl<'a> Lexer<'a> {
     /// until a non-digit character is reached, building a `Vec<char>` for all
     /// the digit characters eaten. Underscores (`_`) are also consumed, being
     /// ignored when found.
-    fn consume_digits(
-        &mut self,
-        base: NumericBase,
-        first_digit: Option<char>
-    ) -> Vec<char> {
+    fn consume_digits(&mut self, base: NumericBase, first_digit: Option<char>) -> Vec<char> {
         let mut vec = Vec::new();
         if let Some(d) = first_digit { vec.push(d); }
 
