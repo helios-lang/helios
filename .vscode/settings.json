@@ -1,5 +1,6 @@
 {
   "editor.tabSize": 4,
   "editor.snippetSuggestions": "none",
-  "editor.rulers": [80]
+  "editor.rulers": [80],
+  "rust-analyzer.inlayHints.parameterHints": false,
 }
