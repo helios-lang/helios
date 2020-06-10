@@ -37,7 +37,7 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
     InvalidStringLiteralEscapeChar(char),
     EmptyCharacterLiteral,

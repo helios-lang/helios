@@ -72,9 +72,7 @@ impl Receiver {
                         | TokenKind::Eof => {
                             self.responder_channel
                                 .clone()
-                                .send(LspResponse::HoverResult {
-                                    id, params: None
-                                })
+                                .send(LspResponse::HoverResult { id, params: None })
                                 .expect("Failed to send `HoverRequest` message to Responder.")
                         },
                         _ => {
