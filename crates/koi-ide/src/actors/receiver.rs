@@ -7,12 +7,12 @@ use std::sync::mpsc::Sender;
 
 pub struct Receiver {
     responder_channel: Sender<LspResponse>,
-    database: HashMap<String, (i64, Ast)>,
+    token_database: HashMap<String, (i64, Ast)>,
 }
 
 impl Receiver {
     pub fn with(responder_channel: Sender<LspResponse>) -> Self {
-        Receiver { responder_channel, database: HashMap::new() }
+        Receiver { responder_channel, token_database: HashMap::new(), }
     }
 
     fn generate_tokens(&self, path: Url) -> Result<Ast, String> {
@@ -30,12 +30,12 @@ impl Receiver {
     fn cache_tokens<V: Into<Option<i64>>>(&mut self, url: Url, version: V) {
         let version = version.into().unwrap_or(0);
         let key = url.to_string();
-        match self.database.get(&key) {
+        match self.token_database.get(&key) {
             Some((cached_version, _)) => {
                 if cached_version != &version {
                     match self.generate_tokens(url) {
                         Ok(tokens) => {
-                            self.database.insert(key, (version, tokens));
+                            self.token_database.insert(key, (version, tokens));
                         },
                         Err(error) => {
                             eprintln!("Failed to generate tokens: {}", error);
@@ -46,7 +46,7 @@ impl Receiver {
             None => {
                 match self.generate_tokens(url) {
                     Ok(tokens) => {
-                        self.database.insert(key, (version, tokens));
+                        self.token_database.insert(key, (version, tokens));
                     },
                     Err(error) => {
                         eprintln!("Failed to generate tokens: {}", error)
@@ -57,7 +57,7 @@ impl Receiver {
     }
 
     fn send_hover_response(&self, id: usize, params: lsp_types::TextDocumentPositionParams) {
-        if let Some((_, tokens)) = self.database.get(params.text_document.uri.as_str()) {
+        if let Some((_, tokens)) = self.token_database.get(params.text_document.uri.as_str()) {
             for token in tokens {
                 if token.range.contains(&Position::new(
                     params.position.line as usize,
@@ -111,6 +111,65 @@ impl Receiver {
         }
     }
 
+    fn publish_diagnostics(&self, uri: lsp_types::Url) {
+        if let Some((version, tokens)) = self.token_database.get(uri.as_str()) {
+            let mut diagnostics = Vec::new();
+
+            for token in tokens {
+                match token.kind {
+                    token::TokenKind::Error(error) => {
+                        diagnostics.push(lsp_types::Diagnostic {
+                            range: lsp_types::Range::new(
+                                lsp_types::Position::new(
+                                    token.range.start.line as u64,
+                                    token.range.start.character as u64
+                                ),
+                                lsp_types::Position::new(
+                                    token.range.end.line as u64,
+                                    token.range.end.character as u64
+                                ),
+                            ),
+                            severity: Some(lsp_types::DiagnosticSeverity::Error),
+                            source: Some("koi".to_string()),
+                            message: error.message(),
+                            code: Some(lsp_types::NumberOrString::String(error.code())),
+                            ..lsp_types::Diagnostic::default()
+                        });
+                    },
+                    token::TokenKind::Unknown(c) => {
+                        diagnostics.push(lsp_types::Diagnostic {
+                            range: lsp_types::Range::new(
+                                lsp_types::Position::new(
+                                    token.range.start.line as u64,
+                                    token.range.start.character as u64
+                                ),
+                                lsp_types::Position::new(
+                                    token.range.end.line as u64,
+                                    token.range.end.character as u64
+                                ),
+                            ),
+                            severity: Some(lsp_types::DiagnosticSeverity::Warning),
+                            source: Some("koi".to_string()),
+                            message: format!("unknown character {:?}", c),
+                            code: Some(lsp_types::NumberOrString::String("W0032".to_string())),
+                            ..lsp_types::Diagnostic::default()
+                        });
+                    },
+                    _ => {}
+                }
+            }
+
+            self.responder_channel
+                .clone()
+                .send(LspResponse::PublishDiagnostics {
+                    params: lsp_types::PublishDiagnosticsParams {
+                        uri, diagnostics, version: Some(*version)
+                    }
+                })
+                .expect("Failed to send `PublishDiagnostics` notification to Responder.");
+        }
+    }
+
     fn process_message(&mut self, message: LspMessage) {
         match message {
             LspMessage::InitializeRequest { id, .. } => {
@@ -129,13 +188,19 @@ impl Receiver {
                 // The client has asked us to exit now
             },
             LspMessage::TextDocumentDidOpenNotification { params, .. } => {
-                self.cache_tokens(params.text_document.uri, params.text_document.version);
+                let uri = params.text_document.uri;
+                let version = params.text_document.version;
+                self.cache_tokens(uri.clone(), version);
+                self.publish_diagnostics(uri);
             },
             LspMessage::TextDocumentDidChangeNotification { .. } => {
                 // The text document has been modified
             },
             LspMessage::TextDocumentDidSaveNotification { params } => {
-                self.cache_tokens(params.text_document.uri, params.text_document.version);
+                let uri = params.text_document.uri;
+                let version = params.text_document.version;
+                self.cache_tokens(uri.clone(), version);
+                self.publish_diagnostics(uri);
             },
             LspMessage::TextDocumentCompletionRequest { .. } => {
                 // A completion request has been sent

@@ -7,7 +7,7 @@ impl Actor for Responder {
     type InMessage = LspResponse;
 
     fn poll_messages(&mut self, messages: &mut VecDeque<Self::InMessage>) {
-        use super::{send_jsonrpc_response, Capabilities};
+        use super::{send_jsonrpc_response, send_jsonrpc_notification, Capabilities};
 
         match messages.pop_front().expect("Failed to get next message") {
             LspResponse::InitializeResult { id } => {
@@ -35,6 +35,9 @@ impl Actor for Responder {
             },
             LspResponse::HoverResult { id, params: result } => {
                 send_jsonrpc_response(id, result);
+            },
+            LspResponse::PublishDiagnostics { params } => {
+                send_jsonrpc_notification("textDocument/publishDiagnostics", params);
             }
         }
     }

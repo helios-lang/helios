@@ -84,6 +84,10 @@ pub enum LspResponse {
         id: usize,
         params: Option<lsp_types::Hover>,
     },
+
+    PublishDiagnostics {
+        params: lsp_types::PublishDiagnosticsParams,
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -180,7 +184,7 @@ pub fn send_jsonrpc_response<T, U>(id: U, result: T)
 pub fn send_jsonrpc_response_raw<S: Into<String>>(reponse: S) {
     let response = reponse.into();
 
-    println!("<-- {}", response);
+    eprintln!("<-- {}", response);
 
     print!("Content-Length: {}\r\n\r\n", response.len());
     print!("{}", response);
@@ -196,7 +200,7 @@ pub fn send_jsonrpc_notification<S, T>(method: S, params: T)
         serde_json::to_string(&response)
             .expect("Failed to serialize JSON RPC notification.");
 
-    println!("<-- {}", response);
+    eprintln!("<-- {}", response);
 
     print!("Content-Length: {}\r\n\r\n", response.len());
     print!("{}", response);
