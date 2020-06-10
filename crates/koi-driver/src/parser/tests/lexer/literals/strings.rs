@@ -77,7 +77,7 @@ r#""\
 
 #[test]
 fn test_unterminated_string_literals() {
-    create_test!(
+    create_test! {
         r#""Hello, world!"#,
         vec! {
             Token::with(
@@ -88,7 +88,7 @@ fn test_unterminated_string_literals() {
                 Position::new(0, 0)..Position::new(0, 14)
             )
         }
-    );
+    }
 }
 
 #[test]
@@ -119,10 +119,43 @@ fn test_raw_string_literals() {
     test_string! {
         r#"r"C:\Documents\Newsletters\Summer2018.pdf""#,
         "C:\\Documents\\Newsletters\\Summer2018.pdf".to_string()
-    };
+    }
 
     test_string! {
         r#"r"\(\*(?!\*[^\)])""#,
         "\\(\\*(?!\\*[^\\)])".to_string()
-    };
+    }
+}
+
+#[test]
+fn test_interpolated_string_literals() {
+    create_test! {
+        r#"f"1 + 2 = {1 + 2}""#,
+        vec! {
+            Token::with(
+                TokenKind::Literal(
+                    Literal::FStr {
+                        content: "1 + 2 = {1 + 2}".to_string(),
+                        terminated: true,
+                    }
+                ),
+                Position::new(0, 0)..Position::new(0, 18)
+            )
+        }
+    }
+
+    create_test! {
+        r#"f"You scored {score} points!""#,
+        vec! {
+            Token::with(
+                TokenKind::Literal(
+                    Literal::FStr {
+                        content: "You scored {score} points!".to_string(),
+                        terminated: true,
+                    }
+                ),
+                Position::new(0, 0)..Position::new(0, 29)
+            )
+        }
+    }
 }

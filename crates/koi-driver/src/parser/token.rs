@@ -112,6 +112,7 @@ pub enum Literal {
     Float { base: NumericBase, value: FloatValue },
     Int { base: NumericBase, value: IntValue },
     Str { content: String, terminated: bool },
+    FStr { content: String, terminated: bool },
     MultiLineStr { fragments: Vec<String>, terminated: bool },
 }
 
@@ -129,6 +130,7 @@ impl Literal {
                 _ => "<<invalid-integer>>".to_string()
             }
             Literal::Str { content, .. } => content.clone(),
+            Literal::FStr { content, .. } => content.clone(),
             Literal::MultiLineStr { fragments, .. } => fragments.join("\n")
         }
     }

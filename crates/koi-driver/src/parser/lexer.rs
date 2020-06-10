@@ -94,6 +94,13 @@ impl<'a> Lexer<'a> {
                     self.identifier('r')
                 }
             },
+            'f' => {
+                if self.peek() == '"' {
+                    self.interpolated_string()
+                } else {
+                    self.identifier('f')
+                }
+            },
             '"' => self.string(),
             // '\''=> unimplemented!("character literal"),
             c if is_symbol(c) => self.symbol(c),
@@ -401,11 +408,13 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// Consumes all the characters found within quotation marks (`"`).
+    /// Consumes a string literal.
     ///
-    /// Simple escape sequences are recognised and are dealt accordingly. These
-    /// sequences include `\↵`, `\\`, `\"`, `\t`, `\n`, and `\r`. Any other
-    /// escape sequence is invalid, and thus will return `TokenKind::Error`.
+    /// The lexer will consume all the characters found between (and including)
+    /// the quotation marks (`"`). Simple escape sequences are recognised and
+    /// dealt accordingly. These sequences include `\↵`, `\\`, `\"`, `\t`, `\n`,
+    /// and `\r`. Any other escape sequence is invalid and therefore this
+    /// method will return `TokenKind::Error`.
     fn string(&mut self) -> TokenKind {
         let mut ignore_whitespace = false;
         let mut error = None::<LexerError>;
@@ -480,6 +489,16 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Consumes a raw string literal.
+    ///
+    /// Unlike a string literal, escape sequences are not specially treated.
+    /// This method will consume the tag `r` before consuming every character
+    /// between (and including) the quotation marks (`"`), as presented in the
+    /// source code.
+    ///
+    /// As such, backslashes (`\`) appear the same number of times as the source
+    /// code. This makes it is easier to input strings that typically contain
+    /// a lot of backslashes, such as Regex strings or Windows directory paths.
     fn raw_string(&mut self) -> TokenKind {
         self.next_char();
         let mut content = Vec::new();
@@ -500,5 +519,25 @@ impl<'a> Lexer<'a> {
         // We are here if the string literal is unterminated
         let content = content.iter().collect();
         TokenKind::Literal(Literal::Str { content, terminated: false })
+    }
+
+    /// Consumes an interpolated string literal (f-string).
+    ///
+    /// For now, it behaves exactly the same as a normal string literal. The
+    /// only difference is that it also consumes the tag `f` before consuming
+    /// all the characters between (and including) the quotation marks (`"`).
+    ///
+    /// The actual process of interpolation is handled by the parser. This
+    /// method returns the token kind (`FStr`), which lets the parser know that
+    /// it must handle this string literal differently.
+    fn interpolated_string(&mut self) -> TokenKind {
+        self.next_char();
+        match self.string() {
+            // We'll just map `Literal::Str` to `Literal::FStr` for now
+            TokenKind::Literal(Literal::Str { content, terminated }) => {
+                TokenKind::Literal(Literal::FStr { content, terminated })
+            },
+            token_kind => token_kind
+        }
     }
 }
