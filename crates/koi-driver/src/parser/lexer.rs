@@ -87,8 +87,15 @@ impl<'a> Lexer<'a> {
                     self.symbol('/')
                 }
             },
-            // '\''=> unimplemented!("character literal"),
+            'r' => {
+                if self.peek() == '"' {
+                    self.raw_string()
+                } else {
+                    self.identifier('r')
+                }
+            },
             '"' => self.string(),
+            // '\''=> unimplemented!("character literal"),
             c if is_symbol(c) => self.symbol(c),
             c if is_identifier_start(c) => self.identifier(c),
             c @ '0'..='9' => self.number(c),
@@ -406,7 +413,7 @@ impl<'a> Lexer<'a> {
 
         while let Some(c) = self.next_char() {
             match c {
-                // We reached the end of the string.
+                // We reached the end of the string
                 '"' => {
                     if let Some(error) = error {
                         return TokenKind::Error(error);
@@ -417,21 +424,21 @@ impl<'a> Lexer<'a> {
                         );
                     }
                 },
-                // We are at the start of an escape sequence.
+                // We are at the start of an escape sequence
                 '\\' => match self.peek() {
                     // Keep the next character if it is a backslash or a double
-                    // quote character.
+                    // quote character
                     '\\' | '"' => {
                         string_content.push(self.next_char().unwrap())
                     },
                     // The next character is a line feed, and thus we need to
-                    // ignore all whitespace characters that follow.
+                    // ignore all whitespace characters that follow
                     '\n' => {
                         ignore_whitespace = true;
                     },
                     // If it is a valid escape code character, we'll insert an
                     // actual unicode character as if it was present on the
-                    // string we're building.
+                    // string we're building
                     e @ 't' | e @ 'n' | e @ 'r' => {
                         if e == 't' {
                             string_content.push('\u{0009}');
@@ -442,8 +449,8 @@ impl<'a> Lexer<'a> {
                         }
                         self.next_char();
                     },
-                    // Otherwise we found an invalid escape sequence. We'll
-                    // panic here.
+                    // Otherwise we found an invalid escape sequence – we'll
+                    // panic here
                     c => {
                         // We'll only keep the first error
                         if error == None {
@@ -471,5 +478,27 @@ impl<'a> Lexer<'a> {
             let content = string_content.iter().collect();
             TokenKind::Literal(Literal::Str { content, terminated: false })
         }
+    }
+
+    fn raw_string(&mut self) -> TokenKind {
+        self.next_char();
+        let mut content = Vec::new();
+
+        while let Some(c) = self.next_char() {
+            match c {
+                // We reached the end of the string.
+                '"' => {
+                    let content = content.iter().collect();
+                    return TokenKind::Literal(
+                        Literal::Str { content, terminated: true }
+                    )
+                },
+                c => content.push(c)
+            }
+        }
+
+        // We are here if the string literal is unterminated
+        let content = content.iter().collect();
+        TokenKind::Literal(Literal::Str { content, terminated: false })
     }
 }

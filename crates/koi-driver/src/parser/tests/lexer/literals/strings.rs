@@ -113,3 +113,16 @@ fn test_invalid_string_literals() {
         }
     }
 }
+
+#[test]
+fn test_raw_string_literals() {
+    test_string! {
+        r#"r"C:\Documents\Newsletters\Summer2018.pdf""#,
+        "C:\\Documents\\Newsletters\\Summer2018.pdf".to_string()
+    };
+
+    test_string! {
+        r#"r"\(\*(?!\*[^\)])""#,
+        "\\(\\*(?!\\*[^\\)])".to_string()
+    };
+}
