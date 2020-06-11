@@ -37,6 +37,11 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
+enum DidFail<E> {
+    Yes(E),
+    No,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
     OverflowedIntegerLiteral,
@@ -76,7 +81,7 @@ impl Display for LexerError {
             Self::MultipleCodepointsInCharLiteral =>
                 "Character literals can only contain one codepoint".to_string(),
             Self::EmptyCharLiteral =>
-                "Empty character literal".to_string(),
+                "Character literals must not be empty".to_string(),
             Self::MultiLineSpanningChar =>
                 "Character literal cannot span multiple lines".to_string(),
         };
@@ -413,9 +418,34 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// Abstraction for consuming an escape sequence.
+    ///
+    /// For now, simple escape sequences are recognised. These include: `\\`,
+    /// `\'`, `\"`, `\n`, `\r`, `\t` and `\0`. Implementation is required for
+    /// hexadecimal and unicode escape sequences.
+    fn escape_sequence(&mut self, contents: &mut Vec<char>) -> DidFail<char> {
+        match self.peek() {
+            '\'' => { contents.push('\''); DidFail::No },
+            '\"' => { contents.push('\"'); DidFail::No },
+            'n'  => { contents.push('\u{000A}'); DidFail::No },
+            'r'  => { contents.push('\u{000D}'); DidFail::No },
+            't'  => { contents.push('\u{0009}'); DidFail::No },
+            '0'  => { contents.push('\u{0000}'); DidFail::No },
+            c => DidFail::Yes(c)
+        }
+    }
+
+    /// Consumes a character literal.
+    ///
+    /// The lexer will attempt to consume every character between single quotes
+    /// (`'`). This is so we can capture unicode and hexadecimal escapes, which
+    /// can span multiple characters in the source code. For now, however, only
+    /// the simple escapes are recognised: `\\`, `\'`, `\"`, `\n`, `\r`, `\t`
+    /// and `\0`. `\↵` is an illegal escape sequence since characters cannot
+    /// span multiple lines.
     fn character(&mut self) -> TokenKind {
         let mut error = None::<LexerError>;
-        let mut content = Vec::new();
+        let mut contents = Vec::new();
 
         while let Some(c) = self.next_char() {
             match c {
@@ -423,10 +453,10 @@ impl<'a> Lexer<'a> {
                 '\'' => {
                     if let Some(error) = error {
                         return TokenKind::Error(error);
-                    } else if content.len() > 1 {
+                    } else if contents.len() > 1 {
                         return TokenKind::Error(
                             LexerError::MultipleCodepointsInCharLiteral);
-                    } else if let Some(character) = content.pop() {
+                    } else if let Some(character) = contents.pop() {
                         return TokenKind::Literal(
                             Literal::Char { character, terminated: true }
                         );
@@ -434,46 +464,34 @@ impl<'a> Lexer<'a> {
                         return TokenKind::Error(LexerError::EmptyCharLiteral);
                     }
                 },
-                // We are at the start of an escape sequence
-                '\\' => match self.peek() {
-                    // ... TODO: Unicode escapes ...
-                    e @ '\'' | e @ 'n' | e @ 'r' | e @ 't' | e @ '0' => {
-                        if e == '\'' {
-                            content.push('\'');
-                        } else if e == 'n' {
-                            content.push('\u{000A}');
-                        } else if e == 'r' {
-                            content.push('\u{000D}');
-                        } else if e == 't' {
-                            content.push('\u{0009}');
-                        } else {
-                            content.push('\u{0000}');
+                '\\' => {
+                    match self.escape_sequence(&mut contents) {
+                        DidFail::No => {
+                            self.next_char();
+                        },
+                        DidFail::Yes(c) => {
+                            if error == None {
+                                error = Some(LexerError::UnknownEscapeChar(c));
+                            }
+                            contents.push(self.next_char().unwrap());
                         }
-                        self.next_char();
                     }
-                    c => {
-                        // We'll only keep the first error
-                        if error == None {
-                            error = Some(LexerError::UnknownEscapeChar(c));
-                        }
-                        content.push(self.next_char().unwrap());
-                    }
-                },
+                }
                 '\n' => {
                     if error == None {
                         error = Some(LexerError::MultiLineSpanningChar);
                     }
                 },
-                c => content.push(c)
+                c => contents.push(c)
             }
         }
 
         // We are here if the character literal is unterminated
         if let Some(error) = error {
             TokenKind::Error(error)
-        } else if content.len() > 1 {
+        } else if contents.len() > 1 {
             TokenKind::Error(LexerError::MultipleCodepointsInCharLiteral)
-        } else if let Some(character) = content.pop() {
+        } else if let Some(character) = contents.pop() {
             TokenKind::Literal(Literal::Char { character, terminated: false })
         } else {
             TokenKind::Error(LexerError::EmptyCharLiteral)
@@ -484,13 +502,13 @@ impl<'a> Lexer<'a> {
     ///
     /// The lexer will consume all the characters found between (and including)
     /// the quotation marks (`"`). Simple escape sequences are recognised and
-    /// dealt accordingly. These sequences include `\↵`, `\\`, `\"`, `\t`, `\n`,
-    /// and `\r`. Any other escape sequence is invalid and therefore this
+    /// dealt accordingly. These sequences include `\↵`, `\\`, `\"`, `\n`, `\r`,
+    /// `\t` and `\0`. Any other escape sequence is invalid and therefore this
     /// method will return `TokenKind::Error`.
     fn string(&mut self) -> TokenKind {
         let mut ignore_whitespace = false;
         let mut error = None::<LexerError>;
-        let mut string_content = Vec::new();
+        let mut contents = Vec::new();
 
         while let Some(c) = self.next_char() {
             match c {
@@ -499,7 +517,7 @@ impl<'a> Lexer<'a> {
                     if let Some(error) = error {
                         return TokenKind::Error(error);
                     } else {
-                        let content = string_content.iter().collect();
+                        let content = contents.iter().collect();
                         return TokenKind::Literal(
                             Literal::Str { content, terminated: true }
                         );
@@ -510,7 +528,7 @@ impl<'a> Lexer<'a> {
                     // Keep the next character if it is a backslash or a double
                     // quote character
                     '\\' | '"' => {
-                        string_content.push(self.next_char().unwrap())
+                        contents.push(self.next_char().unwrap())
                     },
                     // The next character is a line feed, and thus we need to
                     // ignore all whitespace characters that follow
@@ -521,13 +539,15 @@ impl<'a> Lexer<'a> {
                     // actual unicode character as if it was present on the
                     // string we're building
                     // ... TODO: Unicode escapes ...
-                    e @ 'n' | e @ 'r' | e @ 't' => {
+                    e @ 'n' | e @ 'r' | e @ 't' | e @ '0' => {
                         if e == 'n' {
-                            string_content.push('\u{000A}');
+                            contents.push('\u{000A}');
                         } else if e == 'r' {
-                            string_content.push('\u{000D}');
+                            contents.push('\u{000D}');
                         } else if e == 't' {
-                            string_content.push('\u{0009}');
+                            contents.push('\u{0009}');
+                        } else {
+                            contents.push('\u{0000}');
                         }
                         self.next_char();
                     },
@@ -538,17 +558,17 @@ impl<'a> Lexer<'a> {
                         if error == None {
                             error = Some(LexerError::UnknownEscapeChar(c));
                         }
-                        string_content.push(self.next_char().unwrap());
+                        contents.push(self.next_char().unwrap());
                     }
                 }
                 // Whitespace characters are ignored if followed by a `\` and a
                 // line feed character.
-                ' ' | '\n' | '\t' | '\r' if ignore_whitespace => (),
+                ' ' | '\r' | '\n' | '\t' if ignore_whitespace => (),
                 // We push any other character into the vector to be part of the
                 // string.
                 c => {
                     ignore_whitespace = false;
-                    string_content.push(c)
+                    contents.push(c)
                 }
             }
         }
@@ -557,7 +577,7 @@ impl<'a> Lexer<'a> {
         if let Some(error) = error {
             TokenKind::Error(error)
         } else {
-            let content = string_content.iter().collect();
+            let content = contents.iter().collect();
             TokenKind::Literal(Literal::Str { content, terminated: false })
         }
     }
