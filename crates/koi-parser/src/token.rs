@@ -94,7 +94,7 @@ pub enum NumericBase {
 // TODO: See issue #1: Representing overflowed numeric literals
 pub enum Literal {
     Bool(bool),
-    Char { character: char, terminated: bool },
+    Char(char),
     Float { base: NumericBase, value: f64 },
     Int { base: NumericBase, value: i32 },
     Str(String),
@@ -106,7 +106,7 @@ impl Literal {
     pub fn description(&self) -> String {
         match self {
             Literal::Bool(b) => format!("{}", b),
-            Literal::Char { character, .. } => format!("{}", character),
+            Literal::Char(character) => format!("{}", character),
             Literal::Float { value, .. } => format!("{}", value),
             Literal::Int { value, .. } => format!("{}", value),
             Literal::Str(content) => content.clone(),

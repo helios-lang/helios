@@ -50,6 +50,7 @@ pub enum LexerError {
     MultipleCodepointsInCharLiteral,
     EmptyCharLiteral,
     MultiLineSpanningChar,
+    UnterminatedCharLiteral,
     UnterminatedStrLiteral,
 }
 
@@ -66,7 +67,8 @@ impl LexerError {
             Self::MultipleCodepointsInCharLiteral => "E0016".to_string(),
             Self::EmptyCharLiteral => "E0017".to_string(),
             Self::MultiLineSpanningChar => "E0018".to_string(),
-            Self::UnterminatedStrLiteral => "E0019".to_string(),
+            Self::UnterminatedCharLiteral => "E0019".to_string(),
+            Self::UnterminatedStrLiteral => "E0020".to_string(),
         }
     }
 }
@@ -81,11 +83,13 @@ impl Display for LexerError {
             Self::UnknownEscapeChar(c) =>
                 format!("Unknown escape character: {:?}", c),
             Self::MultipleCodepointsInCharLiteral =>
-                "Character literals can only contain one codepoint".to_string(),
+                "Character literals should only contain one codepoint".to_string(),
             Self::EmptyCharLiteral =>
                 "Character literals must not be empty".to_string(),
             Self::MultiLineSpanningChar =>
                 "Character literal cannot span multiple lines".to_string(),
+            Self::UnterminatedCharLiteral =>
+                "Unterminated character literal".to_string(),
             Self::UnterminatedStrLiteral =>
                 "Unterminated string literal".to_string(),
         };
@@ -461,9 +465,7 @@ impl<'a> Lexer<'a> {
                         return TokenKind::Error(
                             LexerError::MultipleCodepointsInCharLiteral);
                     } else if let Some(character) = contents.pop() {
-                        return TokenKind::Literal(
-                            Literal::Char { character, terminated: true }
-                        );
+                        return TokenKind::Literal(Literal::Char(character));
                     } else {
                         return TokenKind::Error(LexerError::EmptyCharLiteral);
                     }
@@ -495,8 +497,9 @@ impl<'a> Lexer<'a> {
             TokenKind::Error(error)
         } else if contents.len() > 1 {
             TokenKind::Error(LexerError::MultipleCodepointsInCharLiteral)
-        } else if let Some(character) = contents.pop() {
-            TokenKind::Literal(Literal::Char { character, terminated: false })
+        } else if let Some(_) = contents.pop() {
+            // TokenKind::Literal(Literal::Char(character))
+            TokenKind::Error(LexerError::UnterminatedCharLiteral)
         } else {
             TokenKind::Error(LexerError::EmptyCharLiteral)
         }

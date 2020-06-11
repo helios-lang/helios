@@ -12,12 +12,7 @@ macro_rules! test_character {
             $string,
             vec! {
                 Token::with(
-                    TokenKind::Literal(
-                        Literal::Char {
-                            character: $character,
-                            terminated: true
-                        }
-                    ),
+                    TokenKind::Literal(Literal::Char($character)),
                     Position::new(0, 0)..Position::new(0, $size)
                 )
             }

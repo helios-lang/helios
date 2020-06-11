@@ -12,9 +12,7 @@ macro_rules! test_string {
             $string,
             vec! {
                 Token::with(
-                    TokenKind::Literal(
-                        Literal::Str($content)
-                    ),
+                    TokenKind::Literal(Literal::Str($content)),
                     Position::new(0, 0)..Position::new(0, $size)
                 )
             }
