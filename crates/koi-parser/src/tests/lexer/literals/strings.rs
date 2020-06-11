@@ -13,10 +13,7 @@ macro_rules! test_string {
             vec! {
                 Token::with(
                     TokenKind::Literal(
-                        Literal::Str {
-                            content: $content,
-                            terminated: true,
-                        }
+                        Literal::Str($content)
                     ),
                     Position::new(0, 0)..Position::new(0, $size)
                 )
@@ -41,15 +38,13 @@ This is the fourth line. \
 This is the last line.""#,
         vec! {
             Token::with(
-                TokenKind::Literal(Literal::Str {
-                    content:
-                        "This is the first line. \
-                         This is the second line. \
-                         This is the third line. \
-                         This is the fourth line. \
-                         This is the last line.".to_string(),
-                    terminated: true,
-                }),
+                TokenKind::Literal(Literal::Str(
+                    "This is the first line. \
+                     This is the second line. \
+                     This is the third line. \
+                     This is the fourth line. \
+                     This is the last line.".to_string(),
+                )),
                 Position::new(0, 0)..Position::new(4, 23)
             )
         }
@@ -63,12 +58,10 @@ r#""\
 ""#,
         vec! {
             Token::with(
-                TokenKind::Literal(Literal::Str {
-                    content:
-                        "Hello, world! My name is PAL. I am a friendly \
-                         computer looking for no harm.".to_string(),
-                    terminated: true,
-                }),
+                TokenKind::Literal(Literal::Str(
+                    "Hello, world! My name is PAL. I am a friendly \
+                     computer looking for no harm.".to_string()
+                )),
                 Position::new(0, 0)..Position::new(4, 1)
             )
         }
@@ -81,11 +74,28 @@ fn test_unterminated_string_literals() {
         r#""Hello, world!"#,
         vec! {
             Token::with(
-                TokenKind::Literal(Literal::Str {
-                    content: "Hello, world!".to_string(),
-                    terminated: false,
-                }),
+                TokenKind::Error(LexerError::UnterminatedStrLiteral),
                 Position::new(0, 0)..Position::new(0, 14)
+            )
+        }
+    }
+
+    create_test! {
+        r#"r"C:\Documents\Newsletters\Summer2018.pdf"#,
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::UnterminatedStrLiteral),
+                Position::new(0, 0)..Position::new(0, 41)
+            )
+        }
+    }
+
+    create_test! {
+        r#"f"1 + 2 = {1 + 2}"#,
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::UnterminatedStrLiteral),
+                Position::new(0, 0)..Position::new(0, 17)
             )
         }
     }
@@ -133,12 +143,7 @@ fn test_interpolated_string_literals() {
         r#"f"1 + 2 = {1 + 2}""#,
         vec! {
             Token::with(
-                TokenKind::Literal(
-                    Literal::FStr {
-                        content: "1 + 2 = {1 + 2}".to_string(),
-                        terminated: true,
-                    }
-                ),
+                TokenKind::Literal(Literal::FStr("1 + 2 = {1 + 2}".to_string())),
                 Position::new(0, 0)..Position::new(0, 18)
             )
         }
@@ -148,12 +153,7 @@ fn test_interpolated_string_literals() {
         r#"f"You scored {score} points!""#,
         vec! {
             Token::with(
-                TokenKind::Literal(
-                    Literal::FStr {
-                        content: "You scored {score} points!".to_string(),
-                        terminated: true,
-                    }
-                ),
+                TokenKind::Literal(Literal::FStr("You scored {score} points!".to_string())),
                 Position::new(0, 0)..Position::new(0, 29)
             )
         }

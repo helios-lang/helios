@@ -97,8 +97,8 @@ pub enum Literal {
     Char { character: char, terminated: bool },
     Float { base: NumericBase, value: f64 },
     Int { base: NumericBase, value: i32 },
-    Str { content: String, terminated: bool },
-    FStr { content: String, terminated: bool },
+    Str(String),
+    FStr(String),
     MultiLineStr { fragments: Vec<String>, terminated: bool },
 }
 
@@ -109,8 +109,8 @@ impl Literal {
             Literal::Char { character, .. } => format!("{}", character),
             Literal::Float { value, .. } => format!("{}", value),
             Literal::Int { value, .. } => format!("{}", value),
-            Literal::Str { content, .. } => content.clone(),
-            Literal::FStr { content, .. } => content.clone(),
+            Literal::Str(content) => content.clone(),
+            Literal::FStr(content) => content.clone(),
             Literal::MultiLineStr { fragments, .. } => fragments.join("\n")
         }
     }

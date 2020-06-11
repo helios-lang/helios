@@ -49,7 +49,8 @@ pub enum LexerError {
     UnknownEscapeChar(char),
     MultipleCodepointsInCharLiteral,
     EmptyCharLiteral,
-    MultiLineSpanningChar
+    MultiLineSpanningChar,
+    UnterminatedStrLiteral,
 }
 
 impl LexerError {
@@ -65,6 +66,7 @@ impl LexerError {
             Self::MultipleCodepointsInCharLiteral => "E0016".to_string(),
             Self::EmptyCharLiteral => "E0017".to_string(),
             Self::MultiLineSpanningChar => "E0018".to_string(),
+            Self::UnterminatedStrLiteral => "E0019".to_string(),
         }
     }
 }
@@ -84,6 +86,8 @@ impl Display for LexerError {
                 "Character literals must not be empty".to_string(),
             Self::MultiLineSpanningChar =>
                 "Character literal cannot span multiple lines".to_string(),
+            Self::UnterminatedStrLiteral =>
+                "Unterminated string literal".to_string(),
         };
         write!(f, "{}", message)
     }
@@ -518,9 +522,7 @@ impl<'a> Lexer<'a> {
                         return TokenKind::Error(error);
                     } else {
                         let content = contents.iter().collect();
-                        return TokenKind::Literal(
-                            Literal::Str { content, terminated: true }
-                        );
+                        return TokenKind::Literal(Literal::Str(content));
                     }
                 },
                 // We are at the start of an escape sequence
@@ -577,8 +579,9 @@ impl<'a> Lexer<'a> {
         if let Some(error) = error {
             TokenKind::Error(error)
         } else {
-            let content = contents.iter().collect();
-            TokenKind::Literal(Literal::Str { content, terminated: false })
+            // let content = contents.iter().collect();
+            // TokenKind::Literal(Literal::Str { content, terminated: false })
+            TokenKind::Error(LexerError::UnterminatedStrLiteral)
         }
     }
 
@@ -601,17 +604,16 @@ impl<'a> Lexer<'a> {
                 // We reached the end of the string.
                 '"' => {
                     let content = content.iter().collect();
-                    return TokenKind::Literal(
-                        Literal::Str { content, terminated: true }
-                    )
+                    return TokenKind::Literal(Literal::Str(content));
                 },
                 c => content.push(c)
             }
         }
 
         // We are here if the string literal is unterminated
-        let content = content.iter().collect();
-        TokenKind::Literal(Literal::Str { content, terminated: false })
+        // let content = content.iter().collect();
+        // TokenKind::Literal(Literal::Str { content, terminated: false })
+        TokenKind::Error(LexerError::UnterminatedStrLiteral)
     }
 
     /// Consumes an interpolated string literal (f-string).
@@ -627,8 +629,8 @@ impl<'a> Lexer<'a> {
         self.next_char();
         match self.string() {
             // We'll just map `Literal::Str` to `Literal::FStr` for now
-            TokenKind::Literal(Literal::Str { content, terminated }) => {
-                TokenKind::Literal(Literal::FStr { content, terminated })
+            TokenKind::Literal(Literal::Str(content)) => {
+                TokenKind::Literal(Literal::FStr(content))
             },
             token_kind => token_kind
         }
