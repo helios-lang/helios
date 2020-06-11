@@ -1,5 +1,5 @@
 use crate::source::{Cursor, Position, Source};
-use crate::parser::token::*;
+use crate::token::*;
 use std::error::Error;
 use std::fmt::{self, Display};
 use unicode_xid::UnicodeXID;
@@ -39,6 +39,8 @@ fn is_symbol(c: char) -> bool {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
+    OverflowedIntegerLiteral,
+    OverflowedFloatLiteral,
     UnknownEscapeChar(char),
     MultipleCodepointsInCharLiteral,
     EmptyCharLiteral,
@@ -52,6 +54,8 @@ impl LexerError {
 
     pub fn code(&self) -> String {
         match self {
+            Self::OverflowedIntegerLiteral => "E0013".to_string(),
+            Self::OverflowedFloatLiteral => "E0014".to_string(),
             Self::UnknownEscapeChar(_) => "E0015".to_string(),
             Self::MultipleCodepointsInCharLiteral => "E0016".to_string(),
             Self::EmptyCharLiteral => "E0017".to_string(),
@@ -63,14 +67,18 @@ impl LexerError {
 impl Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let message = match self {
+            Self::OverflowedIntegerLiteral =>
+                "Integer literal overflows when stored as `int32`".to_string(),
+            Self::OverflowedFloatLiteral =>
+                "Float literal overflows when stored as `float64`".to_string(),
             Self::UnknownEscapeChar(c) =>
-                format!("unknown escape character: {:?}", c),
+                format!("Unknown escape character: {:?}", c),
             Self::MultipleCodepointsInCharLiteral =>
-                "character literals can only contain one codepoint".to_string(),
+                "Character literals can only contain one codepoint".to_string(),
             Self::EmptyCharLiteral =>
-                "empty character literal".to_string(),
+                "Empty character literal".to_string(),
             Self::MultiLineSpanningChar =>
-                "character literal cannot span multiple lines".to_string(),
+                "Character literal cannot span multiple lines".to_string(),
         };
         write!(f, "{}", message)
     }
@@ -370,26 +378,17 @@ impl<'a> Lexer<'a> {
 
         if fractional_part.is_empty() {
             let string: String = integer_part[..].into_iter().collect();
-            let parsed = i32::from_str_radix(&*string, radix);
-            let value = match parsed {
-                Ok(value) => IntValue::Value(value),
-                // It should be fine to assume we overflowed here
-                _ => IntValue::Overflowed
-            };
-
-            TokenKind::Literal(Literal::Int { base, value })
+            match i32::from_str_radix(&*string, radix) {
+                Ok(value) => TokenKind::Literal(Literal::Int { base, value }),
+                _ => TokenKind::Error(LexerError::OverflowedIntegerLiteral)
+            }
         } else {
             let all = [&integer_part[..], &fractional_part[..]].concat();
             let string: String = all[..].into_iter().collect();
-            let parsed = string.parse();
-            let value = match parsed {
-                Ok(value) => FloatValue::Value(value),
-                // It should be fine to assume we overflowed here
-                _ => FloatValue::Overflowed
-            };
-
-            // TODO: We should only allow floats to be in decimal base
-            TokenKind::Literal(Literal::Float { base, value })
+            match string.parse() {
+                Ok(value) => TokenKind::Literal(Literal::Float { base, value }),
+                _ => TokenKind::Error(LexerError::OverflowedFloatLiteral)
+            }
         }
     }
 

@@ -1,5 +1,5 @@
-use crate::parser::token::*;
-use crate::parser::lexer::*;
+use crate::token::*;
+use crate::lexer::*;
 use crate::source::Position;
 use super::read_from_string;
 

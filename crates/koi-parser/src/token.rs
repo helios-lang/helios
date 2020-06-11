@@ -1,7 +1,5 @@
-#![allow(dead_code)]
-
 use crate::source::Position;
-use crate::parser::lexer::LexerError;
+use crate::lexer::LexerError;
 use std::ops::Range;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -93,24 +91,12 @@ pub enum NumericBase {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum IntValue {
-    Overflowed,
-    Value(i32),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum FloatValue {
-    Overflowed,
-    Value(f64),
-}
-
-#[derive(Clone, Debug, PartialEq)]
 // TODO: See issue #1: Representing overflowed numeric literals
 pub enum Literal {
     Bool(bool),
     Char { character: char, terminated: bool },
-    Float { base: NumericBase, value: FloatValue },
-    Int { base: NumericBase, value: IntValue },
+    Float { base: NumericBase, value: f64 },
+    Int { base: NumericBase, value: i32 },
     Str { content: String, terminated: bool },
     FStr { content: String, terminated: bool },
     MultiLineStr { fragments: Vec<String>, terminated: bool },
@@ -121,14 +107,8 @@ impl Literal {
         match self {
             Literal::Bool(b) => format!("{}", b),
             Literal::Char { character, .. } => format!("{}", character),
-            Literal::Float { value, .. } => match value {
-                FloatValue::Value(value) => format!("{}", value),
-                _ => "<<invalid-float>>".to_string()
-            }
-            Literal::Int { value, .. } => match value {
-                IntValue::Value(value) => format!("{}", value),
-                _ => "<<invalid-integer>>".to_string()
-            }
+            Literal::Float { value, .. } => format!("{}", value),
+            Literal::Int { value, .. } => format!("{}", value),
             Literal::Str { content, .. } => content.clone(),
             Literal::FStr { content, .. } => content.clone(),
             Literal::MultiLineStr { fragments, .. } => fragments.join("\n")

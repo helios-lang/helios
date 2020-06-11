@@ -1,6 +1,8 @@
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
-use koi_driver::{Ast, Position, Source, token, tokenize};
+use koi_driver::tokenize;
+use koi_parser::{Ast, token};
+use koi_parser::source::{Position, Source};
 use lsp_types::Url;
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::Sender;

@@ -1,10 +1,8 @@
 mod diagnostic;
-mod parser;
-mod source;
 
 pub use diagnostic::Diagnostic;
-pub use source::{Position, Source};
-pub use parser::{Ast, token};
+use koi_parser::source::{Position, Source};
+use koi_parser::Ast;
 
 type Result<T> = std::result::Result<T, Vec<Diagnostic>>;
 
@@ -13,5 +11,5 @@ pub fn start(_file_name: &str) -> Result<()> {
 }
 
 pub fn tokenize<'a>(source: Source<'a>) -> Ast {
-    parser::parse(source)
+    koi_parser::parse(source)
 }
