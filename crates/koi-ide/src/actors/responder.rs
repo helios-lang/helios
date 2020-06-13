@@ -30,8 +30,8 @@ impl Actor for Responder {
 
                 send_jsonrpc_response(id, Capabilities { capabilities });
             },
-            LspResponse::CompletionList { .. } => {
-                // Unimplemented...
+            LspResponse::CompletionList { id, params: result } => {
+                send_jsonrpc_response(id, result);
             },
             LspResponse::HoverResult { id, params: result } => {
                 send_jsonrpc_response(id, result);

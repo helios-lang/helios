@@ -77,7 +77,7 @@ pub enum LspResponse {
 
     CompletionList {
         id: usize,
-        params: Option<lsp_types::CompletionParams>,
+        params: Option<lsp_types::CompletionResponse>,
     },
 
     HoverResult {

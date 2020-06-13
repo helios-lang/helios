@@ -138,7 +138,7 @@ impl Receiver {
                             ..lsp_types::Diagnostic::default()
                         });
                     },
-                    token::TokenKind::Unknown(c) => {
+                    token::TokenKind::Unexpected(c) => {
                         diagnostics.push(lsp_types::Diagnostic {
                             range: lsp_types::Range::new(
                                 lsp_types::Position::new(
@@ -150,10 +150,10 @@ impl Receiver {
                                     token.range.end.character as u64
                                 ),
                             ),
-                            severity: Some(lsp_types::DiagnosticSeverity::Warning),
+                            severity: Some(lsp_types::DiagnosticSeverity::Error),
                             source: Some("koi".to_string()),
-                            message: format!("unknown character {:?}", c),
-                            code: Some(lsp_types::NumberOrString::String("W0032".to_string())),
+                            message: format!("Unexpected character {:?}", c),
+                            code: Some(lsp_types::NumberOrString::String("E0012".to_string())),
                             ..lsp_types::Diagnostic::default()
                         });
                     },
@@ -204,8 +204,65 @@ impl Receiver {
                 self.cache_tokens(uri.clone(), version);
                 self.publish_diagnostics(uri);
             },
-            LspMessage::TextDocumentCompletionRequest { .. } => {
-                // A completion request has been sent
+            LspMessage::TextDocumentCompletionRequest { id, params } => {
+                use lsp_types::{CompletionItem, CompletionItemKind};
+                let keywords: Vec<CompletionItem> = token::Keyword::keyword_list()
+                    .into_iter()
+                    .map(|keyword| {
+                        lsp_types::CompletionItem {
+                            label: keyword,
+                            kind: Some(CompletionItemKind::Keyword),
+                            ..CompletionItem::default()
+                        }
+                    })
+                    .collect();
+                let primitive_types: Vec<CompletionItem> =
+                    vec![
+                        "bool",
+                        "char",
+                        "float",
+                        "int",
+                        "uint",
+                        "string",
+                    ]
+                    .into_iter()
+                    .map(|r#type| {
+                        CompletionItem {
+                            label: r#type.to_string(),
+                            kind: Some(lsp_types::CompletionItemKind::Struct),
+                            ..CompletionItem::default()
+                        }
+                    })
+                    .collect();
+
+                match params.context {
+                    Some(context) => match context.trigger_kind {
+                        lsp_types::CompletionTriggerKind::Invoked => {
+                            self.responder_channel
+                            .clone()
+                            .send(LspResponse::CompletionList {
+                                id,
+                                params: Some(
+                                    lsp_types::CompletionResponse::Array(
+                                        [
+                                            &keywords[..],
+                                            &primitive_types[..]
+                                        ].concat()
+                                    )
+                                )
+                            })
+                            .expect("Failed to send `CompletionRequest` message to Responder");
+                        },
+                        lsp_types::CompletionTriggerKind::TriggerCharacter => {
+                            eprintln! {
+                                "completionRequest with trigger character: {:?}",
+                                context.trigger_character
+                            }
+                        },
+                        _ => {}
+                    },
+                    None => {}
+                }
             },
             LspMessage::TextDocumentHoverRequest { id, params } => {
                 self.send_hover_response(id, params);
