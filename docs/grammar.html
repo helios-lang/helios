@@ -5,172 +5,303 @@
 </head>
 <body>
   <h1>Koi Grammar</h1>
-  <div class="content">
-    <code>
-      <table>
-        <tr>
-          <td><span id="program">program</span></td>
-          <td>::=</td>
-          <td><a href="#top-level-list">top-level-list</a><sub>opt</sub> <b>EOF</b> ;</td>
-        </tr>
-        <tr>
-          <td><span id="top-level-list">top-level-list</span></td>
-          <td>::=</td>
-          <td><a href="#top-level">top-level</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#top-level">top-level</a> <b>NEWLINE</b> <a href="#top-level-list">top-level-list</a> ;</td>
-        </tr>
+  <div class="grammar-container">
+    <table>
+      <tr>
+        <td><span id="program">program</span></td>
+        <td>::=</td>
+        <td><a href="#top-level-list">top-level-list</a><sub>opt</sub> <b>EOF</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="top-level-list">top-level-list</span></td>
+        <td>::=</td>
+        <td><a href="#top-level">top-level</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#top-level">top-level</a> <b>NEWLINE</b> <a href="#top-level-list">top-level-list</a> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="top-level">top-level</span></a></td>
-          <td>::=</td>
-          <td><a href="#declaration">declaration</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#expression">expression</a> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="top-level">top-level</span></a></td>
+        <td>::=</td>
+        <td><a href="#declaration">declaration</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#expression">expression</a> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="declaration">declaration</span></a></td>
-          <td>::=</td>
-          <td><a href="#function-declaration">function-declaration</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#module-declaration">module-declaration</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#type-declaration">type-declaration</a> ;</td>
-        </tr>
-        <tr>
-          <td><span id="expression">expression</span></a></td>
-          <td>::=</td>
-          <td><a href="#if-expression">if-expression</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#let-expression">let-expression</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#literal-expression">literal-expression</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><a href="#match-expression">match-expression</a> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="declaration">declaration</span></a></td>
+        <td>::=</td>
+        <td><a href="#function-declaration">function-declaration</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#module-declaration">module-declaration</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#type-declaration">type-declaration</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="expression">expression</span></a></td>
+        <td>::=</td>
+        <td><a href="#if-expression">if-expression</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#let-expression">let-expression</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#literal-expression">literal-expression</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#match-expression">match-expression</a> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="function-declaration">function-declaration</span></a></td>
-          <td>::=</td>
-          <td><b>def</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>(</b> <a href="#parameter-list">parameter-list</a><sub>opt</sub> <b>)</b> <b>=</b> <a href="#function-declaration-block">function-declaration-block</a> ;</td>
-        </tr>
-        <tr>
-          <td><span id="module-declaration">module-declaration</span></a></td>
-          <td>::=</td>
-          <td><b>module</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>=</b> <a href="#module-declaration-block">module-declaration-block</a> ;</td>
-        </tr>
-        <tr>
-          <td><span id="type-declaration">type-declaration</span></a></td>
-          <td>::=</td>
-          <td><b>type</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>=</b> <a href="#type-declaration-block">type-declaration-block</a> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="function-declaration">function-declaration</span></a></td>
+        <td>::=</td>
+        <td><b>def</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>(</b> <a href="#parameter-list">parameter-list</a><sub>opt</sub> <b>)</b> <a href="#type-annotation">type-annotation</a><sub>opt</sub> <b>=</b> <a href="#expression-block">expression-block</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="module-declaration">module-declaration</span></a></td>
+        <td>::=</td>
+        <td><b>module</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>=</b> <a href="#module-declaration-block">module-declaration-block</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="type-declaration">type-declaration</span></a></td>
+        <td>::=</td>
+        <td><b>type</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>=</b> <a href="#type-declaration-block">type-declaration-block</a> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="visibility-modifier">visibility-modifier</span></a></td>
-          <td>::=</td>
-          <td><b>public</b></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><b>internal</b> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="visibility-modifier">visibility-modifier</span></a></td>
+        <td>::=</td>
+        <td><b>public</b></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>internal</b> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="parameter-list">parameter-list</span></a></td>
-          <td>::=</td>
-          <td><b>[...]</b> ;</td>
-        </tr>
-        <tr>
-          <td><span id="function-declaration-block">function-declaration-block</span></a></td>
-          <td>::=</td>
-          <td><b>[...]</b> ;</td>
-        </tr>
-        <tr>
-          <td><span id="module-declaration-block">module-declaration-block</span></a></td>
-          <td>::=</td>
-          <td><b>[...]</b> ;</td>
-        </tr>
-        <tr>
-          <td><span id="type-declaration-block">type-declaration-block</span></a></td>
-          <td>::=</td>
-          <td><b>[...]</b> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="parameter">parameter</span></a></td>
+        <td>::=</td>
+        <td><b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="parameter-list">parameter-list</span></a></td>
+        <td>::=</td>
+        <td><a href="#parameter">parameter</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#parameter">parameter</a> <b>,</b> <a href="#parameter-list">parameter-list</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="module-declaration-block">module-declaration-block</span></a></td>
+        <td>::=</td>
+        <td><b>INDENT</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>OUTDENT</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="type-declaration-block">type-declaration-block</span></a></td>
+        <td>::=</td>
+        <td><a href="#enum-body">enum-body</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#record-body">record-body</a> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="if-expression">if-expression</span></a></td>
-          <td>::=</td>
-          <td><b>if</b> <a href="#pattern">pattern</a> <b>then</b> <a href="#expression-block">expression-block</a> <a href="#else-clause">else-clause</a><sub>opt</sub> ;</td>
-        </tr>
-        <tr>
-          <td><span id="else-clause">else-clause</span></a></td>
-          <td>::=</td>
-          <td><b>else</b> <a href="#expression-block">expression-block</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><b>else</b> <a href="#if-expression">if-expression</a> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="module-declaration-block-item">module-declaration-block-item</span></a></td>
+        <td>::=</td>
+        <td><a href="#function-declaration">function-declaration</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#module-declaration">module-declaration</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#type-declaration">type-declaration</a> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="let-expression">let-expression</span></a></td>
-          <td>::=</td>
-          <td><b>let</b> <a href="#pattern">pattern</a> <b>=</b> <a href="#expression-block">expression-block</a> ;</td>
-        </tr>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="enum-body">enum-body</span></a></td>
+        <td>::=</td>
+        <td><b>|</b><sub>opt</sub> <b>IDENTIFIER</b> <a href="#enum-body-rest">enum-body-rest</a><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="enum-body-rest">enum-body-rest</span></a></td>
+        <td>::=</td>
+        <td><b>|</b> <b>IDENTIFIER</b> <a href="#enum-body-rest">enum-body-rest</a><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="record-body">record-body</span></a></td>
+        <td>::=</td>
+        <td><b>{</b> <a href="#record-body-fields">record-body-fields</a><sub>opt</sub> <b>}</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="record-body-fields">record-body-fields</span></a></td>
+        <td>::=</td>
+        <td><b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> <a href="#record-body-rest">record-body-rest</a><sub>opt</sub> <b>,</b><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="record-body-rest">record-body-rest</span></a></td>
+        <td>::=</td>
+        <td><b>,</b> <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> <a href="#record-body-rest">record-body-rest</a><sub>opt</sub> ;</td>
+      </tr>
 
-        <tr><td>&nbsp;</td></tr>
-        <tr>
-          <td><span id="match-expression">match-expression</span></a></td>
-          <td>::=</td>
-          <td><b>match</b> <a href="#pattern">pattern</a> <b>with</b> <a href="#match-expression-clause">match-expression-clause</a> ;</td>
-        </tr>
-        <tr>
-          <td><span id="match-expression-clause">match-expression-clause</span></a></td>
-          <td>::=</td>
-          <td><b>|</b><sub>opt</sub> <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a> <a href="#match-expression-clause-rest">match-expression-clause-rest</a><sub>opt</sub> ;</td>
-        </tr>
-        <tr>
-          <td><span id="match-expression-clause-rest">match-expression-clause-rest</span></a></td>
-          <td>::=</td>
-          <td><b>|</b> <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a></td>
-        </tr>
-        <tr>
-          <td>&nbsp;</a></td>
-          <td>&nbsp;&nbsp;|</td>
-          <td><b>|</b> <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a> <a href="#match-expression-clause-rest">match-expression-clause-rest</a> ;</td>
-        </tr>
-      </table>
-    </code>
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="type">type</span></a></td>
+        <td>::=</td>
+        <td><a href="#array-type">array-type</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#function-type">function-type</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#tuple-type">tuple-type</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>IDENTIFIER</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="array-type">array-type</span></a></td>
+        <td>::=</td>
+        <td><b>[</b> <a href="#type">type</a> <b>]</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="function-type">function-type</span></a></td>
+        <td>::=</td>
+        <td><a href="#type">type</a> <b>-></b> <a href="#type">type</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#type">type</a> <b>-></b> <a href="#function-type">function-type</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="tuple-type">tuple-type</span></a></td>
+        <td>::=</td>
+        <td><a href="#tuple-type-list">tuple-type-list</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>(</b> <a href="#tuple-type-list">tuple-type-list</a><sub>opt</sub> <b>)</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="tuple-type-list">tuple-type-list</span></a></td>
+        <td>::=</td>
+        <td><a href="#type">type</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#type">type</a> <b>,</b> <a href="#tuple-type-list">tuple-type-list</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="type-annotation">type-annotation</span></a></td>
+        <td>::=</td>
+        <td><b>:</b> <a href="#type">type</a> ;</td>
+      </tr>
+
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="if-expression">if-expression</span></a></td>
+        <td>::=</td>
+        <td><b>if</b> <a href="#pattern">pattern</a> <b>then</b> <a href="#expression-block">expression-block</a> <a href="#else-clause">else-clause</a><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="else-clause">else-clause</span></a></td>
+        <td>::=</td>
+        <td><b>else</b> <a href="#expression-block">expression-block</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>else</b> <a href="#if-expression">if-expression</a> ;</td>
+      </tr>
+
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="let-expression">let-expression</span></a></td>
+        <td>::=</td>
+        <td><b>let</b> <a href="#pattern">pattern</a> <b>=</b> <a href="#expression-block">expression-block</a> ;</td>
+      </tr>
+
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="match-expression">match-expression</span></a></td>
+        <td>::=</td>
+        <td><b>match</b> <a href="#pattern">pattern</a> <b>with</b> <a href="#match-expression-clause">match-expression-clause</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="match-expression-clause">match-expression-clause</span></a></td>
+        <td>::=</td>
+        <td><b>|</b><sub>opt</sub> <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a> <a href="#match-expression-clause-rest">match-expression-clause-rest</a><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="match-expression-clause-rest">match-expression-clause-rest</span></a></td>
+        <td>::=</td>
+        <td><b>|</b> <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a> <a href="#match-expression-clause-rest">match-expression-clause-rest</a><sub>opt</sub> ;</td>
+      </tr>
+
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="expression-block">expression-block</span></a></td>
+        <td>::=</td>
+        <td><b>INDENT</b> <a href="#expression-block-list">expression-block-list</a> <b>OUTDENT</b></td>
+      </tr>
+      <tr>
+        <td><span id="expression-block-list">expression-block-list</span></a></td>
+        <td>::=</td>
+        <td><a href="#expression">expression</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#expression">expression</a> <b>;</b> <a href="#expression-block-list">expression-block-list</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#expression">expression</a> <b>NEWLINE</b> <a href="#expression-block-list">expression-block-list</a> ;</td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>
