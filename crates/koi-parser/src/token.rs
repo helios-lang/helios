@@ -51,7 +51,7 @@ pub enum TokenKind {
     Error(LexerError),
 
     /// An unknown token. An error may be raised if such a token is encountered.
-    Unknown(char),
+    Unexpected(char),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -72,6 +72,28 @@ pub enum Keyword {
     Unimplemented,
     Using,
     With,
+}
+
+impl Keyword {
+    pub fn keyword_list() -> Vec<String> {
+        vec![
+            "and",
+            "def",
+            "do",
+            "else",
+            "false",
+            "if",
+            "let",
+            "match",
+            "not",
+            "or",
+            "then",
+            "true",
+            "type",
+            "using",
+            "with",
+        ].into_iter().map(String::from).collect()
+    }
 }
 
 /// Describes the base system used by the number literal encoding.

@@ -46,11 +46,14 @@ enum DidFail<E> {
 pub enum LexerError {
     OverflowedIntegerLiteral,
     OverflowedFloatLiteral,
-    UnknownEscapeChar(char),
-    MultipleCodepointsInCharLiteral,
+
     EmptyCharLiteral,
-    MultiLineSpanningChar,
     UnterminatedCharLiteral,
+    UnknownEscapeChar(char),
+    IllegalTabCharInCharLiteral,
+    MultipleCodepointsInCharLiteral,
+    MultiLineSpanningChar,
+
     UnterminatedStrLiteral,
 }
 
@@ -61,14 +64,17 @@ impl LexerError {
 
     pub fn code(&self) -> String {
         match self {
-            Self::OverflowedIntegerLiteral => "E0013".to_string(),
-            Self::OverflowedFloatLiteral => "E0014".to_string(),
-            Self::UnknownEscapeChar(_) => "E0015".to_string(),
+            Self::OverflowedIntegerLiteral => "E0010".to_string(),
+            Self::OverflowedFloatLiteral => "E0011".to_string(),
+
+            Self::EmptyCharLiteral => "E0012".to_string(),
+            Self::UnterminatedCharLiteral => "E0013".to_string(),
+            Self::UnknownEscapeChar(_) => "E0014".to_string(),
+            Self::IllegalTabCharInCharLiteral => "E0015".to_string(),
             Self::MultipleCodepointsInCharLiteral => "E0016".to_string(),
-            Self::EmptyCharLiteral => "E0017".to_string(),
-            Self::MultiLineSpanningChar => "E0018".to_string(),
-            Self::UnterminatedCharLiteral => "E0019".to_string(),
-            Self::UnterminatedStrLiteral => "E0020".to_string(),
+            Self::MultiLineSpanningChar => "E0017".to_string(),
+
+            Self::UnterminatedStrLiteral => "E0018".to_string(),
         }
     }
 }
@@ -80,16 +86,20 @@ impl Display for LexerError {
                 "Integer literal overflows when stored as `int32`".to_string(),
             Self::OverflowedFloatLiteral =>
                 "Float literal overflows when stored as `float64`".to_string(),
-            Self::UnknownEscapeChar(c) =>
-                format!("Unknown escape character: {:?}", c),
-            Self::MultipleCodepointsInCharLiteral =>
-                "Character literals should only contain one codepoint".to_string(),
+
             Self::EmptyCharLiteral =>
                 "Character literals must not be empty".to_string(),
-            Self::MultiLineSpanningChar =>
-                "Character literal cannot span multiple lines".to_string(),
             Self::UnterminatedCharLiteral =>
                 "Unterminated character literal".to_string(),
+            Self::UnknownEscapeChar(c) =>
+                format!("Unknown escape character: {:?}", c),
+            Self::IllegalTabCharInCharLiteral =>
+                "Illegal tab character in character literal".to_string(),
+            Self::MultipleCodepointsInCharLiteral =>
+                "Character literals should only contain one codepoint".to_string(),
+            Self::MultiLineSpanningChar =>
+                "Character literal cannot span multiple lines".to_string(),
+
             Self::UnterminatedStrLiteral =>
                 "Unterminated string literal".to_string(),
         };
@@ -148,7 +158,7 @@ impl<'a> Lexer<'a> {
             c if is_symbol(c) => self.symbol(c),
             c if is_identifier_start(c) => self.identifier(c),
             c @ '0'..='9' => self.number(c),
-            c => TokenKind::Unknown(c)
+            c => TokenKind::Unexpected(c)
         };
 
         Some(Token::with(token_kind, old_pos..self.cursor.pos))
@@ -483,9 +493,14 @@ impl<'a> Lexer<'a> {
                         }
                     }
                 }
-                '\n' => {
+                '\n' | '\r' => {
                     if error == None {
                         error = Some(LexerError::MultiLineSpanningChar);
+                    }
+                },
+                '\t' => {
+                    if error == None {
+                        error = Some(LexerError::IllegalTabCharInCharLiteral)
                     }
                 },
                 c => contents.push(c)

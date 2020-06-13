@@ -44,6 +44,16 @@ fn test_invalid_character_literals() {
     }
 
     create_test! {
+        r#"' "#,
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::UnterminatedCharLiteral),
+                Position::new(0, 0)..Position::new(0, 2)
+            )
+        }
+    }
+
+    create_test! {
         r#"'\ '"#,
         vec! {
             Token::with(
@@ -54,11 +64,32 @@ fn test_invalid_character_literals() {
     }
 
     create_test! {
+        r#"'	'"#,
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::IllegalTabCharInCharLiteral),
+                Position::new(0, 0)..Position::new(0, 3)
+            )
+        }
+    }
+
+    create_test! {
         r#"'abc'"#,
         vec! {
             Token::with(
                 TokenKind::Error(LexerError::MultipleCodepointsInCharLiteral),
                 Position::new(0, 0)..Position::new(0, 5)
+            )
+        }
+    }
+
+    create_test! {
+r#"'
+'"#,
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::MultiLineSpanningChar),
+                Position::new(0, 0)..Position::new(1, 1)
             )
         }
     }
