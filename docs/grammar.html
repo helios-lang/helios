@@ -49,7 +49,12 @@
       <tr>
         <td></td>
         <td>&nbsp;&nbsp;|</td>
-        <td><a href="#type-declaration">type-declaration</a> ;</td>
+        <td><a href="#type-declaration">type-declaration</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><a href="#using-declaration">using-declaration</a></td>
       </tr>
       <tr>
         <td><span id="expression">expression</span></a></td>
@@ -87,6 +92,16 @@
         <td><span id="type-declaration">type-declaration</span></a></td>
         <td>::=</td>
         <td><b>type</b> <a href="#visibility-modifier">visibility-modifier</a><sub>opt</sub> <b>IDENTIFIER</b> <b>=</b> <a href="#type-declaration-block">type-declaration-block</a> ;</td>
+      </tr>
+      <tr>
+        <td><span id="using-declaration">using-declaration</span></a></td>
+        <td>::=</td>
+        <td><b>using</b> <b>PATH</b> <a href="#using-declaration-alias">using-declaration-alias</a><sub>opt</sub></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>using</b> <b>PATH</b> <a href="#using-declaration-import">using-declaration-import</a><sub>opt</sub> ;</td>
       </tr>
 
       <tr><td>&nbsp;</td></tr>
@@ -131,6 +146,33 @@
         <td></td>
         <td>&nbsp;&nbsp;|</td>
         <td><a href="#record-body">record-body</a> ;</td>
+      </tr>
+
+      <tr><td>&nbsp;</td></tr>
+      <tr>
+        <td><span id="using-declaration-import">using-declaration-import</span></a></td>
+        <td>::=</td>
+        <td><b>.</b> <b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a><sub>opt</sub></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>.</b> <b>{</b> <a href="#using-declaration-import-list">using-declaration-import-list</a><sub>opt</sub> <b>}</b> ;</td>
+      </tr>
+      <tr>
+        <td><span id="using-declaration-import-list">using-declaration-import-list</span></a></td>
+        <td>::=</td>
+        <td><b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a><sub>opt</sub> <a href="#using-declaration-import-rest">using-declaration-import-rest</a><sub>opt</sub> <b>,</b><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="using-declaration-import-rest">using-declaration-import-rest</span></a></td>
+        <td>::=</td>
+        <td><b>,</b> <b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a><sub>opt</sub> ;</td>
+      </tr>
+      <tr>
+        <td><span id="using-declaration-alias">using-declaration-alias</span></a></td>
+        <td>::=</td>
+        <td><b>as</b> <b>IDENTIFIER</b> ;</td>
       </tr>
 
       <tr><td>&nbsp;</td></tr>
@@ -284,7 +326,12 @@
       <tr>
         <td><span id="expression-block">expression-block</span></a></td>
         <td>::=</td>
-        <td><b>INDENT</b> <a href="#expression-block-list">expression-block-list</a> <b>OUTDENT</b></td>
+        <td><a href="#expression">expression</a></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>&nbsp;&nbsp;|</td>
+        <td><b>INDENT</b> <a href="#expression-block-list">expression-block-list</a> <b>OUTDENT</b> ;</td>
       </tr>
       <tr>
         <td><span id="expression-block-list">expression-block-list</span></a></td>
