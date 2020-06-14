@@ -111,15 +111,33 @@ impl Error for LexerError {}
 
 pub struct Lexer<'a> {
     cursor: Cursor<'a>,
+    is_at_start_of_line: bool,
+    current_indentation_level: usize,
 }
 
 impl<'a> Lexer<'a> {
     pub fn with(source: Source<'a>) -> Self {
-        Self { cursor: Cursor::with(source) }
+        Self {
+            cursor: Cursor::with(source),
+            is_at_start_of_line: true,
+            current_indentation_level: 0,
+        }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
         let next_char = self.next_char()?;
+
+        let mut record_new_indent = false;
+        let mut new_indent_level = self.current_indentation_level;
+
+        if self.is_at_start_of_line {
+            if next_char == ' ' || next_char == '\t' {
+                record_new_indent = true;
+            } else {
+                new_indent_level = 0;
+            }
+            self.is_at_start_of_line = false;
+        }
 
         // Because we've already advanced to the next character, it's position
         // is one less than our current character's position.
@@ -160,6 +178,9 @@ impl<'a> Lexer<'a> {
             c @ '0'..='9' => self.number(c),
             c => TokenKind::Unexpected(c)
         };
+
+        if record_new_indent { new_indent_level = self.cursor.pos.character; }
+        self.current_indentation_level = new_indent_level;
 
         Some(Token::with(token_kind, old_pos..self.cursor.pos))
     }
@@ -288,6 +309,7 @@ impl<'a> Lexer<'a> {
 
     fn newline(&mut self) -> TokenKind {
         self.consume_while(is_newline);
+        self.is_at_start_of_line = true;
         TokenKind::Newline
     }
 
