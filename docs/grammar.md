@@ -46,4 +46,12 @@
 <i id="parameter-list">parameter-list</i> ::=
   | <a href="#parameter">parameter</a>
   | <a href="#parameter">parameter</a> <b>,</b> <a href="#parameter-list">parameter-list</a> ;
+
+<i id="module-declaration-block">module-declaration-block</i>
+  | <b>INDENT</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>OUTDENT</b> ;
+
+<i id="module-declaration-block-item">module-declaration-block-item</i>
+  | <a href="#function-declaration">function-declaration</a>
+  | <a href="#module-declaration">module-declaration</a>
+  | <a href="#type-declaration">type-declaration</a> ;
 </pre>
