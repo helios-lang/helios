@@ -416,12 +416,12 @@ impl<'a> Lexer<'a> {
     }
 
     /// Matches any character that is a valid symbol.
+    ///
+    /// _TODO:_ Perhaps we should handle cases with misleading symbols, such as
+    /// U+037E, the Greek question mark, which looks like a semicolon (compare
+    /// ';' with ';').
     fn symbol(&mut self, symbol: char) -> TokenKind {
-        match self.peek() {
-            '=' => {
-                self.next_char();
-                TokenKind::Symbol(Symbol::from_char_with_equal(symbol))
-            },
+        match symbol {
             '?' => {
                 if (self.peek(), self.peek_at(1)) == ('?', '?') {
                     // Consume the next two question marks
@@ -432,7 +432,15 @@ impl<'a> Lexer<'a> {
                     TokenKind::Symbol(Symbol::Question)
                 }
             },
-            _ => TokenKind::Symbol(Symbol::from_char(symbol))
+            _ => {
+                match Symbol::compose(symbol, self.peek()) {
+                    Some(symbol) => {
+                        self.next_char();
+                        TokenKind::Symbol(symbol)
+                    },
+                    None => TokenKind::Symbol(Symbol::from_char(symbol))
+                }
+            }
         }
     }
 

@@ -57,3 +57,161 @@ fn test_symbols() {
     test_symbol!("(",   Symbol::LParen);
     test_symbol!(")",   Symbol::RParen);
 }
+
+#[test]
+fn test_valid_composed_symbols() {
+    test_symbol!("!=",  Symbol::BangEq);
+    test_symbol!("<=",  Symbol::LtEq);
+    test_symbol!(">=",  Symbol::GtEq);
+    test_symbol!("<-",  Symbol::LThinArrow);
+    test_symbol!("->",  Symbol::RThinArrow);
+    test_symbol!("=>",  Symbol::ThickArrow);
+}
+
+#[test]
+fn test_invalid_composed_symbols() {
+    create_test! {
+        "=!",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::Eq),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Bang),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+
+    create_test! {
+        "=<",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::Eq),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Lt),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+
+    create_test! {
+        "-<",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::Minus),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Lt),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+
+    create_test! {
+        ">-",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::Gt),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Minus),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+}
+
+#[test]
+fn test_misleading_symbols() {
+    create_test! {
+        ";",
+        vec! {
+            Token::with(
+                TokenKind::Unexpected('\u{037e}'),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "–",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::EnDash),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "—",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::EmDash),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "–>",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::EnDash),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Gt),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+
+    create_test! {
+        "—>",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::EmDash),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Gt),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+
+    create_test! {
+        "<–",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::Lt),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::EnDash),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+
+    create_test! {
+        "<—",
+        vec! {
+            Token::with(
+                TokenKind::Symbol(Symbol::Lt),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::EmDash),
+                Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+}

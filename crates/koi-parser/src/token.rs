@@ -197,6 +197,13 @@ pub enum Symbol {
     Gt,
     /// The `>=` token.
     GtEq,
+    /// The `<-` token.
+    LThinArrow,
+    /// The `->` token.
+    RThinArrow,
+    /// The `=>` token.
+    ThickArrow,
+
     /// The `{` token.
     LBrace,
     /// The `}` token.
@@ -246,17 +253,19 @@ impl Symbol {
             ']' => RBracket,
             '(' => LParen,
             ')' => RParen,
-            _ => panic!("Cannot convert `{}` to a valid Symbol", c)
+            _ => panic!("Character `{}` is not a valid Symbol", c)
         }
     }
 
-    pub fn from_char_with_equal(c: char) -> Self {
-        use Symbol::*;
-        match c {
-            '!' => BangEq,
-            '<' => LtEq,
-            '>' => GtEq,
-            _ => panic!("Not a valid compound token: `{}=`", c)
+    pub fn compose(first: char, second: char) -> Option<Self> {
+        match (first, second) {
+            ('!', '=') => Some(Self::BangEq),
+            ('<', '=') => Some(Self::LtEq),
+            ('>', '=') => Some(Self::GtEq),
+            ('<', '-') => Some(Self::LThinArrow),
+            ('-', '>') => Some(Self::RThinArrow),
+            ('=', '>') => Some(Self::ThickArrow),
+            _ => None
         }
     }
 }
