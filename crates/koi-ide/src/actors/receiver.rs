@@ -37,6 +37,7 @@ impl Receiver {
                 if cached_version != &version {
                     match self.generate_tokens(url) {
                         Ok(tokens) => {
+                            tokens.iter().for_each(|token| eprintln!("{:?}", token));
                             self.token_database.insert(key, (version, tokens));
                         },
                         Err(error) => {
@@ -65,18 +66,16 @@ impl Receiver {
                     params.position.line as usize,
                     params.position.character as usize
                 )) {
-                    use token::TokenKind;
+                    // use token::TokenKind;
                     match token.kind {
-                        TokenKind::Keyword(_)
-                        | TokenKind::Symbol(_)
-                        | TokenKind::Whitespace { .. }
-                        | TokenKind::Newline
-                        | TokenKind::Eof => {
-                            self.responder_channel
-                                .clone()
-                                .send(LspResponse::HoverResult { id, params: None })
-                                .expect("Failed to send `HoverRequest` message to Responder.")
-                        },
+                        // TokenKind::Keyword(_)
+                        // | TokenKind::Symbol(_)
+                        // | TokenKind::Eof => {
+                        //     self.responder_channel
+                        //         .clone()
+                        //         .send(LspResponse::HoverResult { id, params: None })
+                        //         .expect("Failed to send `HoverRequest` message to Responder.")
+                        // },
                         _ => {
                             self.responder_channel
                                 .clone()

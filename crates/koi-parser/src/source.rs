@@ -109,8 +109,7 @@ impl<'a> Cursor<'a> {
     /// * If we are given a new line (and thus the file still has contents in to
     ///   be processed), then we'll return the next character in our new queue.
     ///
-    /// * Otherwise, we have reached the end of the file, and thus we return
-    ///   `None`.
+    /// * Otherwise, we've reached the end of the file and so we'll return `None`.
     pub fn advance(&mut self) -> Option<char> {
         match self.chars.next() {
             Some(c) => {
@@ -132,8 +131,12 @@ impl<'a> Cursor<'a> {
         self.chars.len()
     }
 
-    pub fn nth(&self, n: usize) -> char {
-        self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
+    // pub fn nth(&self, n: usize) -> char {
+    //     self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
+    // }
+
+    pub fn nth(&self, n: usize) -> Option<char> {
+        self.chars.clone().nth(n)
     }
 }
 

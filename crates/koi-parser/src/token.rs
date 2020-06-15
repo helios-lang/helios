@@ -39,10 +39,13 @@ pub enum TokenKind {
     LineComment { is_doc_comment: bool },
 
     /// Any whitespace character (e.g. a space character).
-    Whitespace { kind: WhitespaceKind, count: usize },
+    // Whitespace { kind: WhitespaceKind, count: usize },
 
     /// A newline character (`\n` or `\r`).
     Newline,
+    Continue,
+    Indent,
+    Outdent,
 
     /// End of file token.
     Eof,
