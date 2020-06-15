@@ -1,20 +1,16 @@
-// use koi_driver::Diagnostic;
-// use std::io::Write;
-
-// pub fn emit_diagnostic<I, W>(writer: &mut W, diagnostics: I)
-// where I: IntoIterator<Item=Diagnostic>,
-//       W: Write
-// {
-//     for diagnostic in diagnostics {
-//         writeln!(writer, "[{}]: {}", diagnostic.code, diagnostic.message)
-//             .expect("Failed to write to writer");
-//     }
-// }
+use koi_driver::tokenize;
+use koi_parser::source::Source;
 
 /// Starts the build process with the given file.
-pub fn build(_file_name: &str) {
-    // if let Err(diagnostics) = koi_driver::start(file_name) {
-    //     emit_diagnostic(&mut std::io::stderr().lock(), diagnostics);
-    // }
-    unimplemented!()
+pub fn build(file_name: &str) {
+    match Source::file(file_name) {
+        Ok(source) => {
+            let time = std::time::Instant::now();
+            tokenize(source);
+            println!("Time elapsed: {} ms", time.elapsed().as_millis());
+        },
+        Err(error) => {
+            eprintln!("Failed to load file from source: {}", error);
+        }
+    }
 }
