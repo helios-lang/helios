@@ -79,23 +79,29 @@ impl<'a> BufRead for Source<'a> {
     }
 }
 
-pub struct Cursor<'a> {
-    source: Source<'a>,
+pub struct Cursor {
     chars: IntoIter<char>,
     pub pos: Position,
+    did_advance_line: bool,
 }
 
-impl<'a> Cursor<'a> {
-    pub fn with(source: Source<'a>) -> Self {
-        let chars = Vec::new().into_iter();
-        let mut cursor = Self { source, chars, pos: Position::default() };
+impl Cursor {
+    pub fn with(mut source: Source) -> Self {
+        let mut buffer = String::new();
+        let chars = match source.read_to_string(&mut buffer){
+            Ok(bytes) if bytes == 0 => None,
+            Ok(_) => Some(buffer.chars().collect::<Vec<_>>().into_iter()),
+            Err(error) => {
+                eprintln!("Failed to read line: {}", error);
+                None
+            }
+        };
 
-        match cursor.advance_line() {
-            Some(chars) => cursor.chars = chars,
-            None => cursor.chars = Vec::new().into_iter()
+        Self {
+            chars: chars.unwrap_or(Vec::new().into_iter()),
+            pos: Position::default(),
+            did_advance_line: false,
         }
-
-        cursor
     }
 
     /// Advances to the next character in the `Cursor` iterator.
@@ -113,17 +119,18 @@ impl<'a> Cursor<'a> {
     pub fn advance(&mut self) -> Option<char> {
         match self.chars.next() {
             Some(c) => {
-                self.pos.advance();
+                if c == '\n' { self.did_advance_line = true; }
+
+                if self.did_advance_line {
+                    self.did_advance_line = false;
+                    self.pos.advance_line();
+                } else {
+                    self.pos.advance();
+                }
+
                 Some(c)
             },
-            None => match self.advance_line() {
-                Some(line) => {
-                    self.chars = line;
-                    self.pos.advance_line();
-                    self.advance()
-                },
-                None => None
-            }
+            None => None
         }
     }
 
@@ -131,25 +138,7 @@ impl<'a> Cursor<'a> {
         self.chars.len()
     }
 
-    // pub fn nth(&self, n: usize) -> char {
-    //     self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
-    // }
-
-    pub fn nth(&self, n: usize) -> Option<char> {
-        self.chars.clone().nth(n)
-    }
-}
-
-impl<'a> Cursor<'a> {
-    fn advance_line(&mut self) -> Option<IntoIter<char>> {
-        let mut buffer = String::new();
-        match self.source.read_line(&mut buffer){
-            Ok(bytes) if bytes == 0 => None,
-            Ok(_) => Some(buffer.chars().collect::<Vec<_>>().into_iter()),
-            Err(error) => {
-                eprintln!("Failed to read line: {}", error);
-                None
-            }
-        }
+    pub fn nth(&self, n: usize) -> char {
+        self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
     }
 }

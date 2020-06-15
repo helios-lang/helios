@@ -11,12 +11,12 @@ use token::Token;
 
 pub type Ast = Vec<Token>;
 
-pub struct Parser<'a> {
-    lexer: Lexer<'a>,
+pub struct Parser {
+    lexer: Lexer,
 }
 
-impl<'a> Parser<'a> {
-    pub fn with(lexer: Lexer<'a>) -> Self {
+impl Parser {
+    pub fn with(lexer: Lexer) -> Self {
         Self { lexer }
     }
 
@@ -31,7 +31,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-pub fn parse<'a>(source: Source<'a>) -> Ast {
+pub fn parse<'a>(source: Source) -> Ast {
     let lexer = Lexer::with(source);
     Parser::with(lexer).parse()
 }

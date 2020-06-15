@@ -113,26 +113,72 @@ impl Display for LexerError {
 
 impl Error for LexerError {}
 
-pub struct Lexer<'a> {
-    cursor: Cursor<'a>,
+pub struct Lexer {
+    cursor: Cursor,
     at_start_of_line: bool,
     current_indentation_level: usize,
 }
 
-impl<'a> Lexer<'a> {
-    pub fn with(source: Source<'a>) -> Self {
+impl Lexer {
+    pub fn with(source: Source) -> Self {
         Self {
             cursor: Cursor::with(source),
-            at_start_of_line: false,
+            at_start_of_line: true,
             current_indentation_level: 0,
         }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        eprintln!("{:?}, {}", self.peek(), self.peek() == '\0');
-        let next_char = self.next_char()?;
+        let old_pos = self.cursor.pos;
 
-        Some(Token::with(TokenKind::Unexpected(next_char), self.cursor.pos..self.cursor.pos))
+        if self.at_start_of_line {
+            self.at_start_of_line = false;
+            let count = self.consume_while(is_whitespace);
+
+            if count > self.current_indentation_level {
+                self.current_indentation_level = count;
+                return Some(Token::with(TokenKind::Indent, self.cursor.pos..self.cursor.pos));
+            } else if count < self.current_indentation_level {
+                self.current_indentation_level = count;
+                return Some(Token::with(TokenKind::Outdent, self.cursor.pos..self.cursor.pos));
+            }
+        }
+
+        let next_char = self.next_char()?;
+        if is_whitespace(next_char) { return self.next_token(); }
+
+        let token_kind = match next_char {
+            '\n' => self.newline(),
+            '/' => {
+                if self.peek() == '/' {
+                    self.line_comment()
+                } else {
+                    self.symbol('/')
+                }
+            },
+            'r' => {
+                if self.peek() == '"' {
+                    self.raw_string()
+                } else {
+                    self.identifier('r')
+                }
+            },
+            'f' => {
+                if self.peek() == '"' {
+                    self.interpolated_string()
+                } else {
+                    self.identifier('f')
+                }
+            },
+            '"' => self.string(),
+            '\''=> self.character(),
+            c if is_symbol(c) => self.symbol(c),
+            c if is_identifier_start(c) => self.identifier(c),
+            c @ '0'..='9' => self.number(c),
+            c => TokenKind::Unexpected(c)
+        };
+
+        Some(Token::with(token_kind, old_pos..self.cursor.pos))
     }
 
     // pub fn next_token(&mut self) -> Option<Token> {
@@ -200,7 +246,7 @@ impl<'a> Lexer<'a> {
     // }
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer {
     /// Moves to the next character in the iterator.
     fn next_char(&mut self) -> Option<char> {
         match self.cursor.advance() {
@@ -209,25 +255,15 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    // /// Peeks the next character without consuming it.
-    // fn peek(&self) -> char {
-    //     self.peek_at(0)
-    // }
-
-    // /// Peeks the character at the given index without consuming it.
-    // fn peek_at(&self, n: usize) -> char {
-    //     self.cursor.nth(n)
-    // }
-
     /// Peeks the next character without consuming it.
     fn peek(&self) -> char {
-        self.cursor.nth(0).expect("Logic error: failed to peek")
+        self.peek_at(0)
     }
 
-    // /// Peeks the character at the given index without consuming it.
-    // fn peek_at(&self, n: usize) -> char {
-    //     self.cursor.nth(n)//.expect("Out of bounds")
-    // }
+    /// Peeks the character at the given index without consuming it.
+    fn peek_at(&self, n: usize) -> char {
+        self.cursor.nth(n)
+    }
 
     /// Checks if the `Cursor` has reached the end of the input.
     fn is_at_end(&self) -> bool {
@@ -320,7 +356,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer {
     // fn whitespace(&mut self, whitespace_char: char) -> TokenKind {
     //     // if whitespace_char == ' ' {
     //     //     let count = 1 + self.consume_while(|c| c == ' ');
@@ -431,21 +467,17 @@ impl<'a> Lexer<'a> {
 
         let mut fractional_part: Vec<char> = Vec::new();
 
-        if self.peek() == '.' {
-            unimplemented!("Cannot peek at specific location anymore")
+        if self.peek() == '.' && self.peek_at(2) != '.' {
+            fractional_part.push(self.next_char().unwrap());
+            match self.peek() {
+                '0'..='9' | '_' => {
+                    let mut rest =
+                        self.consume_digits(NumericBase::Decimal, None);
+                    fractional_part.append(&mut rest);
+                },
+                _ => fractional_part.push('0')
+            }
         }
-
-        // if self.peek() == '.' && self.peek_at(2) != '.' {
-        //     fractional_part.push(self.next_char().unwrap());
-        //     match self.peek() {
-        //         '0'..='9' | '_' => {
-        //             let mut rest =
-        //                 self.consume_digits(NumericBase::Decimal, None);
-        //             fractional_part.append(&mut rest);
-        //         },
-        //         _ => fractional_part.push('0')
-        //     }
-        // }
 
         if fractional_part.is_empty() {
             let string: String = integer_part[..].into_iter().collect();
@@ -471,15 +503,14 @@ impl<'a> Lexer<'a> {
     fn symbol(&mut self, symbol: char) -> TokenKind {
         match symbol {
             '?' => {
-                unimplemented!("Cannot peek at specific location anymore")
-                // if (self.peek(), self.peek_at(1)) == ('?', '?') {
-                //     // Consume the next two question marks
-                //     self.next_char();
-                //     self.next_char();
-                //     TokenKind::Keyword(Keyword::Unimplemented)
-                // } else {
-                //     TokenKind::Symbol(Symbol::Question)
-                // }
+                if (self.peek(), self.peek_at(1)) == ('?', '?') {
+                    // Consume the next two question marks
+                    self.next_char();
+                    self.next_char();
+                    TokenKind::Keyword(Keyword::Unimplemented)
+                } else {
+                    TokenKind::Symbol(Symbol::Question)
+                }
             },
             _ => {
                 match Symbol::compose(symbol, self.peek()) {
