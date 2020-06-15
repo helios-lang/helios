@@ -38,14 +38,15 @@ pub enum TokenKind {
     /// A line comment starting with two forward slashes (`//`).
     LineComment { is_doc_comment: bool },
 
-    /// Any whitespace character (e.g. a space character).
-    // Whitespace { kind: WhitespaceKind, count: usize },
-
-    /// A newline character (`\n` or `\r`).
+    /// Signifies the end of the current line (if it is still part of the
+    /// current scope).
     Newline,
-    Continue,
-    Indent,
-    Outdent,
+
+    /// Signifies the beginning of a new scope.
+    Begin,
+
+    /// Signifies the end of a scope.
+    End,
 
     /// End of file token.
     Eof,

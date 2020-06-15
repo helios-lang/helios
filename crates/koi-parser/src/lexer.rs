@@ -18,15 +18,9 @@ fn is_identifier_continue(c: char) -> bool {
     c.is_xid_continue()
 }
 
-/// Checks if the given character is a newline or carriage return character
-/// (either `\n` or `\r`).
-///
-/// _TODO: Should we ensure that a carriage return character is preceded by a
-/// newline character?_
-fn is_newline(c: char) -> bool {
-    c == '\n' //|| c == '\r'
-}
-
+/// Checks if the given character is a whitespace character. This includes the
+/// space character, the tab character, and the carriage return character. Only
+/// the newline character is used to signify a new line.
 fn is_whitespace(c: char) -> bool {
     c == ' ' || c == '\r' || c == '\t'
 }
@@ -116,6 +110,7 @@ impl Error for LexerError {}
 pub struct Lexer {
     cursor: Cursor,
     at_start_of_line: bool,
+    current_indentation_column: usize,
     current_indentation_level: usize,
 }
 
@@ -124,6 +119,7 @@ impl Lexer {
         Self {
             cursor: Cursor::with(source),
             at_start_of_line: true,
+            current_indentation_column: 0,
             current_indentation_level: 0,
         }
     }
@@ -135,20 +131,43 @@ impl Lexer {
             self.at_start_of_line = false;
             let count = self.consume_while(is_whitespace);
 
-            if count > self.current_indentation_level {
-                self.current_indentation_level = count;
-                return Some(Token::with(TokenKind::Indent, self.cursor.pos..self.cursor.pos));
-            } else if count < self.current_indentation_level {
-                self.current_indentation_level = count;
-                return Some(Token::with(TokenKind::Outdent, self.cursor.pos..self.cursor.pos));
+            if count > self.current_indentation_column {
+                self.current_indentation_column = count;
+                self.current_indentation_level += 1;
+                return Some(Token::with(TokenKind::Begin, old_pos..self.cursor.pos));
+            } else if count < self.current_indentation_column {
+                self.current_indentation_column = count;
+                self.current_indentation_level -= 1;
+                return Some(Token::with(TokenKind::End, old_pos..self.cursor.pos));
+            } else if old_pos != Position::new(0, 0) {
+                return Some(Token::with(TokenKind::Newline, old_pos..self.cursor.pos));
             }
         }
 
-        let next_char = self.next_char()?;
-        if is_whitespace(next_char) { return self.next_token(); }
+        let next_char = match self.next_char() {
+            Some(c) => c,
+            None => {
+                if self.current_indentation_level > 0 {
+                    self.current_indentation_level -= 1;
+                    return Some(Token::with(TokenKind::End, old_pos..self.cursor.pos));
+                } else {
+                    return None;
+                }
+            }
+        };
+
+        // Skip whitespace characters
+        if is_whitespace(next_char) {
+            return self.next_token();
+        }
+
+        // Skip newline character
+        if next_char == '\n' {
+            self.at_start_of_line = true;
+            return self.next_token();
+        }
 
         let token_kind = match next_char {
-            '\n' => self.newline(),
             '/' => {
                 if self.peek() == '/' {
                     self.line_comment()
@@ -180,70 +199,6 @@ impl Lexer {
 
         Some(Token::with(token_kind, old_pos..self.cursor.pos))
     }
-
-    // pub fn next_token(&mut self) -> Option<Token> {
-    //     let next_char = self.next_char()?;
-
-    //     // Because we've already advanced to the next character, it's position
-    //     // is one less than our current character's position
-    //     // TODO: There must be a more elegant way to do this?
-    //     let old_pos = Position::new(
-    //         self.cursor.pos.line,
-    //         self.cursor.pos.character - 1
-    //     );
-
-    //     if self.at_start_of_line {
-    //         self.at_start_of_line = false;
-    //         eprintln!("{} => {:?}", self.cursor.pos, self.peek());
-    //         self.consume_while(is_whitespace);
-    //         let count = self.cursor.pos.character - old_pos.character;
-    //         eprintln!("LEVEL: {}", count);
-    //         if count > self.current_indentation_level {
-    //             self.current_indentation_level = count;
-    //             Some(Token::with(TokenKind::Indent, self.cursor.pos..self.cursor.pos))
-    //         } else if count < self.current_indentation_level {
-    //             self.current_indentation_level = count;
-    //             Some(Token::with(TokenKind::Outdent, self.cursor.pos..self.cursor.pos))
-    //         } else {
-    //             Some(Token::with(TokenKind::Continue, self.cursor.pos..self.cursor.pos))
-    //         }
-    //     } else {
-    //         if is_whitespace(next_char) { return self.next_token(); }
-
-    //         let token_kind = match next_char {
-    //             '\n' => self.newline(),
-    //             '/' => {
-    //                 if self.peek() == '/' {
-    //                     self.line_comment()
-    //                 } else {
-    //                     self.symbol('/')
-    //                 }
-    //             },
-    //             'r' => {
-    //                 if self.peek() == '"' {
-    //                     self.raw_string()
-    //                 } else {
-    //                     self.identifier('r')
-    //                 }
-    //             },
-    //             'f' => {
-    //                 if self.peek() == '"' {
-    //                     self.interpolated_string()
-    //                 } else {
-    //                     self.identifier('f')
-    //                 }
-    //             },
-    //             '"' => self.string(),
-    //             '\''=> self.character(),
-    //             c if is_symbol(c) => self.symbol(c),
-    //             c if is_identifier_start(c) => self.identifier(c),
-    //             c @ '0'..='9' => self.number(c),
-    //             c => TokenKind::Unexpected(c)
-    //         };
-
-    //         Some(Token::with(token_kind, old_pos..self.cursor.pos))
-    //     }
-    // }
 }
 
 impl Lexer {
@@ -357,23 +312,6 @@ impl Lexer {
 }
 
 impl Lexer {
-    // fn whitespace(&mut self, whitespace_char: char) -> TokenKind {
-    //     // if whitespace_char == ' ' {
-    //     //     let count = 1 + self.consume_while(|c| c == ' ');
-    //     //     TokenKind::Whitespace { kind: WhitespaceKind::Space, count }
-    //     // } else {
-    //     //     let count = 1 + self.consume_while(|c| c == '\t');
-    //     //     TokenKind::Whitespace { kind: WhitespaceKind::Tab, count }
-    //     // }
-    //     unimplemented!()
-    // }
-
-    fn newline(&mut self) -> TokenKind {
-        self.consume_while(is_newline);
-        self.at_start_of_line = true;
-        TokenKind::Newline
-    }
-
     /// Matches every character up until the new line character. The characters
     /// consumed will be part of the `TokenKind::LineComment` variant.
     fn line_comment(&mut self) -> TokenKind {
