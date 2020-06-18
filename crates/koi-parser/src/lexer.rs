@@ -405,7 +405,7 @@ impl Lexer {
 
         let mut fractional_part: Vec<char> = Vec::new();
 
-        if self.peek() == '.' && self.peek_at(2) != '.' {
+        if self.peek() == '.' && self.peek_at(1) != '.' {
             fractional_part.push(self.next_char().unwrap());
             match self.peek() {
                 '0'..='9' | '_' => {
