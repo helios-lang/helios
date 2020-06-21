@@ -117,41 +117,47 @@ impl Receiver {
             let mut diagnostics = Vec::new();
 
             for token in tokens {
+                let range = lsp_types::Range::new(
+                    lsp_types::Position::new(
+                        token.range.start.line as u64,
+                        token.range.start.character as u64
+                    ),
+                    lsp_types::Position::new(
+                        token.range.end.line as u64,
+                        token.range.end.character as u64
+                    ),
+                );
+
                 match token.kind {
                     token::TokenKind::Error(error) => {
+                        let related_information = error
+                            .related_information()
+                            .map(|message| vec![
+                                lsp_types::DiagnosticRelatedInformation {
+                                    location: lsp_types::Location {
+                                        uri: uri.clone(),
+                                        range,
+                                    },
+                                    message
+                                }
+                            ]);
+
                         diagnostics.push(lsp_types::Diagnostic {
-                            range: lsp_types::Range::new(
-                                lsp_types::Position::new(
-                                    token.range.start.line as u64,
-                                    token.range.start.character as u64
-                                ),
-                                lsp_types::Position::new(
-                                    token.range.end.line as u64,
-                                    token.range.end.character as u64
-                                ),
-                            ),
+                            range,
                             severity: Some(lsp_types::DiagnosticSeverity::Error),
                             source: Some("koi".to_string()),
                             message: error.message(),
                             code: Some(lsp_types::NumberOrString::String(error.code())),
+                            related_information,
                             ..lsp_types::Diagnostic::default()
                         });
                     },
                     token::TokenKind::Unexpected(c) => {
                         diagnostics.push(lsp_types::Diagnostic {
-                            range: lsp_types::Range::new(
-                                lsp_types::Position::new(
-                                    token.range.start.line as u64,
-                                    token.range.start.character as u64
-                                ),
-                                lsp_types::Position::new(
-                                    token.range.end.line as u64,
-                                    token.range.end.character as u64
-                                ),
-                            ),
+                            range,
                             severity: Some(lsp_types::DiagnosticSeverity::Error),
                             source: Some("koi".to_string()),
-                            message: format!("Unexpected character {:?}", c),
+                            message: format!("Unexpected character {:?} (U+{:04X})", c, c as u32),
                             code: Some(lsp_types::NumberOrString::String("E0012".to_string())),
                             ..lsp_types::Diagnostic::default()
                         });
