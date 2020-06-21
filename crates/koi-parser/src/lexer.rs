@@ -42,7 +42,7 @@ enum DidFail<E> {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
-    BadIndent,
+    BadIndent { expected: usize, found: usize },
 
     OverflowedIntegerLiteral,
     OverflowedFloatLiteral,
@@ -64,7 +64,7 @@ impl LexerError {
 
     pub fn code(&self) -> String {
         match self {
-            Self::BadIndent => "E0009".to_string(),
+            Self::BadIndent { .. } => "E0009".to_string(),
             Self::OverflowedIntegerLiteral => "E0010".to_string(),
             Self::OverflowedFloatLiteral => "E0011".to_string(),
 
@@ -78,13 +78,30 @@ impl LexerError {
             Self::UnterminatedStrLiteral => "E0018".to_string(),
         }
     }
+
+    pub fn related_information(&self) -> Option<String> {
+        match self {
+            Self::BadIndent { expected, found } => {
+                if expected == &0 {
+                    Some("Expected no indentation".to_string())
+                } else {
+                    Some(format! {
+                        "Expected indentation at column {}, not at {}",
+                        expected,
+                        found,
+                    })
+                }
+            }
+            _ => None
+        }
+    }
 }
 
 impl Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let message = match self {
-            Self::BadIndent =>
-                "Invalid indentation level".to_string(),
+            Self::BadIndent { .. } =>
+                "Invalid indentation".to_string(),
 
             Self::OverflowedIntegerLiteral =>
                 "Integer literal overflows when stored as `int32`".to_string(),
@@ -319,20 +336,25 @@ impl Lexer {
 
             // We have encountered bad indentation (it is larger than expected)
             if self.current_indentation > last_block.depth() {
-                eprintln!(": XX L{:03} {:02} {:?}", self.cursor.pos.line, self.current_indentation, self.blocks);
+                eprintln!(": XX L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.blocks);
                 self.did_enter_new_line = false;
                 self.should_emit_end_token = false;
-                TokenKind::Error(LexerError::BadIndent)
+                TokenKind::Error(
+                    LexerError::BadIndent {
+                        expected: last_block.depth(),
+                        found: self.current_indentation
+                    }
+                )
 
             // We still have to decrease our indentation
             } else if self.current_indentation < last_block.depth() {
-                eprintln!(": EN L{:03} {:02} {:?}", self.cursor.pos.line, self.current_indentation, self.blocks);
+                eprintln!(": EN L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.blocks);
                 self.blocks.pop();
                 TokenKind::End
 
             // We have decreased by a sufficient amount
             } else {
-                eprintln!(": NL L{:03} {:02} {:?}", self.cursor.pos.line, self.current_indentation, self.blocks);
+                eprintln!(": NL L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.blocks);
                 self.did_enter_new_line = false;
                 self.should_emit_end_token = false;
                 TokenKind::Newline
@@ -343,14 +365,14 @@ impl Lexer {
 
             // We have increased our indentation
             if self.current_indentation > last_block.depth() {
-                eprintln!("= GT L{:03} {:02} {:?}", self.cursor.pos.line, self.current_indentation, self.blocks);
+                eprintln!("= GT L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.blocks);
                 self.blocks.push(Block(self.current_indentation));
                 self.did_enter_new_line = false;
                 TokenKind::Begin
 
             // We have decreased our indentation
             } else if self.current_indentation < last_block.depth() {
-                eprintln!("= LT L{:03} {:02} {:?}", self.cursor.pos.line, self.current_indentation, self.blocks);
+                eprintln!("= LT L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.blocks);
                 // Check if this is an empty line
                 if self.peek() == '\n' {
                     self.did_enter_new_line = false;
@@ -361,7 +383,7 @@ impl Lexer {
                 }
             // We have the same level of indentation
             } else {
-                eprintln!("= EQ L{:03} {:02} {:?}", self.cursor.pos.line, self.current_indentation, self.blocks);
+                eprintln!("= EQ L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.blocks);
                 self.did_enter_new_line = false;
                 TokenKind::Newline
             }
