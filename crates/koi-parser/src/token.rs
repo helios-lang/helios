@@ -1,8 +1,9 @@
 use crate::source::Position;
 use crate::lexer::LexerError;
+use std::fmt::{self, Debug};
 use std::ops::Range;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub range: Range<Position>,
@@ -15,6 +16,12 @@ impl Token {
             format!("Invalid range `{}..{}`", range.start, range.end)
         );
         Self { kind, range }
+    }
+}
+
+impl Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Token({:?}, {}..{})", self.kind, self.range.start, self.range.end)
     }
 }
 
@@ -70,11 +77,13 @@ pub enum Keyword {
     Match,
     Not,
     Or,
+    Public,
     Then,
     True,
     Type,
     Unimplemented,
     Using,
+    Val,
     With,
 }
 
@@ -91,10 +100,12 @@ impl Keyword {
             "match",
             "not",
             "or",
+            "public",
             "then",
             "true",
             "type",
             "using",
+            "val",
             "with",
         ].into_iter().map(String::from).collect()
     }

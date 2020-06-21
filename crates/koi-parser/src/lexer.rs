@@ -334,9 +334,14 @@ impl Lexer {
 
             // We have decreased our indentation
             } else if self.current_indentation < last_block.depth() {
-                self.should_emit_end_token = true;
-                self.indentation()
-
+                // Check if this is an empty line
+                if self.peek() == '\n' {
+                    self.did_enter_new_line = false;
+                    TokenKind::Newline
+                } else {
+                    self.should_emit_end_token = true;
+                    self.indentation()
+                }
             // We have the same level of indentation
             } else {
                 self.did_enter_new_line = false;
@@ -381,10 +386,12 @@ impl Lexer {
             "match" => TokenKind::Keyword(Keyword::Match),
             "not"   => TokenKind::Keyword(Keyword::Not),
             "or"    => TokenKind::Keyword(Keyword::Or),
+            "public"=> TokenKind::Keyword(Keyword::Public),
             "then"  => TokenKind::Keyword(Keyword::Then),
             "true"  => TokenKind::Keyword(Keyword::True),
             "type"  => TokenKind::Keyword(Keyword::Type),
             "using" => TokenKind::Keyword(Keyword::Using),
+            "val"   => TokenKind::Keyword(Keyword::Val),
             "with"  => TokenKind::Keyword(Keyword::With),
             _       => TokenKind::Identifier(string)
         }
