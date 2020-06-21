@@ -1,4 +1,4 @@
-use crate::source::{Cursor, Position, Source};
+use crate::source::{Cursor, Source};
 use crate::token::*;
 use std::error::Error;
 use std::fmt::{self, Display};
@@ -107,63 +107,49 @@ impl Display for LexerError {
 
 impl Error for LexerError {}
 
+#[derive(Debug)]
+struct Block(usize);
+
+impl Block {
+    pub fn depth(&self) -> usize {
+        self.0
+    }
+}
+
 pub struct Lexer {
     cursor: Cursor,
-    at_start_of_line: bool,
-    current_indentation_column: usize,
-    current_indentation_level: usize,
+    did_enter_new_line: bool,
+    should_emit_end_token: bool,
+    current_indentation: usize,
+    blocks: Vec<Block>,
 }
 
 impl Lexer {
     pub fn with(source: Source) -> Self {
         Self {
             cursor: Cursor::with(source),
-            at_start_of_line: true,
-            current_indentation_column: 0,
-            current_indentation_level: 0,
+            did_enter_new_line: false,
+            should_emit_end_token: false,
+            current_indentation: 0,
+            blocks: vec![Block(0)],
         }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
         let old_pos = self.cursor.pos;
 
-        if self.at_start_of_line {
-            self.at_start_of_line = false;
-            let count = self.consume_while(is_whitespace);
-
-            if count > self.current_indentation_column {
-                self.current_indentation_column = count;
-                self.current_indentation_level += 1;
-                return Some(Token::with(TokenKind::Begin, old_pos..self.cursor.pos));
-            } else if count < self.current_indentation_column {
-                self.current_indentation_column = count;
-                self.current_indentation_level -= 1;
-                return Some(Token::with(TokenKind::End, old_pos..self.cursor.pos));
-            } else if old_pos != Position::new(0, 0) {
-                return Some(Token::with(TokenKind::Newline, old_pos..self.cursor.pos));
-            }
+        if self.did_enter_new_line {
+            return Some(Token::with(self.indentation(), old_pos..self.cursor.pos));
         }
 
-        let next_char = match self.next_char() {
-            Some(c) => c,
-            None => {
-                if self.current_indentation_level > 0 {
-                    self.current_indentation_level -= 1;
-                    return Some(Token::with(TokenKind::End, old_pos..self.cursor.pos));
-                } else {
-                    return None;
-                }
-            }
-        };
+        let next_char = self.next_char()?;
 
-        // Skip whitespace characters
         if is_whitespace(next_char) {
             return self.next_token();
         }
 
-        // Skip newline character
         if next_char == '\n' {
-            self.at_start_of_line = true;
+            self.did_enter_new_line = true;
             return self.next_token();
         }
 
@@ -312,6 +298,53 @@ impl Lexer {
 }
 
 impl Lexer {
+    /// Consumes indentation and returns the appropriate indentation token kind.
+    ///
+    /// The following outlines which token kind is determined:
+    /// * If we've increased our indentation, we'll return `TokenKind::Begin`.
+    /// * If we did not change the level of indentation, we'll return
+    ///   `TokenKind::Newline`.
+    /// * Otherwise, we've decreased our indentation level and so we'll emit as
+    ///   many `TokenKind::End` tokens as required to go back to the new
+    ///   indentation level.
+    fn indentation(&mut self) -> TokenKind {
+        if self.should_emit_end_token {
+            let last_block = self.blocks.last().unwrap_or(&Block(0));
+
+            // We still have to decrease our indentation
+            if self.current_indentation < last_block.depth() {
+                self.blocks.pop();
+                TokenKind::End
+
+            // We have decreased by a sufficient amount
+            } else {
+                self.did_enter_new_line = false;
+                self.should_emit_end_token = false;
+                TokenKind::Newline
+            }
+        } else {
+            self.current_indentation = self.consume_while(is_whitespace);
+            let last_block = self.blocks.last().unwrap_or(&Block(0));
+
+            // We have increased our indentation
+            if self.current_indentation > last_block.depth() {
+                self.blocks.push(Block(self.current_indentation));
+                self.did_enter_new_line = false;
+                TokenKind::Begin
+
+            // We have decreased our indentation
+            } else if self.current_indentation < last_block.depth() {
+                self.should_emit_end_token = true;
+                self.indentation()
+
+            // We have the same level of indentation
+            } else {
+                self.did_enter_new_line = false;
+                TokenKind::Newline
+            }
+        }
+    }
+
     /// Matches every character up until the new line character. The characters
     /// consumed will be part of the `TokenKind::LineComment` variant.
     fn line_comment(&mut self) -> TokenKind {
@@ -326,7 +359,7 @@ impl Lexer {
     }
 
     /// Matches every character that can be part of an identifier. This includes
-    /// upper- and lower-case letters, the underscore, and the hyphen.
+    /// upper and lower-case letters, the underscore, and the hyphen.
     fn identifier(&mut self, first_char: char) -> TokenKind {
         let vec = self.consume_build(first_char, is_identifier_continue);
         let string: String = vec.into_iter().collect();
