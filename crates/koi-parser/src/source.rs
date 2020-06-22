@@ -82,7 +82,6 @@ impl<'a> BufRead for Source<'a> {
 pub struct Cursor {
     chars: IntoIter<char>,
     pub pos: Position,
-    did_advance_line: bool,
 }
 
 impl Cursor {
@@ -100,7 +99,6 @@ impl Cursor {
         Self {
             chars: chars.unwrap_or(Vec::new().into_iter()),
             pos: Position::default(),
-            did_advance_line: false,
         }
     }
 
@@ -117,21 +115,15 @@ impl Cursor {
     ///
     /// * Otherwise, we've reached the end of the file and so we'll return `None`.
     pub fn advance(&mut self) -> Option<char> {
-        match self.chars.next() {
-            Some(c) => {
-                if c == '\n' { self.did_advance_line = true; }
+        self.chars.next().map(|next_char| {
+            if next_char == '\n' {
+                self.pos.advance_line();
+            } else {
+                self.pos.advance();
+            }
 
-                if self.did_advance_line {
-                    self.did_advance_line = false;
-                    self.pos.advance_line();
-                } else {
-                    self.pos.advance();
-                }
-
-                Some(c)
-            },
-            None => None
-        }
+            next_char
+        })
     }
 
     pub fn source_len(&self) -> usize {
