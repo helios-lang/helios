@@ -31,7 +31,7 @@ impl Parser {
     }
 }
 
-pub fn parse<'a>(source: Source) -> Ast {
+pub fn parse(source: Source) -> Ast {
     let lexer = Lexer::with(source);
     Parser::with(lexer).parse()
 }
