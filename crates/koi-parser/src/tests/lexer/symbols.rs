@@ -211,7 +211,7 @@ fn test_misleading_symbols() {
 }
 
 #[test]
-fn test_unclosed_delimiters() {
+fn test_erroneous_grouping_delimiters() {
     create_test! {
         "{",
         vec! {
