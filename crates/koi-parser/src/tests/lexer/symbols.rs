@@ -50,12 +50,6 @@ fn test_symbols() {
     test_symbol!("<=",  Symbol::LtEq);
     test_symbol!(">",   Symbol::Gt);
     test_symbol!(">=",  Symbol::GtEq);
-    test_symbol!("{",   Symbol::LBrace);
-    test_symbol!("}",   Symbol::RBrace);
-    test_symbol!("[",   Symbol::LBracket);
-    test_symbol!("]",   Symbol::RBracket);
-    test_symbol!("(",   Symbol::LParen);
-    test_symbol!(")",   Symbol::RParen);
 }
 
 #[test]
@@ -211,6 +205,81 @@ fn test_misleading_symbols() {
             Token::with(
                 TokenKind::Symbol(Symbol::EmDash),
                 Position::new(0, 1)..Position::new(0, 2)
+            ),
+        }
+    }
+}
+
+#[test]
+fn test_unclosed_delimiters() {
+    create_test! {
+        "{",
+        vec! {
+            Token::with(
+                TokenKind::GroupingStart,
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Error(LexerError::UnclosedDelimiter(GroupingDelimiter::Brace)),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "[",
+        vec! {
+            Token::with(
+                TokenKind::GroupingStart,
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Error(LexerError::UnclosedDelimiter(GroupingDelimiter::Bracket)),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "(",
+        vec! {
+            Token::with(
+                TokenKind::GroupingStart,
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+            Token::with(
+                TokenKind::Error(LexerError::UnclosedDelimiter(GroupingDelimiter::Paren)),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "}",
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::UnexpectedClosingDelimiter(GroupingDelimiter::Brace)),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        "]",
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::UnexpectedClosingDelimiter(GroupingDelimiter::Bracket)),
+                Position::new(0, 0)..Position::new(0, 1)
+            ),
+        }
+    }
+
+    create_test! {
+        ")",
+        vec! {
+            Token::with(
+                TokenKind::Error(LexerError::UnexpectedClosingDelimiter(GroupingDelimiter::Paren)),
+                Position::new(0, 0)..Position::new(0, 1)
             ),
         }
     }
