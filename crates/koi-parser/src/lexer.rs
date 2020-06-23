@@ -43,42 +43,6 @@ enum DidFail<E> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum GroupingDelimiter {
-    Brace,
-    Bracket,
-    Paren,
-}
-
-impl GroupingDelimiter {
-    pub fn human_readable_string(self) -> String {
-        use GroupingDelimiter::*;
-        match self {
-            Brace => "brace".to_string(),
-            Bracket => "bracket".to_string(),
-            Paren => "parenthesis".to_string(),
-        }
-    }
-
-    pub fn char_representation(self) -> char {
-        use GroupingDelimiter::*;
-        match self {
-            Brace => '}',
-            Bracket => ']',
-            Paren => ')',
-        }
-    }
-
-    pub fn from_char(c: char) -> Self {
-        match c {
-            '{' | '}' => Self::Brace,
-            '[' | ']' => Self::Bracket,
-            '(' | ')' => Self::Paren,
-            _ => panic!("Cannot create a GroupingDelimiter from {:?}", c)
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
     UnclosedDelimiter(GroupingDelimiter),
     UnexpectedClosingDelimiter(GroupingDelimiter),
@@ -127,7 +91,7 @@ impl LexerError {
                 Some(
                     format! {
                         "This delimiter does not correspond to any preceding open {}",
-                        delimiter.human_readable_string()
+                        delimiter.string_representation()
                     }
                 )
             },
@@ -153,13 +117,13 @@ impl Display for LexerError {
             Self::UnclosedDelimiter(delimiter) =>
                 format! {
                     "Unclosed delimeter: expected a closing {} {:?}",
-                    delimiter.human_readable_string(),
+                    delimiter.string_representation(),
                     delimiter.char_representation(),
                 },
             Self::UnexpectedClosingDelimiter(delimiter) =>
                 format! {
                     "Unexpected closing {}",
-                    delimiter.human_readable_string(),
+                    delimiter.string_representation(),
                 },
 
             Self::BadIndent { .. } =>
@@ -929,12 +893,14 @@ impl Lexer {
     }
 
     fn grouping_start(&mut self, first_char: char, range: Range<Position>) -> TokenKind {
-        self.push_mode(LexerMode::Grouping(range, GroupingDelimiter::from_char(first_char)));
-        TokenKind::GroupingStart
+        let delimiter = GroupingDelimiter::from_char(first_char);
+        self.push_mode(LexerMode::Grouping(range, delimiter));
+        TokenKind::GroupingStart(delimiter)
     }
 
-    fn grouping_end(&mut self, _first_char: char) -> TokenKind {
+    fn grouping_end(&mut self, first_char: char) -> TokenKind {
+        let delimiter = GroupingDelimiter::from_char(first_char);
         self.pop_mode();
-        TokenKind::GroupingEnd
+        TokenKind::GroupingEnd(delimiter)
     }
 }

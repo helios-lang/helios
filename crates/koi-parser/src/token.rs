@@ -55,8 +55,8 @@ pub enum TokenKind {
     /// Signifies the end of a scope.
     End,
 
-    GroupingStart,
-    GroupingEnd,
+    GroupingStart(GroupingDelimiter),
+    GroupingEnd(GroupingDelimiter),
 
     /// End of file token.
     Eof,
@@ -292,4 +292,40 @@ impl Symbol {
 pub enum WhitespaceKind {
     Space,
     Tab,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum GroupingDelimiter {
+    Brace,
+    Bracket,
+    Paren,
+}
+
+impl GroupingDelimiter {
+    pub fn string_representation(self) -> String {
+        use GroupingDelimiter::*;
+        match self {
+            Brace => "brace".to_string(),
+            Bracket => "bracket".to_string(),
+            Paren => "parenthesis".to_string(),
+        }
+    }
+
+    pub fn char_representation(self) -> char {
+        use GroupingDelimiter::*;
+        match self {
+            Brace => '}',
+            Bracket => ']',
+            Paren => ')',
+        }
+    }
+
+    pub fn from_char(c: char) -> Self {
+        match c {
+            '{' | '}' => Self::Brace,
+            '[' | ']' => Self::Bracket,
+            '(' | ')' => Self::Paren,
+            _ => panic!("Cannot create a GroupingDelimiter from {:?}", c)
+        }
+    }
 }
