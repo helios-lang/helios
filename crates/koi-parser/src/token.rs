@@ -55,6 +55,9 @@ pub enum TokenKind {
     /// Signifies the end of a scope.
     End,
 
+    GroupingStart,
+    GroupingEnd,
+
     /// End of file token.
     Eof,
 
