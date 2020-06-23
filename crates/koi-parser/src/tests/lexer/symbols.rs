@@ -258,7 +258,7 @@ fn test_erroneous_grouping_delimiters() {
         "}",
         vec! {
             Token::with(
-                TokenKind::Error(LexerError::UnexpectedClosingDelimiter(GroupingDelimiter::Brace)),
+                TokenKind::Error(LexerError::RedundantClosingDelimiter(GroupingDelimiter::Brace)),
                 Position::new(0, 0)..Position::new(0, 1)
             ),
         }
@@ -268,7 +268,7 @@ fn test_erroneous_grouping_delimiters() {
         "]",
         vec! {
             Token::with(
-                TokenKind::Error(LexerError::UnexpectedClosingDelimiter(GroupingDelimiter::Bracket)),
+                TokenKind::Error(LexerError::RedundantClosingDelimiter(GroupingDelimiter::Bracket)),
                 Position::new(0, 0)..Position::new(0, 1)
             ),
         }
@@ -278,7 +278,7 @@ fn test_erroneous_grouping_delimiters() {
         ")",
         vec! {
             Token::with(
-                TokenKind::Error(LexerError::UnexpectedClosingDelimiter(GroupingDelimiter::Paren)),
+                TokenKind::Error(LexerError::RedundantClosingDelimiter(GroupingDelimiter::Paren)),
                 Position::new(0, 0)..Position::new(0, 1)
             ),
         }

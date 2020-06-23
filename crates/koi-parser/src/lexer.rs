@@ -45,7 +45,7 @@ enum DidFail<E> {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
     UnclosedDelimiter(GroupingDelimiter),
-    UnexpectedClosingDelimiter(GroupingDelimiter),
+    RedundantClosingDelimiter(GroupingDelimiter),
     BadIndent { expected: usize, found: usize },
 
     OverflowedIntegerLiteral,
@@ -69,7 +69,7 @@ impl LexerError {
     pub fn code(&self) -> String {
         match self {
             Self::UnclosedDelimiter(_) => "E0007".to_string(),
-            Self::UnexpectedClosingDelimiter(_) => "E0008".to_string(),
+            Self::RedundantClosingDelimiter(_) => "E0008".to_string(),
             Self::BadIndent { .. } => "E0009".to_string(),
             Self::OverflowedIntegerLiteral => "E0010".to_string(),
             Self::OverflowedFloatLiteral => "E0011".to_string(),
@@ -87,7 +87,7 @@ impl LexerError {
 
     pub fn related_information(&self) -> Option<String> {
         match self {
-            Self::UnexpectedClosingDelimiter(delimiter) => {
+            Self::RedundantClosingDelimiter(delimiter) => {
                 Some(
                     format! {
                         "This delimiter does not correspond to any preceding open {}",
@@ -120,9 +120,9 @@ impl Display for LexerError {
                     delimiter.string_representation(),
                     delimiter.char_representation(),
                 },
-            Self::UnexpectedClosingDelimiter(delimiter) =>
+            Self::RedundantClosingDelimiter(delimiter) =>
                 format! {
-                    "Unexpected closing {}",
+                    "Redundant closing {}",
                     delimiter.string_representation(),
                 },
 
@@ -254,7 +254,7 @@ impl Lexer {
             c @ '}' | c @ ')' | c @ ']' => {
                 let new_delimiter = GroupingDelimiter::from_char(c);
                 TokenKind::Error(
-                    LexerError::UnexpectedClosingDelimiter(new_delimiter)
+                    LexerError::RedundantClosingDelimiter(new_delimiter)
                 )
             },
             '"' => self.string(),
@@ -302,7 +302,7 @@ impl Lexer {
                     self.grouping_end(c)
                 } else {
                     TokenKind::Error(
-                        LexerError::UnexpectedClosingDelimiter(new_delimiter)
+                        LexerError::RedundantClosingDelimiter(new_delimiter)
                     )
                 }
             },
@@ -529,7 +529,7 @@ impl Lexer {
 
         let next_char = self.peek();
         let mut is_doc_comment = false;
-        if next_char == '!' || next_char == '/' { is_doc_comment = true }
+        if next_char == '!' || next_char == '/' { is_doc_comment = true; }
 
         self.consume_while(|c| c != '\n');
         TokenKind::LineComment { is_doc_comment }
