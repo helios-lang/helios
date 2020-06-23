@@ -216,7 +216,7 @@ fn test_erroneous_grouping_delimiters() {
         "{",
         vec! {
             Token::with(
-                TokenKind::GroupingStart,
+                TokenKind::GroupingStart(GroupingDelimiter::Brace),
                 Position::new(0, 0)..Position::new(0, 1)
             ),
             Token::with(
@@ -230,7 +230,7 @@ fn test_erroneous_grouping_delimiters() {
         "[",
         vec! {
             Token::with(
-                TokenKind::GroupingStart,
+                TokenKind::GroupingStart(GroupingDelimiter::Bracket),
                 Position::new(0, 0)..Position::new(0, 1)
             ),
             Token::with(
@@ -244,7 +244,7 @@ fn test_erroneous_grouping_delimiters() {
         "(",
         vec! {
             Token::with(
-                TokenKind::GroupingStart,
+                TokenKind::GroupingStart(GroupingDelimiter::Paren),
                 Position::new(0, 0)..Position::new(0, 1)
             ),
             Token::with(
