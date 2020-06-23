@@ -13,7 +13,7 @@ macro_rules! create_test {
         match source {
             Ok(source) => {
                 let mut tokens = Vec::new();
-                let mut lexer = Lexer::with(source);
+                let mut lexer = Lexer::with(source, true);
 
                 while let Some(token) = lexer.next_token() {
                     tokens.push(token);

@@ -171,6 +171,7 @@ impl Default for LexerMode {
 
 pub struct Lexer {
     cursor: Cursor,
+    should_consume_doc_comments: bool,
     did_enter_new_line: bool,
     should_emit_end_token: bool,
     current_indentation: usize,
@@ -179,9 +180,10 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn with(source: Source) -> Self {
+    pub fn with(source: Source, should_consume_doc_comments: bool) -> Self {
         Self {
             cursor: Cursor::with(source),
+            should_consume_doc_comments,
             did_enter_new_line: false,
             should_emit_end_token: false,
             current_indentation: 0,
@@ -378,11 +380,10 @@ impl Lexer {
 
     /// Consumes the input while the given `predicate` holds true, building a
     /// `Vec<char>` for all the characters eaten.
-    fn consume_build<F>(&mut self, first_char: char, predicate: F) -> Vec<char>
+    fn consume_build<F>(&mut self, predicate: F) -> Vec<char>
     where F: Fn(char) -> bool
     {
         let mut vec = Vec::new();
-        vec.push(first_char);
         while predicate(self.peek()) && !self.is_at_end() {
             if let Some(c) = self.next_char() {
                 vec.push(c);
@@ -529,16 +530,32 @@ impl Lexer {
 
         let next_char = self.peek();
         let mut is_doc_comment = false;
-        if next_char == '!' || next_char == '/' { is_doc_comment = true; }
+        if next_char == '!' || next_char == '/' {
+            self.next_char();
+            is_doc_comment = true;
+        }
 
-        self.consume_while(|c| c != '\n');
-        TokenKind::LineComment { is_doc_comment }
+        // Remove the first whitespace character
+        if is_whitespace(self.peek()) {
+            self.next_char();
+        }
+
+        let content =
+            if self.should_consume_doc_comments && is_doc_comment {
+                Some(self.consume_build(|c| c != '\n').into_iter().collect())
+            } else {
+                self.consume_while(|c| c != '\n');
+                None
+            };
+
+        TokenKind::LineComment { is_doc_comment, content }
     }
 
     /// Matches every character that can be part of an identifier. This includes
     /// upper and lower-case letters, the underscore, and the hyphen.
     fn identifier(&mut self, first_char: char) -> TokenKind {
-        let vec = self.consume_build(first_char, is_identifier_continue);
+        let rest = self.consume_build(is_identifier_continue);
+        let vec = [&vec![first_char], &rest[..]].concat();
         let string: String = vec.into_iter().collect();
         self.keyword_or_identifier(string)
     }

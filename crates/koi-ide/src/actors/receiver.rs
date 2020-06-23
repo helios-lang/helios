@@ -21,7 +21,7 @@ impl Receiver {
         match path.to_file_path() {
             Ok(path) => match Source::file(path) {
                 Ok(source) => {
-                    Ok(tokenize(source))
+                    Ok(tokenize(source, true))
                 },
                 Err(error) => Err(format!("Failed to load file from source: {}", error))
             },

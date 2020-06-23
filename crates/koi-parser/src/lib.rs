@@ -31,7 +31,7 @@ impl Parser {
     }
 }
 
-pub fn parse(source: Source) -> Ast {
-    let lexer = Lexer::with(source);
+pub fn parse(source: Source, should_consume_doc_comments: bool) -> Ast {
+    let lexer = Lexer::with(source, should_consume_doc_comments);
     Parser::with(lexer).parse()
 }

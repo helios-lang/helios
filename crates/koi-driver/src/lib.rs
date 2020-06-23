@@ -10,6 +10,6 @@ pub fn start(_file_name: &str) -> Result<()> {
     unimplemented!()
 }
 
-pub fn tokenize<'a>(source: Source<'a>) -> Ast {
-    koi_parser::parse(source)
+pub fn tokenize<'a>(source: Source<'a>, should_consume_doc_comments: bool) -> Ast {
+    koi_parser::parse(source, should_consume_doc_comments)
 }

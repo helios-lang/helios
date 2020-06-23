@@ -43,7 +43,7 @@ pub enum TokenKind {
     Symbol(Symbol),
 
     /// A line comment starting with two forward slashes (`//`).
-    LineComment { is_doc_comment: bool },
+    LineComment { is_doc_comment: bool, content: Option<String> },
 
     /// Signifies the end of the current line (if it is still part of the
     /// current scope).
@@ -55,7 +55,12 @@ pub enum TokenKind {
     /// Signifies the end of a scope.
     End,
 
+    /// Signifies the start of a delimited grouping (such as the opening curly
+    /// brace `'{'`).
     GroupingStart(GroupingDelimiter),
+
+    /// Signifies the end of a delimited grouping (such as the closing curly
+    /// brace `'}'`).
     GroupingEnd(GroupingDelimiter),
 
     /// End of file token.
