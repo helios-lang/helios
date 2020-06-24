@@ -1,10 +1,10 @@
 #[macro_export]
 /// Creates a new simple test.
 ///
-/// Requires a `str` literal (representing the source code) and a `Vec` of
-/// `Token`s (representing the final tokenized form). The provided `str` literal
-/// will be tokenized and assert if the tokenized form is equal to the given
-/// `Vec`.
+/// Requires a `str` literal (representing the source code) and a `Vec<Token>`
+/// (representing the expected tokenized form). This macro will then tokenize
+/// the source code, after which its result will be checked with the expected
+/// form.
 macro_rules! create_test {
     ($string:expr, $expected:expr) => {
         let string = $string;

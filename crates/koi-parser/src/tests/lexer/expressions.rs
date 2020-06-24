@@ -64,4 +64,58 @@ fn test_simple_expressions() {
             ),
         }
     }
+
+    create_test! {
+        "type Point = { x : float, y : float }",
+        vec! {
+            Token::with(
+                TokenKind::Keyword(Keyword::Type),
+                Position::new(0, 0)..Position::new(0, 4)
+            ),
+            Token::with(
+                TokenKind::Identifier("Point".to_string()),
+                Position::new(0, 5)..Position::new(0, 10)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Eq),
+                Position::new(0, 11)..Position::new(0, 12)
+            ),
+            Token::with(
+                TokenKind::GroupingStart(GroupingDelimiter::Brace),
+                Position::new(0, 13)..Position::new(0, 14)
+            ),
+            Token::with(
+                TokenKind::Identifier("x".to_string()),
+                Position::new(0, 15)..Position::new(0, 16)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Colon),
+                Position::new(0, 17)..Position::new(0, 18)
+            ),
+            Token::with(
+                TokenKind::Identifier("float".to_string()),
+                Position::new(0, 19)..Position::new(0, 24)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Comma),
+                Position::new(0, 24)..Position::new(0, 25)
+            ),
+            Token::with(
+                TokenKind::Identifier("y".to_string()),
+                Position::new(0, 26)..Position::new(0, 27)
+            ),
+            Token::with(
+                TokenKind::Symbol(Symbol::Colon),
+                Position::new(0, 28)..Position::new(0, 29)
+            ),
+            Token::with(
+                TokenKind::Identifier("float".to_string()),
+                Position::new(0, 30)..Position::new(0, 35)
+            ),
+            Token::with(
+                TokenKind::GroupingEnd(GroupingDelimiter::Brace),
+                Position::new(0, 36)..Position::new(0, 37)
+            ),
+        }
+    }
 }
