@@ -43,7 +43,7 @@
   | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a>* ;
 
 <i id="parameter-list">parameter-list</i> ::=
-  | <a href="#parameter">parameter</a> ( <b>,</b> <a href="#parameter-list">parameter</a> )* <b>,</b>? ;
+  | <a href="#parameter">parameter</a> ( <b>,</b> <a href="#parameter">parameter</a> )* <b>,</b>? ;
 
 <i id="module-declaration-block">module-declaration-block</i> ::=
   | <b>INDENT</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>OUTDENT</b> ;
@@ -75,6 +75,32 @@
 
 <i id="record-body-fields">record-body-fields</i> ::=
   | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> ( <b>,</b> <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> ) <b>,</b>? ;
+
+<i id="type">type</i> ::=
+  | <a href="#array-type">array-type</a>
+  | <a href="#function-type">function-type</a>
+  | <a href="#tuple-type">tuple-type</a>
+  | <b>IDENTIFIER</b> ;
+
+<i id="array-type">array-type</i> ::=
+  | <b>[</b> <a href="#type">type</a> <b>]</b> ;
+
+<i id="function-type">function-type</i> ::=
+  | <a href="#type">type</a> <b>-></b> <a href="#function-type-rest">function-type-rest</a> ;
+
+<i id="function-type-rest">function-type-rest</i> ::=
+  | <a href="#type">type</a>
+  | <a href="#type">type</a> <b>-></b> <a href="#function-type-rest">function-type-rest</a> ;
+
+<i id="tuple-type">tuple-type</i> ::=
+  | <b>(</b> <b>)</b>
+  | <a href="#tuple-type-list">tuple-type-list</a>
+  | <b>(</b> <a href="#tuple-type-list">tuple-type-list</a> <b>,</b>? <b>)</b> ;
+
+<i id="tuple-type-list">tuple-type-list</i> ::=
+  | <a href="#type">type</a> ( <b>,</b> <a href="#type">type</a> )* ;
+
+---
 
 <i id="equality">equality</i> ::=
   | <a href="#comparison">comparison</a> ( ( <b>=</b> | <b>!=</b> ) <a href="#comparison">comparison</a> )* ;
