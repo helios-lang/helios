@@ -100,7 +100,31 @@
 <i id="tuple-type-list">tuple-type-list</i> ::=
   | <a href="#type">type</a> ( <b>,</b> <a href="#type">type</a> )* ;
 
----
+<i id="type-annotation">type-annotation</i> ::=
+  | <b>:</b> <a href="#type">type</a> ;
+
+<i id="if-expression">if-expression</i> ::=
+  | <b>if</b> <a href="#pattern">pattern</a> <b>then</b> <a href="#expression-block">expression-block</a> <a href="#else-clause">else-clause</a>? ;
+
+<i id="else-clause">else-clause</i> ::=
+  | <b>else</b> <a href="#expression-block">expression-block</a>
+  | <b>else</b> <a href="#if-expression">if-expression</a> ;
+
+<i id="let-expression">let-expression</i> ::=
+  | <b>let</b> <a href="#pattern">pattern</a> <b>=</b> <a href="#expression-block">expression-block</a> ;
+
+<i id="match-expression">match-expression</i> ::=
+  | <b>match</b> <a href="#pattern">pattern</a> <b>with</b> <a href="#match-expression-clause">match-expression-clause</a> ;
+
+<i id="match-expression-clause">match-expression-clause</i> ::=
+  | <b>|</b>? <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a> ( <b>|</b> <a href="#pattern">pattern</a> <b>-></b> <a href="#expression-block">expression-block</a> )* ;
+
+<i id="expression-block">expression-block</i> ::=
+  | <a href="#expression">expression</a>
+  | <b>INDENT</b> <a href="#expression-block-list">expression-block-list</a> <b>OUTDENT</b> ;
+
+<i id="expression-block-list">expression-block-list</i> ::=
+  | <a href="#expression">expression</a> ( ( <b>;</b> | <b>NEWLINE</b> ) <a href="#expression-block-list">expression-block-list</a> )* ;
 
 <i id="equality">equality</i> ::=
   | <a href="#comparison">comparison</a> ( ( <b>=</b> | <b>!=</b> ) <a href="#comparison">comparison</a> )* ;
