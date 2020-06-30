@@ -40,7 +40,7 @@
   | <b>internal</b> ;
 
 <i id="parameter">parameter</i> ::=
-  | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a>* ;
+  | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a>? ;
 
 <i id="parameter-list">parameter-list</i> ::=
   | <a href="#parameter">parameter</a> ( <b>,</b> <a href="#parameter">parameter</a> )* <b>,</b>? ;
