@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 use crate::source::{Cursor, Position, Source};
 use crate::token::*;
 use std::default::Default;
@@ -159,7 +162,7 @@ impl Error for LexerError {}
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerMode {
     Normal,
-    Grouping(Range<Position>, GroupingDelimiter),
+    Grouping,
     Interpolation,
 }
 
@@ -196,7 +199,7 @@ impl Lexer {
         #[allow(unreachable_patterns)]
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
-            LexerMode::Grouping(_, delimiter) => self.tokenize_grouping(delimiter),
+            LexerMode::Grouping => self.tokenize_grouping(),
             LexerMode::Interpolation => self.tokenize_interpolation(),
             _ => unimplemented!(),
         }
@@ -254,13 +257,6 @@ impl Lexer {
                     self.identifier('f')
                 }
             },
-            c @ '{' | c @ '(' | c @ '[' => self.grouping_start(c, old_pos..self.cursor.pos),
-            c @ '}' | c @ ')' | c @ ']' => {
-                let new_delimiter = GroupingDelimiter::from_char(c);
-                TokenKind::Error(
-                    LexerError::RedundantClosingDelimiter(new_delimiter)
-                )
-            },
             '"' => self.string(),
             '\''=> self.character(),
             c if is_symbol(c) => self.symbol(c),
@@ -272,122 +268,12 @@ impl Lexer {
         Some(Token::with(token_kind, old_pos..self.cursor.pos))
     }
 
-    fn tokenize_grouping(&mut self, delimiter: GroupingDelimiter) -> Option<Token> {
-        let old_pos = self.cursor.pos;
-        let next_char = match self.next_char() {
-            Some(char) => char,
-            None => {
-                // Check if we still have unclosed groupings
-                match self.pop_mode() {
-                    Some(LexerMode::Grouping(range, delimiter)) => {
-                        return Some(
-                            Token::with(
-                                TokenKind::Error(
-                                    LexerError::UnclosedDelimiter(delimiter)
-                                ),
-                                range
-                            )
-                        )
-                    },
-                    _ => return None
-                }
-            }
-        };
-
-        if is_whitespace(next_char) || next_char == '\n' {
-            return self.next_token();
-        }
-
-        let token_kind = match next_char {
-            c @ '{' | c @ '(' | c @ '[' => self.grouping_start(c, old_pos..self.cursor.pos),
-            c @ '}' | c @ ')' | c @ ']' => {
-                let new_delimiter = GroupingDelimiter::from_char(c);
-                if new_delimiter == delimiter {
-                    self.grouping_end(c)
-                } else {
-                    TokenKind::Error(
-                        LexerError::RedundantClosingDelimiter(new_delimiter)
-                    )
-                }
-            },
-            '/' => {
-                if self.peek() == '/' {
-                    self.line_comment()
-                } else {
-                    self.symbol('/')
-                }
-            },
-            'r' => {
-                if self.peek() == '"' {
-                    self.raw_string()
-                } else {
-                    self.identifier('r')
-                }
-            },
-            'f' => {
-                if self.peek() == '"' {
-                    self.interpolated_string()
-                } else {
-                    self.identifier('f')
-                }
-            },
-            '"' => self.string(),
-            '\''=> self.character(),
-            c if is_symbol(c) => self.symbol(c),
-            c if is_identifier_start(c) => self.identifier(c),
-            c @ '0'..='9' => self.number(c),
-            c => TokenKind::Unexpected(c)
-        };
-
-        Some(Token::with(token_kind, old_pos..self.cursor.pos))
+    fn tokenize_grouping(&mut self) -> Option<Token> {
+        unimplemented!("Lexer::tokenize_grouping")
     }
 
     fn tokenize_interpolation(&mut self) -> Option<Token> {
-        eprintln!("INTERPOLATION!");
-        let old_pos = self.cursor.pos;
-        let next_char = self.next_char()?;
-
-        // let mut content = Vec::new();
-
-        // loop {
-        //     match next_char {
-        //         '"' => {
-        //             if self.current_mode() == LexerMode::Interpolation {
-        //                 self.pop_mode();
-        //                 return Some(
-        //                     Token::with(
-        //                         TokenKind::InterpolationEnd,
-        //                         old_pos..self.cursor.pos
-        //                     )
-        //                 );
-        //             } else {
-        //                 return Some(
-        //                     Token::with(
-        //                         TokenKind::Unexpected('@'),
-        //                         old_pos..self.cursor.pos
-        //                     )
-        //                 );
-        //             }
-        //         },
-        //         '{' => return Some(Token::with(TokenKind::Unexpected('#'), old_pos..self.cursor.pos)),
-        //         c => content.push(c)
-        //     }
-        // }
-
-        let token_kind = match next_char {
-            '"' => {
-                if self.current_mode() == LexerMode::Interpolation {
-                    self.pop_mode();
-                    TokenKind::InterpolationEnd
-                } else {
-                    TokenKind::Unexpected('@')
-                }
-            },
-            '{' => TokenKind::Unexpected('#'),
-            _ => TokenKind::Literal(Literal::Bool(true))
-        };
-
-        Some(Token::with(token_kind, old_pos..self.cursor.pos))
+        unimplemented!("Lexer::tokenize_interpolation")
     }
 }
 
@@ -954,15 +840,15 @@ impl Lexer {
         // }
     }
 
-    fn grouping_start(&mut self, first_char: char, range: Range<Position>) -> TokenKind {
-        let delimiter = GroupingDelimiter::from_char(first_char);
-        self.push_mode(LexerMode::Grouping(range, delimiter));
-        TokenKind::GroupingStart(delimiter)
-    }
+    // fn grouping_start(&mut self, first_char: char, range: Range<Position>) -> TokenKind {
+    //     let delimiter = GroupingDelimiter::from_char(first_char);
+    //     self.push_mode(LexerMode::Grouping(range, delimiter));
+    //     TokenKind::GroupingStart(delimiter)
+    // }
 
-    fn grouping_end(&mut self, first_char: char) -> TokenKind {
-        let delimiter = GroupingDelimiter::from_char(first_char);
-        self.pop_mode();
-        TokenKind::GroupingEnd(delimiter)
-    }
+    // fn grouping_end(&mut self, first_char: char) -> TokenKind {
+    //     let delimiter = GroupingDelimiter::from_char(first_char);
+    //     self.pop_mode();
+    //     TokenKind::GroupingEnd(delimiter)
+    // }
 }
