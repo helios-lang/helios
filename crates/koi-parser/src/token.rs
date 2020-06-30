@@ -63,8 +63,12 @@ pub enum TokenKind {
     /// brace `'}'`).
     GroupingEnd(GroupingDelimiter),
 
-    /// End of file token.
-    Eof,
+    InterpolationStart,
+    InterpolationElement,
+    InterpolationEnd,
+
+    // /// End of file token.
+    // Eof,
 
     /// Indicates that the current token is erroneous or invalid.
     Error(LexerError),

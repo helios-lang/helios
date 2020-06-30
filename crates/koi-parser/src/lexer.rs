@@ -193,9 +193,11 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
+        #[allow(unreachable_patterns)]
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
             LexerMode::Grouping(_, delimiter) => self.tokenize_grouping(delimiter),
+            LexerMode::Interpolation => self.tokenize_interpolation(),
             _ => unimplemented!(),
         }
     }
@@ -339,6 +341,54 @@ impl Lexer {
 
         Some(Token::with(token_kind, old_pos..self.cursor.pos))
     }
+
+    fn tokenize_interpolation(&mut self) -> Option<Token> {
+        eprintln!("INTERPOLATION!");
+        let old_pos = self.cursor.pos;
+        let next_char = self.next_char()?;
+
+        // let mut content = Vec::new();
+
+        // loop {
+        //     match next_char {
+        //         '"' => {
+        //             if self.current_mode() == LexerMode::Interpolation {
+        //                 self.pop_mode();
+        //                 return Some(
+        //                     Token::with(
+        //                         TokenKind::InterpolationEnd,
+        //                         old_pos..self.cursor.pos
+        //                     )
+        //                 );
+        //             } else {
+        //                 return Some(
+        //                     Token::with(
+        //                         TokenKind::Unexpected('@'),
+        //                         old_pos..self.cursor.pos
+        //                     )
+        //                 );
+        //             }
+        //         },
+        //         '{' => return Some(Token::with(TokenKind::Unexpected('#'), old_pos..self.cursor.pos)),
+        //         c => content.push(c)
+        //     }
+        // }
+
+        let token_kind = match next_char {
+            '"' => {
+                if self.current_mode() == LexerMode::Interpolation {
+                    self.pop_mode();
+                    TokenKind::InterpolationEnd
+                } else {
+                    TokenKind::Unexpected('@')
+                }
+            },
+            '{' => TokenKind::Unexpected('#'),
+            _ => TokenKind::Literal(Literal::Bool(true))
+        };
+
+        Some(Token::with(token_kind, old_pos..self.cursor.pos))
+    }
 }
 
 impl Lexer {
@@ -466,7 +516,6 @@ impl Lexer {
 
             // We have encountered bad indentation (it is larger than expected)
             if self.current_indentation > last_block {
-                eprintln!(": XX L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.indentation_stack);
                 self.did_enter_new_line = false;
                 self.should_emit_end_token = false;
                 TokenKind::Error(
@@ -478,13 +527,11 @@ impl Lexer {
 
             // We still have to decrease our indentation
             } else if self.current_indentation < last_block {
-                eprintln!(": EN L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.indentation_stack);
                 self.indentation_stack.pop();
                 TokenKind::End
 
             // We have decreased by a sufficient amount
             } else {
-                eprintln!(": NL L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.indentation_stack);
                 self.did_enter_new_line = false;
                 self.should_emit_end_token = false;
                 TokenKind::Newline
@@ -495,7 +542,6 @@ impl Lexer {
 
             // Skip line if it's empty
             if self.peek() == '\n' {
-                eprintln!("Skipping line...");
                 self.next_char();
                 self.did_enter_new_line = true;
                 return self.indentation();
@@ -503,20 +549,17 @@ impl Lexer {
 
             // We have increased our indentation
             if self.current_indentation > last_block {
-                eprintln!("= GT L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.indentation_stack);
                 self.indentation_stack.push(self.current_indentation);
                 self.did_enter_new_line = false;
                 TokenKind::Begin
 
             // We have decreased our indentation
             } else if self.current_indentation < last_block {
-                eprintln!("= LT L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.indentation_stack);
                 self.should_emit_end_token = true;
                 self.indentation()
 
             // We have the same level of indentation
             } else {
-                eprintln!("= EQ L{:03} {:02} {:?}", self.cursor.pos.line + 1, self.current_indentation, self.indentation_stack);
                 self.did_enter_new_line = false;
                 TokenKind::Newline
             }
@@ -900,13 +943,15 @@ impl Lexer {
     /// it must handle this string literal differently.
     fn interpolated_string(&mut self) -> TokenKind {
         self.next_char();
-        match self.string() {
-            // We'll just map `Literal::Str` to `Literal::FStr` for now
-            TokenKind::Literal(Literal::Str(content)) => {
-                TokenKind::Literal(Literal::FStr(content))
-            },
-            token_kind => token_kind
-        }
+        self.push_mode(LexerMode::Interpolation);
+        TokenKind::InterpolationStart
+        // match self.string() {
+        //     // We'll just map `Literal::Str` to `Literal::FStr` for now
+        //     TokenKind::Literal(Literal::Str(content)) => {
+        //         TokenKind::Literal(Literal::FStr(content))
+        //     },
+        //     token_kind => token_kind
+        // }
     }
 
     fn grouping_start(&mut self, first_char: char, range: Range<Position>) -> TokenKind {
