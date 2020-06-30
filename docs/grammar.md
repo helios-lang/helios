@@ -19,9 +19,9 @@
   | <a href="#using-declaration">using-declaration</a> ;
 
 <i id="expression">expression</i> ::=
+  | <a href="#equality">equality</a>
   | <a href="#if-expression">if-expression</a>
   | <a href="#let-expression">let-expression</a>
-  | <a href="#literal-expression">literal-expression</a>
   | <a href="#match-expression">match-expression</a> ;
 
 <i id="function-declaration">function-declaration</i> ::=
@@ -38,7 +38,7 @@
 
 <i id="visibility-modifier">visibility-modifier</i> ::=
   | <b>public</b>
-  | <b>internal</b>  ;
+  | <b>internal</b> ;
 
 <i id="parameter">parameter</i> ::=
   | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a><sub>opt</sub> ;
@@ -47,11 +47,34 @@
   | <a href="#parameter">parameter</a>
   | <a href="#parameter">parameter</a> <b>,</b> <a href="#parameter-list">parameter-list</a> ;
 
-<i id="module-declaration-block">module-declaration-block</i>
+<i id="module-declaration-block">module-declaration-block</i> ::=
   | <b>INDENT</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>OUTDENT</b> ;
 
-<i id="module-declaration-block-item">module-declaration-block-item</i>
+<i id="module-declaration-block-item">module-declaration-block-item</i> ::=
   | <a href="#function-declaration">function-declaration</a>
   | <a href="#module-declaration">module-declaration</a>
   | <a href="#type-declaration">type-declaration</a> ;
+
+<i id="equality">equality</i> ::=
+  | <a href="#comparison">comparison</a> ( ( <b>=</b> | <b>!=</b> ) <a href="#comparison">comparison</a> )* ;
+
+<i id="comparison">comparison</i> ::=
+  | <a href="#add-sub">add-sub</a> ( ( <b><</b> | <b><=</b> | <b>=></b> | <b>></b> ) <a href="#add-sub">add-sub</a> )* ;
+
+<i id="add-sub">add-sub</i> ::=
+  | <a href="#mul-div">mul-div</a> ( ( <b>+</b> | <b>-</b> ) <a href="#mul-div">mul-div</a> )* ;
+
+<i id="mul-div">mul-div</i> ::=
+  | <a href="#unary">mul-div</a> ( ( <b>*</b> | <b>/</b> ) <a href="#unary">mul-div</a> )* ;
+
+<i id="unary">unary</i> ::=
+  | ( <b>~</b> | <b>!</b> ) <a href="#unary">unary</a>
+  | <a href="#primary">primary</a> ;
+
+<i id="primary">primary</i> ::=
+  | <a href="#literal">literal</a>
+  | <a href="#parenthesised-expr">parenthesised-expr</a> ;
+
+<i id="parenthesised-expr">parenthesised-expr</i> ::=
+  | <b>(</b> <a href="#expression">expression</a> <b>)</b> ;
 </pre>
