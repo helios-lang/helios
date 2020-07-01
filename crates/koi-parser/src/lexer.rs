@@ -502,6 +502,7 @@ impl Lexer {
             "if"    => TokenKind::Keyword(Keyword::If),
             "let"   => TokenKind::Keyword(Keyword::Let),
             "match" => TokenKind::Keyword(Keyword::Match),
+            "module"=> TokenKind::Keyword(Keyword::Module),
             "not"   => TokenKind::Keyword(Keyword::Not),
             "or"    => TokenKind::Keyword(Keyword::Or),
             "public"=> TokenKind::Keyword(Keyword::Public),

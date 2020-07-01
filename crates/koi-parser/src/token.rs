@@ -87,6 +87,7 @@ pub enum Keyword {
     If,
     Let,
     Match,
+    Module,
     Not,
     Or,
     Public,
@@ -140,7 +141,6 @@ pub enum NumericBase {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-// TODO: See issue #1: Representing overflowed numeric literals
 pub enum Literal {
     Bool(bool),
     Char(char),
