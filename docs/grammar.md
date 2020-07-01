@@ -2,10 +2,10 @@
 
 <pre>
 <i id="program">program</i> ::=
-  | <a href="#top-level-list">top-level-list</a>* <b>EOF</b> ;
+  | <a href="#top-level-list">top-level-list</a>? <b>EOF</b> ;
 
 <i id="top-level-list">top-level-list</i> ::=
-  | <a href="#top-level">top-level</a> ( <b>NEWLINE</b> <a href="#top-level">top-level</a> )* ;
+  | <a href="#top-level">top-level</a> ( <b>NEWLINE</b> <a href="#top-level-list">top-level-list</a> )? ;
 
 <i id="top-level">top-level</i> ::=
   | <a href="#declaration">declaration</a>
@@ -33,7 +33,7 @@
   | <b>type</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>=</b> <a href="#type-declaration-block">type-declaration-block</a> ;
 
 <i id="using-declaration">using-declaration</i> ::=
-  | <b>using</b> <b>PATH</b> ( <a href="#using-declaration-alias">using-declaration-alias</a> | <a href="#using-declaration-import">using-declaration-import</a> )? ;
+  | <b>using</b> <b>PATH</b> ( <a href="#using-declaration-alias">using-declaration-alias</a> | <a href="#using-declaration-member">using-declaration-member</a> )? ;
 
 <i id="visibility-modifier">visibility-modifier</i> ::=
   | <b>public</b>
@@ -43,21 +43,21 @@
   | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a>? ;
 
 <i id="parameter-list">parameter-list</i> ::=
-  | <a href="#parameter">parameter</a> ( <b>,</b> <a href="#parameter">parameter</a> )* <b>,</b>? ;
+  | <a href="#parameter">parameter</a> ( <b>,</b> <a href="#parameter-list">parameter-list</a> )? <b>,</b>? ;
 
 <i id="module-declaration-block">module-declaration-block</i> ::=
-  | <b>INDENT</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>OUTDENT</b> ;
+  | <b>BEGIN</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>END</b> ;
 
 <i id="type-declaration-block">type-declaration-block</i> ::=
   | <a href="#enum-body">enum-body</a>
   | <a href="#record-body">record-body</a> ;
 
-<i id="using-declaration-import">using-declaration-import</i> ::=
+<i id="using-declaration-member">using-declaration-member</i> ::=
   | <b>.</b> <b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a>?
-  | <b>.</b> <b>{</b> <a href="#using-declaration-import-list">using-declaration-import-list</a>? <b>}</b> ;
+  | <b>.</b> <b>{</b> <a href="#using-declaration-member-list">using-declaration-member-list</a>? <b>}</b> ;
 
-<i id="using-declaration-import-list">using-declaration-import-list</i> ::=
-  | <b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a>? ( <b>,</b> <b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a>? )* <b>,</b>? ;
+<i id="using-declaration-member-list">using-declaration-member-list</i> ::=
+  | <b>IDENTIFIER</b> <a href="#using-declaration-alias">using-declaration-alias</a>? ( <b>,</b> <a href="#using-declaration-member-list">using-declaration-member-list</a>? )? <b>,</b>? ;
 
 <i id="using-declaration-alias">using-declaration-alias</i> ::=
   | <b>as</b> <b>IDENTIFIER</b> ;
@@ -68,13 +68,15 @@
   | <a href="#type-declaration">type-declaration</a> ;
 
 <i id="enum-body">enum-body</i> ::=
-  | <b>|</b>? <b>IDENTIFIER</b> ( <b>|</b> <b>IDENTIFIER</b> )* ;
+  | <b>|</b>? <b>IDENTIFIER</b> ( <b>|</b> <b>IDENTIFIER</b> )*
+  | <b>BEGIN</b> <b>|</b>? <b>IDENTIFIER</b> ( <b>|</b> <b>IDENTIFIER</b> )* <b>END</b> ;
 
 <i id="record-body">record-body</i> ::=
-  | <b>{</b> <a href="#record-body-fields">record-body-fields</a> <b>}</b> ;
+  | <b>{</b> <a href="#record-body-fields">record-body-fields</a> <b>}</b>
+  | <b>BEGIN</b> <b>{</b> <a href="#record-body-fields">record-body-fields</a> <b>}</b> <b>END</b> ;
 
 <i id="record-body-fields">record-body-fields</i> ::=
-  | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> ( <b>,</b> <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> ) <b>,</b>? ;
+  | <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> ( <b>,</b> <b>IDENTIFIER</b> <a href="#type-annotation">type-annotation</a> )* <b>,</b>? ;
 
 <i id="type">type</i> ::=
   | <a href="#array-type">array-type</a>
@@ -86,19 +88,15 @@
   | <b>[</b> <a href="#type">type</a> <b>]</b> ;
 
 <i id="function-type">function-type</i> ::=
-  | <a href="#type">type</a> <b>-></b> <a href="#function-type-rest">function-type-rest</a> ;
-
-<i id="function-type-rest">function-type-rest</i> ::=
-  | <a href="#type">type</a>
-  | <a href="#type">type</a> <b>-></b> <a href="#function-type-rest">function-type-rest</a> ;
+  | <a href="#type">type</a> ( <b>-></b> <a href="#function-type">function-type</a> )+ ;
 
 <i id="tuple-type">tuple-type</i> ::=
   | <b>(</b> <b>)</b>
-  | <a href="#tuple-type-list">tuple-type-list</a>
-  | <b>(</b> <a href="#tuple-type-list">tuple-type-list</a> <b>,</b>? <b>)</b> ;
+  | <b>(</b> <a href="#tuple-type-list">tuple-type-list</a> <b>,</b>? <b>)</b>
+  | <a href="#tuple-type-list">tuple-type-list</a> ;
 
 <i id="tuple-type-list">tuple-type-list</i> ::=
-  | <a href="#type">type</a> ( <b>,</b> <a href="#type">type</a> )* ;
+  | <a href="#type">type</a> ( <b>,</b> <a href="#tuple-type-list">tuple-type-list</a> )? ;
 
 <i id="type-annotation">type-annotation</i> ::=
   | <b>:</b> <a href="#type">type</a> ;
@@ -121,34 +119,42 @@
 
 <i id="expression-block">expression-block</i> ::=
   | <a href="#expression">expression</a>
-  | <b>INDENT</b> <a href="#expression-block-list">expression-block-list</a> <b>OUTDENT</b> ;
+  | <b>BEGIN</b> <a href="#expression-block-list">expression-block-list</a> <b>END</b> ;
 
 <i id="expression-block-list">expression-block-list</i> ::=
   | <a href="#expression">expression</a> ( ( <b>;</b> | <b>NEWLINE</b> ) <a href="#expression-block-list">expression-block-list</a> )* ;
 
 <i id="equality">equality</i> ::=
-  | <a href="#comparison">comparison</a> ( ( <b>=</b> | <b>!=</b> ) <a href="#comparison">comparison</a> )* ;
+  | <a href="#comparison-expression">comparison-expression</a> ( ( <b>=</b> | <b>!=</b> ) <a href="#comparison-expression">comparison-expression</a> )* ;
 
-<i id="comparison">comparison</i> ::=
-  | <a href="#add-sub">add-sub</a> ( ( <b><</b> | <b><=</b> | <b>=></b> | <b>></b> ) <a href="#add-sub">add-sub</a> )* ;
+<i id="comparison-expression">comparison-expression</i> ::=
+  | <a href="#additive-expression">additive-expression</a> ( ( <b><</b> | <b><=</b> | <b>=></b> | <b>></b> ) <a href="#additive-expression">additive-expression</a> )* ;
 
-<i id="add-sub">add-sub</i> ::=
-  | <a href="#mul-div">mul-div</a> ( ( <b>+</b> | <b>-</b> ) <a href="#mul-div">mul-div</a> )* ;
+<i id="additive-expression">additive-expression</i> ::=
+  | <a href="#multiplicative-expression">multiplicative-expression</a> ( ( <b>+</b> | <b>-</b> ) <a href="#multiplicative-expression">multiplicative-expression</a> )* ;
 
-<i id="mul-div">mul-div</i> ::=
-  | <a href="#unary">unary</a> ( ( <b>*</b> | <b>/</b> ) <a href="#unary">unary</a> )* ;
+<i id="multiplicative-expression">multiplicative-expression</i> ::=
+  | <a href="#unary-expression">unary-expression</a> ( ( <b>*</b> | <b>/</b> ) <a href="#unary-expression">unary-expression</a> )* ;
 
-<i id="unary">unary</i> ::=
-  | ( <b>~</b> | <b>!</b> ) <a href="#unary">unary</a>
+<i id="unary-expression">unary-expression</i> ::=
+  | ( <b>~</b> | <b>!</b> ) <a href="#unary-expression">unary-expression</a>
   | <a href="#primary">primary</a> ;
 
 <i id="primary">primary</i> ::=
-  | <a href="#literal">literal</a>
-  | <a href="#parenthesised-expr">parenthesised-expr</a> ;
-
-<i id="parenthesised-expr">parenthesised-expr</i> ::=
+  | <b>IDENTIFIER</b>
+  | <a href="#literal-boolean">literal-boolean</a>
+  | <a href="#literal-number">literal-number</a>
+  | <a href="#literal-string">literal-string</a>
   | <b>(</b> <a href="#expression">expression</a> <b>)</b> ;
 
-<i id="literal">literal</i> ::=
-  | ... ;
+<i id="literal-boolean">literal-boolean</i> ::=
+  | <b>true</b>
+  | <b>false</b> ;
+
+<i id="literal-number">literal-number</i> ::=
+  | <b>FLOAT</b>
+  | <b>INTEGER</b> ;
+
+<i id="literal-string">literal-string</i> ::=
+  | <b>STRING</b> ;
 </pre>
