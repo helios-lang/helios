@@ -137,12 +137,13 @@
   | <a href="#unary-expression">unary-expression</a> ( ( <b>*</b> | <b>/</b> ) <a href="#unary-expression">unary-expression</a> )* ;
 
 <i id="unary-expression">unary-expression</i> ::=
-  | ( <b>~</b> | <b>!</b> ) <a href="#unary-expression">unary-expression</a>
+  | ( <b>-</b> | <b>!</b> ) <a href="#unary-expression">unary-expression</a>
   | <a href="#primary">primary</a> ;
 
 <i id="primary">primary</i> ::=
   | <b>IDENTIFIER</b>
   | <a href="#literal-boolean">literal-boolean</a>
+  | <a href="#literal-character">literal-character</a>
   | <a href="#literal-number">literal-number</a>
   | <a href="#literal-string">literal-string</a>
   | <b>(</b> <a href="#expression">expression</a> <b>)</b> ;
@@ -151,10 +152,36 @@
   | <b>true</b>
   | <b>false</b> ;
 
+<i id="literal-character">literal-character</i> ::=
+  | <b>CHARACTER</b> ;
+
 <i id="literal-number">literal-number</i> ::=
   | <b>FLOAT</b>
   | <b>INTEGER</b> ;
 
 <i id="literal-string">literal-string</i> ::=
-  | <b>STRING</b> ;
+  | <a href="#interpolated-string-literal">interpolated-string-literal</a>
+  | <a href="#raw-string-literal">raw-string-literal</a>
+  | <a href="#static-string-literal">static-string-literal</a> ;
+
+<i id="interpolated-string-literal">interpolated-string-literal</i> ::=
+  | <b>f</b> <b>"</b> <a href="#quoted-text">quoted-text</a>* <b>"</b> ;
+
+<i id="raw-string-literal">raw-string-literal</i> ::=
+  | <b>r</b> <b>"</b> <a href="#quoted-text-item">quoted-text-item</a>* <b>"</b> ;
+
+<i id="static-string-literal">static-string-literal</i> ::=
+  | <b>"</b> <a href="#quoted-text">quoted-text</a>* <b>"</b> ;
+
+<i id="quoted-text">quoted-text</i> ::=
+  | <a href="#escaped-character">escaped-character</a>
+  | <a href="#quoted-text-item">quoted-text-item</a> ;
+
+<i id="quoted-text-item">quoted-text-item</i> ::=
+  | <b>~</b>( <b>"</b> | <b>U+000A</b> | <b>U+000D</b> ) ;
+
+<i id="escaped-character">escaped-character</i> ::=
+  | <b>\</b> ( <b>\</b> | <b>0</b> | <b>n</b> | <b>t</b> | <b>'</b> | <b>"</b> )
+  | <b>\</b> <b>x</b> <b>ASCII-HEXADECIMAL-DIGITS</b>
+  | <b>\</b> <b>u</b> <b>{</b> <b>UNICODE-SCALAR-DIGITS</b> <b>}</b> ;
 </pre>
