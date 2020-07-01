@@ -18,7 +18,7 @@
   | <a href="#using-declaration">using-declaration</a> ;
 
 <i id="expression">expression</i> ::=
-  | <a href="#equality">equality</a>
+  | <a href="#equality-expression">equality-expression</a>
   | <a href="#if-expression">if-expression</a>
   | <a href="#let-expression">let-expression</a>
   | <a href="#match-expression">match-expression</a> ;
@@ -124,7 +124,7 @@
 <i id="expression-block-list">expression-block-list</i> ::=
   | <a href="#expression">expression</a> ( ( <b>;</b> | <b>NEWLINE</b> ) <a href="#expression-block-list">expression-block-list</a> )* ;
 
-<i id="equality">equality</i> ::=
+<i id="equality-expression">equality-expression</i> ::=
   | <a href="#comparison-expression">comparison-expression</a> ( ( <b>=</b> | <b>!=</b> ) <a href="#comparison-expression">comparison-expression</a> )* ;
 
 <i id="comparison-expression">comparison-expression</i> ::=
