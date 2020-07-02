@@ -1,11 +1,23 @@
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
 use koi_driver::tokenize;
 use koi_parser::{Ast, token};
 use koi_parser::source::{Position, Source};
+use koi_parser::reporter::{Diagnosis, Reporter};
 use lsp_types::Url;
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::Sender;
+
+struct IdeReporter;
+
+impl Reporter for IdeReporter {
+    fn report(&mut self, diagnosis: Diagnosis) {
+        eprintln!(">>> ERROR: {:?}", diagnosis);
+    }
+}
 
 pub struct Receiver {
     responder_channel: Sender<LspResponse>,
@@ -21,7 +33,7 @@ impl Receiver {
         match path.to_file_path() {
             Ok(path) => match Source::file(path) {
                 Ok(source) => {
-                    Ok(tokenize(source, true))
+                    Ok(tokenize(source, Box::new(IdeReporter), true))
                 },
                 Err(error) => Err(format!("Failed to load file from source: {}", error))
             },

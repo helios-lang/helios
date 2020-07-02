@@ -206,10 +206,12 @@ impl Lexer {
     }
 
     pub fn push_mode(&mut self, mode: LexerMode) {
+        // eprintln!("Pushing mode: {:?}", mode);
         self.mode_stack.push(mode);
     }
 
     pub fn pop_mode(&mut self) -> Option<LexerMode> {
+        // eprintln!("Popping mode...");
         self.mode_stack.pop()
     }
 
@@ -269,7 +271,7 @@ impl Lexer {
     }
 
     fn tokenize_grouping(&mut self) -> Option<Token> {
-        unimplemented!("Lexer::tokenize_grouping")
+        self.tokenize_normal()
     }
 
     fn tokenize_interpolation(&mut self) -> Option<Token> {

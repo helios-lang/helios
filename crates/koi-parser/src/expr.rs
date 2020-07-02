@@ -1,12 +1,12 @@
-use crate::token::Token;
+use crate::token::{Token, TokenKind};
 
 #[derive(Debug)]
 pub enum Expr {
     /// A literal expression that is translated exactly as written in source.
     Literal(ExprLiteral),
 
-    /// A named reference to an identity.
-    Ident(String),
+    /// A named reference to an identifier.
+    Identifier(String),
 
     /// A unary expression holding a token (signifying the operator) and an
     /// expression (signifying the right hand side of the operation).
@@ -17,11 +17,13 @@ pub enum Expr {
     Binary(Token, Box<Expr>, Box<Expr>),
 
     /// A grouped expression (constructed when an expression is parenthesised).
-    Group(Box<Expr>),
+    Grouping(Box<Expr>),
+
+    Binding(Box<Expr>, Box<Expr>),
 
     /// An expression error variant signifying that the syntax tree contains a
-    /// missing expression.
-    Missing,
+    /// missing node.
+    Missing(Option<TokenKind>),
 
     /// An expression error variant signifying the following token was
     /// unexpected (will be used for diagnostics).

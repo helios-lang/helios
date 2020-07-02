@@ -87,7 +87,7 @@ pub struct Cursor {
 impl Cursor {
     pub fn with(mut source: Source) -> Self {
         let mut buffer = String::new();
-        let chars = match source.read_to_string(&mut buffer){
+        let chars = match source.read_to_string(&mut buffer) {
             Ok(bytes) if bytes == 0 => None,
             Ok(_) => Some(buffer.chars().collect::<Vec<_>>().into_iter()),
             Err(error) => {
