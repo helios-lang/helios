@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenKind};
+use crate::token::Token;
 
 #[derive(Debug)]
 pub enum Expr {
@@ -20,7 +20,7 @@ pub enum Expr {
     Grouping(Box<Expr>),
 
     /// A local binding expression.
-    LocalBinding(String, Box<Expr>),
+    LocalBinding(Option<String>, Box<Expr>),
 }
 
 #[derive(Debug)]

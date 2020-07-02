@@ -1,4 +1,4 @@
-use crate::source::Cursor;
+use crate::source::{Cursor, Source};
 use crate::token::Token;
 
 pub struct Lexer {
@@ -6,8 +6,8 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn with(cursor: Cursor) -> Self {
-        Self { cursor }
+    pub fn with(source: Source) -> Self {
+        Self { cursor: Cursor::with(source) }
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
