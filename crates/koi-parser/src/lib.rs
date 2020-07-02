@@ -320,7 +320,7 @@ impl Parser {
     }
 }
 
-pub fn parse(source: Source, reporter: Box<dyn Reporter>, should_consume_doc_comments: bool) -> Ast {
+pub fn parse(source: Source, _reporter: Box<dyn Reporter>, should_consume_doc_comments: bool) -> Ast {
     let lexer = Lexer::with(source, should_consume_doc_comments);
     new_parser::Parser::with(lexer).parse()
 }
