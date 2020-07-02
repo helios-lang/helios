@@ -36,9 +36,16 @@ impl Display for Position {
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Span {
-    start: Position,
-    end: Position,
+    pub start: Position,
+    pub end: Position,
+}
+
+impl Span {
+    pub fn new(start: Position, end: Position) -> Self {
+        Self { start, end }
+    }
 }
 
 #[derive(Copy, Clone)]

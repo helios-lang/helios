@@ -1,12 +1,23 @@
+use crate::source::Span;
+use std::fmt::{self, Debug};
+
+#[derive(Clone, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
+    pub span: Span,
+}
+
+impl Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Token({:?}, {}..{})", self.kind, self.span.start, self.span.end)
+    }
 }
 
 /// An enum representing all the possible token types.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
     /// A tag that identifies a variable, type, module, etc.
-    Identifier,
+    Identifier(String),
 
     /// A reserved identifier.
     Keyword(Keyword),
