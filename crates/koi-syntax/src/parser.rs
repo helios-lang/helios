@@ -1,6 +1,6 @@
 use crate::decl::Decl;
 use crate::expr::{Expr, ExprLiteral};
-use crate::lexer::Lexer;
+use crate::lexer::{Lexer, LexerMode};
 use crate::token::*;
 
 pub type Ast = Vec<AstNode>;
@@ -203,6 +203,18 @@ impl Parser {
                         Expr::Literal(ExprLiteral::Float(value))
                     },
                     l => unimplemented!("Literal {:?}", l)
+                },
+                TokenKind::GroupingStart(GroupingDelimiter::Paren) => {
+                    self.lexer.push_mode(LexerMode::Grouping);
+                    let expr = self.expression();
+
+                    if self.expect(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
+                        self.lexer.pop_mode();
+                    } else {
+                        eprintln!("Missing parenthesis grouping end delimiter!");
+                    }
+
+                    Expr::Grouping(Box::new(expr))
                 },
                 k => unimplemented!("Kind {:?}", k)
             }

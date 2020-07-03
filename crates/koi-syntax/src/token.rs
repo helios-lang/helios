@@ -1,3 +1,4 @@
+use crate::errors::LexerError;
 use crate::source::Span;
 use std::fmt::{self, Debug};
 
@@ -52,6 +53,11 @@ pub enum TokenKind {
 
     /// Signifies the end of a scope.
     End,
+
+    GroupingStart(GroupingDelimiter),
+    GroupingEnd(GroupingDelimiter),
+
+    Error(LexerError),
 
     /// An unknown token. An error may be raised if such a token is encountered.
     Unexpected(char),
