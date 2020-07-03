@@ -4,11 +4,12 @@ mod decl;
 mod expr;
 mod lexer;
 mod parser;
-mod source;
-mod token;
+pub mod source;
+pub mod token;
 
 use crate::lexer::Lexer;
-use crate::parser::{Ast, Parser};
+pub use crate::parser::Ast;
+use crate::parser::Parser;
 use crate::source::Source;
 
 pub fn parse(source: Source) -> Ast {

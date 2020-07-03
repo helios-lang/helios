@@ -5,6 +5,7 @@ use crate::token::*;
 
 pub type Ast = Vec<AstNode>;
 
+#[derive(Debug)]
 pub enum AstNode {
     Expr(Expr),
     Decl(Decl),
