@@ -25,6 +25,10 @@ fn is_whitespace(c: char) -> bool {
     c == ' ' || c == '\r' || c == '\t'
 }
 
+fn is_grouping_delimiter(c: char) -> bool {
+    c == '{' || c == '}' || c == '[' || c == ']' || c == '(' || c == ')'
+}
+
 /// Checks if the given character is a recognised symbol.
 fn is_symbol(c: char) -> bool {
     match c {
@@ -122,6 +126,7 @@ impl Lexer {
                     self.symbol(next_char)
                 }
             },
+            c if is_grouping_delimiter(c) => self.grouping(c),
             c if is_symbol(c) => self.symbol(c),
             c if is_identifier_start(c) => self.identifier(c),
             c @ '0'..='9' => self.number(c),
@@ -132,7 +137,8 @@ impl Lexer {
     }
 
     fn tokenize_grouping(&mut self) -> Option<Token> {
-        todo!("Lexer::tokenize_grouping")
+        // todo!("Lexer::tokenize_grouping")
+        self.tokenize_normal()
     }
 }
 
@@ -341,6 +347,18 @@ impl Lexer {
             };
 
         TokenKind::LineComment { is_doc_comment, content }
+    }
+
+    fn grouping(&mut self, delimiter: char) -> TokenKind {
+        match delimiter {
+            '{' => TokenKind::GroupingStart(GroupingDelimiter::Bracket),
+            '[' => TokenKind::GroupingStart(GroupingDelimiter::Bracket),
+            '(' => TokenKind::GroupingStart(GroupingDelimiter::Paren),
+            '}' => TokenKind::GroupingEnd(GroupingDelimiter::Bracket),
+            ']' => TokenKind::GroupingEnd(GroupingDelimiter::Bracket),
+            ')' => TokenKind::GroupingEnd(GroupingDelimiter::Paren),
+            _ => panic!("Invalid grouping delimiter: {:?}", delimiter)
+        }
     }
 
     /// Matches any character that is a valid symbol.
