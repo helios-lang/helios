@@ -92,13 +92,13 @@ impl Lexer {
     }
 
     fn tokenize_normal(&mut self) -> Option<Token> {
-        let old_pos = self.current_position();
+        let old_pos = self.current_pos();
 
         if self.did_enter_new_line {
             return Some(
                 Token::with(
                     self.indentation(),
-                    Span::new(old_pos, self.current_position())
+                    Span::new(old_pos, self.current_pos())
                 )
             );
         }
@@ -114,7 +114,21 @@ impl Lexer {
             return self.next_token();
         }
 
-        todo!("Lexer::tokenize_normal")
+        let kind = match next_char {
+            '/' => {
+                if self.peek() == '/' {
+                    self.line_comment()
+                } else {
+                    self.symbol(next_char)
+                }
+            },
+            c if is_symbol(c) => self.symbol(c),
+            c if is_identifier_start(c) => self.identifier(c),
+            c @ '0'..='9' => self.number(c),
+            c => TokenKind::Unknown(c)
+        };
+
+        Some(Token::with(kind, Span::new(old_pos, self.current_pos())))
     }
 
     fn tokenize_grouping(&mut self) -> Option<Token> {
@@ -142,11 +156,11 @@ impl Lexer {
     }
 
     /// Checks if the `Cursor` has reached the end of the input.
-    fn is_at_end(&self) -> bool {
+    pub fn is_at_end(&self) -> bool {
         self.cursor.source_len() == 0
     }
 
-    fn current_position(&self) -> Position {
+    fn current_pos(&self) -> Position {
         self.cursor.pos
     }
 
@@ -297,6 +311,175 @@ impl Lexer {
             } else {
                 self.did_enter_new_line = false;
                 TokenKind::Newline
+            }
+        }
+    }
+
+    /// Matches every character up until the new line character. The characters
+    /// consumed will be part of the `TokenKind::LineComment` variant.
+    fn line_comment(&mut self) -> TokenKind {
+        self.next_char();
+
+        let next_char = self.peek();
+        let mut is_doc_comment = false;
+        if next_char == '!' || next_char == '/' {
+            self.next_char();
+            is_doc_comment = true;
+        }
+
+        // Remove the first whitespace character
+        if is_whitespace(self.peek()) {
+            self.next_char();
+        }
+
+        let content =
+            if /* self.should_consume_doc_comments && */ is_doc_comment {
+                Some(self.consume_build(|c| c != '\n').into_iter().collect())
+            } else {
+                self.consume_while(|c| c != '\n');
+                None
+            };
+
+        TokenKind::LineComment { is_doc_comment, content }
+    }
+
+    /// Matches any character that is a valid symbol.
+    ///
+    /// _TODO:_ Perhaps we should handle cases with confused symbols, such as
+    /// U+037E, the Greek question mark, which looks like a semicolon (compare
+    /// ';' with ';').
+    fn symbol(&mut self, symbol: char) -> TokenKind {
+        match symbol {
+            '?' => {
+                if (self.peek(), self.peek_at(1)) == ('?', '?') {
+                    // Consume the next two question marks
+                    self.next_char();
+                    self.next_char();
+                    TokenKind::Keyword(Keyword::Unimplemented)
+                } else {
+                    TokenKind::Symbol(Symbol::Question)
+                }
+            },
+            _ => {
+                match Symbol::compose(symbol, self.peek()) {
+                    Some(symbol) => {
+                        self.next_char();
+                        TokenKind::Symbol(symbol)
+                    },
+                    None => TokenKind::Symbol(Symbol::from_char(symbol))
+                }
+            }
+        }
+    }
+
+    /// Matches every character that can be part of an identifier. This includes
+    /// upper and lower-case letters, the underscore, and the hyphen.
+    fn identifier(&mut self, first_char: char) -> TokenKind {
+        let rest = self.consume_build(is_identifier_continue);
+        let vec = [&vec![first_char], &rest[..]].concat();
+        let string: String = vec.into_iter().collect();
+        self.keyword_or_identifier(string)
+    }
+
+    /// Attempts to match the given string to a keyword, returning a
+    /// `TokenKind::Keyword` if a match is found, otherwise a
+    /// `TokenKind::Identifier`.
+    fn keyword_or_identifier(&mut self, string: String) -> TokenKind {
+        match &*string {
+            "and"   => TokenKind::Keyword(Keyword::And),
+            "def"   => TokenKind::Keyword(Keyword::Def),
+            "do"    => TokenKind::Keyword(Keyword::Do),
+            "else"  => TokenKind::Keyword(Keyword::Else),
+            "false" => TokenKind::Keyword(Keyword::False),
+            "if"    => TokenKind::Keyword(Keyword::If),
+            "let"   => TokenKind::Keyword(Keyword::Let),
+            "match" => TokenKind::Keyword(Keyword::Match),
+            "module"=> TokenKind::Keyword(Keyword::Module),
+            "not"   => TokenKind::Keyword(Keyword::Not),
+            "or"    => TokenKind::Keyword(Keyword::Or),
+            "public"=> TokenKind::Keyword(Keyword::Public),
+            "then"  => TokenKind::Keyword(Keyword::Then),
+            "true"  => TokenKind::Keyword(Keyword::True),
+            "type"  => TokenKind::Keyword(Keyword::Type),
+            "using" => TokenKind::Keyword(Keyword::Using),
+            "val"   => TokenKind::Keyword(Keyword::Val),
+            "with"  => TokenKind::Keyword(Keyword::With),
+            _       => TokenKind::Identifier(string)
+        }
+    }
+
+    /// Matches any valid sequence of digits that can form an integer or float
+    /// literal. Both literal forms support the binary, octal, and hexadecimal
+    /// bases in addition to the default decimal system.
+    fn number(&mut self, first_digit: char) -> TokenKind {
+        let mut base = Base::Decimal;
+        let mut radix = 10;
+
+        let integer_part = {
+            if first_digit == '0' {
+                match self.peek() {
+                    // Binary literal.
+                    'b' => {
+                        base = Base::Binary;
+                        radix = 2;
+                        self.next_char();
+                        self.consume_digits(Base::Binary, None)
+                    },
+                    // Octal literal.
+                    'o' => {
+                        base = Base::Octal;
+                        radix = 8;
+                        self.next_char();
+                        self.consume_digits(Base::Octal, None)
+                    },
+                    // Hexadecimal literal.
+                    'x' => {
+                        base = Base::Hexadecimal;
+                        radix = 16;
+                        self.next_char();
+                        self.consume_digits(Base::Hexadecimal, None)
+                    },
+                    // Decimal literal. We ignore the decimal point to avoid it
+                    // from being pushed into the `integer_part` vector (it'll
+                    // be the first element of the `fractional_part` vector
+                    // later on instead).
+                    '0'..='9' | '_' => {
+                        self.consume_digits(Base::Decimal, None)
+                    }
+                    // Just 0.
+                    _ => vec!['0']
+                }
+            } else {
+                self.consume_digits(Base::Decimal, Some(first_digit))
+            }
+        };
+
+        let mut fractional_part: Vec<char> = Vec::new();
+
+        if self.peek() == '.' && self.peek_at(1) != '.' {
+            fractional_part.push(self.next_char().unwrap());
+            match self.peek() {
+                '0'..='9' | '_' => {
+                    let mut rest =
+                        self.consume_digits(Base::Decimal, None);
+                    fractional_part.append(&mut rest);
+                },
+                _ => fractional_part.push('0')
+            }
+        }
+
+        if fractional_part.is_empty() {
+            let string: String = integer_part[..].into_iter().collect();
+            match i32::from_str_radix(&*string, radix) {
+                Ok(value) => TokenKind::Literal(Literal::Int { base, value }),
+                _ => TokenKind::Error(LexerError::OverflowedIntLiteral)
+            }
+        } else {
+            let all = [&integer_part[..], &fractional_part[..]].concat();
+            let string: String = all[..].into_iter().collect();
+            match string.parse() {
+                Ok(value) => TokenKind::Literal(Literal::Float { base, value }),
+                _ => TokenKind::Error(LexerError::OverflowedFloatLiteral)
             }
         }
     }
