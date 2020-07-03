@@ -20,7 +20,7 @@ pub enum Expr {
     Grouping(Box<Expr>),
 
     /// A local binding expression.
-    LocalBinding(Option<String>, Box<Expr>),
+    LocalBinding(Pattern, Box<Expr>),
 }
 
 #[derive(Debug)]
@@ -36,4 +36,10 @@ pub enum ExprLiteral {
 
     /// A string literal.
     Str(String),
+}
+
+#[derive(Debug)]
+pub enum Pattern {
+    Identifier(String),
+    Missing,
 }

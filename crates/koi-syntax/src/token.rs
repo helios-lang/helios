@@ -60,7 +60,7 @@ pub enum TokenKind {
     Error(LexerError),
 
     /// An unknown token. An error may be raised if such a token is encountered.
-    Unexpected(char),
+    Unknown(char),
 }
 
 #[derive(Clone, Debug, PartialEq)]

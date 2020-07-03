@@ -1,5 +1,5 @@
 use crate::decl::Decl;
-use crate::expr::{Expr, ExprLiteral};
+use crate::expr::{Expr, ExprLiteral, Pattern};
 use crate::lexer::{Lexer, LexerMode};
 use crate::token::*;
 
@@ -9,6 +9,7 @@ pub type Ast = Vec<AstNode>;
 pub enum AstNode {
     Expr(Expr),
     Decl(Decl),
+    Eof,
 }
 
 pub struct Parser {
@@ -24,7 +25,7 @@ impl Parser {
     pub fn parse(&mut self) -> Ast {
         let mut nodes = Vec::new();
 
-        while self.lexer.next_token() != None {
+        while !self.lexer.is_at_end() {
             nodes.push(self.program());
         }
 
@@ -65,7 +66,7 @@ impl Parser {
         false
     }
 
-    fn expect(&mut self, kind: TokenKind) -> bool {
+    fn consume_when(&mut self, kind: TokenKind) -> bool {
         if self.check(kind) {
             self.next_token();
             true
@@ -85,11 +86,17 @@ impl Parser {
 
 impl Parser {
     fn program(&mut self) -> AstNode {
+        if self.consume_when(TokenKind::Newline) {
+            if let None = self.peek() {
+                return AstNode::Eof;
+            }
+        }
+
         AstNode::Expr(self.expression())
     }
 
     fn expression(&mut self) -> Expr {
-        if self.expect(TokenKind::Keyword(Keyword::Let)) {
+        if self.consume_when(TokenKind::Keyword(Keyword::Let)) {
             return self.let_expression();
         }
 
@@ -99,10 +106,16 @@ impl Parser {
     fn let_expression(&mut self) -> Expr {
         let identifier = match self.next_token() {
             Some(token) => match token.kind {
-                TokenKind::Identifier(s) => Some(s),
-                k => panic!("Unexpected {:?}", k),
+                TokenKind::Identifier(s) => Pattern::Identifier(s),
+                k => {
+                    eprintln!("[Error]: Unexpected {:?}, expected pattern", k);
+                    Pattern::Missing
+                },
             },
-            None => panic!("Unexpected EOF")
+            None => {
+                eprintln!("[Error]: Unexpected EOF, expected pattern");
+                Pattern::Missing
+            }
         };
 
         self.consume(TokenKind::Symbol(Symbol::Eq), "Expected `=` after binding name");
@@ -189,6 +202,9 @@ impl Parser {
     fn primary(&mut self) -> Expr {
         if let Some(token) = self.next_token() {
             match token.kind {
+                TokenKind::Identifier(identifer) => {
+                    Expr::Identifier(identifer)
+                },
                 TokenKind::Keyword(Keyword::False) => {
                     Expr::Literal(ExprLiteral::Bool(false))
                 },
@@ -208,7 +224,7 @@ impl Parser {
                     self.lexer.push_mode(LexerMode::Grouping);
                     let expr = self.expression();
 
-                    if self.expect(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
+                    if self.consume_when(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
                         self.lexer.pop_mode();
                     } else {
                         eprintln!("Missing parenthesis grouping end delimiter!");
