@@ -127,9 +127,10 @@ impl Parser {
     fn parse_let_expression(&mut self) -> Expr {
         let mut local_binding = expr::LocalBinding::new();
 
-        local_binding.identifier = Some(self.consume(TokenKind::Identifier));
-        local_binding.equal_symbol = Some(self.consume(TokenKind::Symbol(Symbol::Eq)));
-        local_binding.expression = Some(Box::new(self.parse_expression_block()));
+        local_binding
+            .identifier(self.consume(TokenKind::Identifier))
+            .equal_symbol(self.consume(TokenKind::Symbol(Symbol::Eq)))
+            .expression(self.parse_expression_block());
 
         Expr::LocalBindingExpr(local_binding)
     }

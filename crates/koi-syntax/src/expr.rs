@@ -61,6 +61,21 @@ impl LocalBinding {
     pub fn new() -> Self {
         Self::default()
     }
+
+    pub fn identifier<T: Into<Option<Token>>>(&mut self, identifier: T) -> &mut Self {
+        self.identifier = identifier.into();
+        self
+    }
+
+    pub fn equal_symbol<T: Into<Option<Token>>>(&mut self, equal_symbol: T) -> &mut Self {
+        self.equal_symbol = equal_symbol.into();
+        self
+    }
+
+    pub fn expression(&mut self, expression: Expr) -> &mut Self {
+        self.expression = Some(Box::new(expression));
+        self
+    }
 }
 
 #[derive(Debug, Default)]
