@@ -8,6 +8,9 @@ mod parser;
 pub mod source;
 pub mod token;
 
+#[cfg(test)]
+mod tests;
+
 use crate::lexer::Lexer;
 pub use crate::parser::Ast;
 use crate::parser::Parser;
