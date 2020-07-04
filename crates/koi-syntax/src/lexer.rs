@@ -107,7 +107,14 @@ impl Lexer {
 
         let next_char = match self.next_char() {
             Some(c) => c,
-            None => return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos())),
+            None => {
+                if !self.indentation_stack.is_empty() {
+                    self.indentation_stack.pop();
+                    return Token::with(TokenKind::End, Span::new(old_pos, self.current_pos()));
+                } else {
+                    return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos()))
+                }
+            }
         };
 
         if is_whitespace(next_char) {
