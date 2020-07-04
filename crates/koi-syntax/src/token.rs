@@ -28,7 +28,7 @@ impl Debug for Token {
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
     /// A tag that identifies a variable, type, module, etc.
-    Identifier(String),
+    Identifier,
 
     /// A reserved identifier.
     Keyword(Keyword),
@@ -42,7 +42,7 @@ pub enum TokenKind {
     Symbol(Symbol),
 
     /// A line comment starting with two forward slashes (`//`).
-    LineComment { is_doc_comment: bool, content: Option<String> },
+    LineComment { is_doc_comment: bool },
 
     /// Signifies the end of the current line (if it is still part of the
     /// current scope).
@@ -59,13 +59,15 @@ pub enum TokenKind {
 
     Error(LexerError),
 
+    Missing(Box<Self>),
+
     /// An unknown token. An error may be raised if such a token is encountered.
     Unknown(char),
 
     Eof,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Keyword {
     And,
     Def,
@@ -130,27 +132,10 @@ pub enum Base {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Bool(bool),
-    Char(char),
-    Float { base: Base, value: f64 },
-    Int { base: Base, value: i32 },
-    Str(String),
-    FStr(String),
-    MultiLineStr(Vec<String>),
-}
-
-impl Literal {
-    pub fn description(&self) -> String {
-        match self {
-            Literal::Bool(b) => format!("{}", b),
-            Literal::Char(character) => format!("{}", character),
-            Literal::Float { value, .. } => format!("{}", value),
-            Literal::Int { value, .. } => format!("{}", value),
-            Literal::Str(content) => content.clone(),
-            Literal::FStr(content) => content.clone(),
-            Literal::MultiLineStr(fragments) => fragments.join("\n")
-        }
-    }
+    Character,
+    Float(Base),
+    Integer(Base),
+    String(String),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -299,7 +284,7 @@ pub enum GroupingDelimiter {
 }
 
 impl GroupingDelimiter {
-    pub fn string_representation(self) -> String {
+    pub fn description(self) -> String {
         use GroupingDelimiter::*;
         match self {
             Brace => "brace".to_string(),
@@ -308,7 +293,7 @@ impl GroupingDelimiter {
         }
     }
 
-    pub fn char_representation(self) -> char {
+    pub fn closing_char_representation(self) -> char {
         use GroupingDelimiter::*;
         match self {
             Brace => '}',

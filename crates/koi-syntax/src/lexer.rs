@@ -346,15 +346,8 @@ impl Lexer {
             self.next_char();
         }
 
-        let content =
-            if /* self.should_consume_doc_comments && */ is_doc_comment {
-                Some(self.consume_build(|c| c != '\n').into_iter().collect())
-            } else {
-                self.consume_while(|c| c != '\n');
-                None
-            };
-
-        TokenKind::LineComment { is_doc_comment, content }
+        self.consume_while(|c| c != '\n');
+        TokenKind::LineComment { is_doc_comment }
     }
 
     fn grouping(&mut self, delimiter: char) -> TokenKind {
@@ -430,7 +423,7 @@ impl Lexer {
             "using" => TokenKind::Keyword(Keyword::Using),
             "val"   => TokenKind::Keyword(Keyword::Val),
             "with"  => TokenKind::Keyword(Keyword::With),
-            _       => TokenKind::Identifier(string)
+            _       => TokenKind::Identifier
         }
     }
 
@@ -439,74 +432,58 @@ impl Lexer {
     /// bases in addition to the default decimal system.
     fn number(&mut self, first_digit: char) -> TokenKind {
         let mut base = Base::Decimal;
-        let mut radix = 10;
 
-        let integer_part = {
-            if first_digit == '0' {
-                match self.peek() {
-                    // Binary literal.
-                    'b' => {
-                        base = Base::Binary;
-                        radix = 2;
-                        self.next_char();
-                        self.consume_digits(Base::Binary, None)
-                    },
-                    // Octal literal.
-                    'o' => {
-                        base = Base::Octal;
-                        radix = 8;
-                        self.next_char();
-                        self.consume_digits(Base::Octal, None)
-                    },
-                    // Hexadecimal literal.
-                    'x' => {
-                        base = Base::Hexadecimal;
-                        radix = 16;
-                        self.next_char();
-                        self.consume_digits(Base::Hexadecimal, None)
-                    },
-                    // Decimal literal. We ignore the decimal point to avoid it
-                    // from being pushed into the `integer_part` vector (it'll
-                    // be the first element of the `fractional_part` vector
-                    // later on instead).
-                    '0'..='9' | '_' => {
-                        self.consume_digits(Base::Decimal, None)
-                    }
-                    // Just 0.
-                    _ => vec!['0']
+        if first_digit == '0' {
+            match self.peek() {
+                // Binary literal.
+                'b' => {
+                    base = Base::Binary;
+                    self.next_char();
+                    self.consume_digits(Base::Binary, None);
+                },
+                // Octal literal.
+                'o' => {
+                    base = Base::Octal;
+                    self.next_char();
+                    self.consume_digits(Base::Octal, None);
+                },
+                // Hexadecimal literal.
+                'x' => {
+                    base = Base::Hexadecimal;
+                    self.next_char();
+                    self.consume_digits(Base::Hexadecimal, None);
+                },
+                // Decimal literal. We ignore the decimal point to avoid it
+                // from being pushed into the `integer_part` vector (it'll
+                // be the first element of the `fractional_part` vector
+                // later on instead).
+                '0'..='9' | '_' => {
+                    self.consume_digits(Base::Decimal, None);
                 }
-            } else {
-                self.consume_digits(Base::Decimal, Some(first_digit))
+                // Just 0.
+                _ => ()
             }
+        } else {
+            self.consume_digits(Base::Decimal, Some(first_digit));
         };
 
-        let mut fractional_part: Vec<char> = Vec::new();
+        let mut has_fractional_part = false;
 
         if self.peek() == '.' && self.peek_at(1) != '.' {
-            fractional_part.push(self.next_char().unwrap());
+            self.next_char();
+            has_fractional_part = true;
             match self.peek() {
                 '0'..='9' | '_' => {
-                    let mut rest =
-                        self.consume_digits(Base::Decimal, None);
-                    fractional_part.append(&mut rest);
+                    self.consume_digits(Base::Decimal, None);
                 },
-                _ => fractional_part.push('0')
+                _ => ()
             }
         }
 
-        if fractional_part.is_empty() {
-            let string: String = integer_part[..].into_iter().collect();
-            match i32::from_str_radix(&*string, radix) {
-                Ok(value) => TokenKind::Literal(Literal::Int { base, value }),
-                _ => TokenKind::Error(LexerError::OverflowedIntLiteral)
-            }
+        if !has_fractional_part {
+            TokenKind::Literal(Literal::Integer(base))
         } else {
-            let all = [&integer_part[..], &fractional_part[..]].concat();
-            let string: String = all[..].into_iter().collect();
-            match string.parse() {
-                Ok(value) => TokenKind::Literal(Literal::Float { base, value }),
-                _ => TokenKind::Error(LexerError::OverflowedFloatLiteral)
-            }
+            TokenKind::Literal(Literal::Float(base))
         }
     }
 }
