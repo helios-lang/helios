@@ -19,6 +19,8 @@ pub enum Expr {
     /// A grouped expression (constructed when an expression is parenthesised).
     Grouping(Box<Expr>),
 
+    ExprBlock(Vec<Box<Expr>>),
+
     /// A local binding expression.
     LocalBindingExpr(LocalBinding),
 

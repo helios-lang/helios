@@ -89,10 +89,11 @@ impl Parser {
 
 impl Parser {
     fn program(&mut self) -> AstNode {
-        if self.consume_when(TokenKind::Newline) {
-            if let None = self.peek() {
-                return AstNode::Eof;
-            }
+        self.consume_when(TokenKind::Newline);
+
+        // This may not ever be called
+        if self.consume_when(TokenKind::Eof) {
+            return AstNode::Eof;
         }
 
         AstNode::Expr(self.expression())
@@ -133,7 +134,7 @@ impl Parser {
                 "Expected `=` after binding pattern"
             );
 
-        local_binding.expression = Some(Box::new(self.expression()));
+        local_binding.expression = Some(Box::new(self.expression_block()));
 
         Expr::LocalBindingExpr(local_binding)
     }
@@ -146,7 +147,9 @@ impl Parser {
             self.expect(TokenKind::Keyword(Keyword::Then),
             "Expected keyword `then` after conditional expression pattern"
         );
-        if_expression.expression = Some(Box::new(self.expression()));
+        if_expression.expression = Some(Box::new(self.expression_block()));
+
+        self.consume_when(TokenKind::Newline);
 
         if self.consume_when(TokenKind::Keyword(Keyword::Else)) {
             if_expression.else_clause = Some(Box::new(self.else_clause()));
@@ -159,8 +162,33 @@ impl Parser {
         if self.consume_when(TokenKind::Keyword(Keyword::If)) {
             self.if_expression()
         } else {
-            self.expression()
+            self.expression_block()
         }
+    }
+
+    fn expression_block(&mut self) -> Expr {
+        if self.consume_when(TokenKind::Begin) {
+            return self.expression_block_list();
+        }
+
+        self.expression()
+    }
+
+    fn expression_block_list(&mut self) -> Expr {
+        let mut expressions = Vec::new();
+        expressions.push(Box::new(self.expression()));
+
+        while self.check_all(&[
+            TokenKind::Newline,
+            TokenKind::Symbol(Symbol::Semicolon),
+        ]) {
+            self.next_token();
+            expressions.push(Box::new(self.expression()));
+        }
+
+        self.expect(TokenKind::End, "Expected outdent");
+
+        Expr::ExprBlock(expressions)
     }
 
     fn equality_expression(&mut self) -> Expr {
@@ -170,7 +198,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::BangEq),
             TokenKind::Symbol(Symbol::Eq),
         ]) {
-            let operator = self.next_token(); //.unwrap();
+            let operator = self.next_token();
             let rhs = self.comparison_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -187,7 +215,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Gt),
             TokenKind::Symbol(Symbol::GtEq),
         ]) {
-            let operator = self.next_token(); //.unwrap();
+            let operator = self.next_token();
             let rhs = self.additive_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -202,7 +230,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Plus),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
-            let operator = self.next_token(); //.unwrap();
+            let operator = self.next_token();
             let rhs = self.multiplicative_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -217,7 +245,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Asterisk),
             TokenKind::Symbol(Symbol::ForwardSlash),
         ]) {
-            let operator = self.next_token(); //.unwrap();
+            let operator = self.next_token();
             let rhs = self.unary_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -230,7 +258,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Bang),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
-            let operator = self.next_token(); //.unwrap();
+            let operator = self.next_token();
             let rhs = self.additive_expression();
             return Expr::Unary(operator, Box::new(rhs))
         }
@@ -270,45 +298,7 @@ impl Parser {
 
                 Expr::Grouping(Box::new(expr))
             },
-            k => unimplemented!("Kind {:?}", k)
+            k => unimplemented!("TokenKind {:?}", k)
         }
-
-        // if let Some(token) = self.next_token() {
-        //     match token.kind {
-        //         TokenKind::Identifier(identifer) => {
-        //             Expr::Identifier(identifer)
-        //         },
-        //         TokenKind::Keyword(Keyword::False) => {
-        //             Expr::Literal(ExprLiteral::Bool(false))
-        //         },
-        //         TokenKind::Keyword(Keyword::True) => {
-        //             Expr::Literal(ExprLiteral::Bool(true))
-        //         },
-        //         TokenKind::Literal(literal) => match literal {
-        //             Literal::Int { value, .. } => {
-        //                 Expr::Literal(ExprLiteral::Int(value))
-        //             },
-        //             Literal::Float { value, .. } => {
-        //                 Expr::Literal(ExprLiteral::Float(value))
-        //             },
-        //             l => unimplemented!("Literal {:?}", l)
-        //         },
-        //         TokenKind::GroupingStart(GroupingDelimiter::Paren) => {
-        //             self.lexer.push_mode(LexerMode::Grouping);
-        //             let expr = self.expression();
-
-        //             if self.consume_when(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
-        //                 self.lexer.pop_mode();
-        //             } else {
-        //                 eprintln!("Missing parenthesis grouping end delimiter!");
-        //             }
-
-        //             Expr::Grouping(Box::new(expr))
-        //         },
-        //         k => unimplemented!("Kind {:?}", k)
-        //     }
-        // } else {
-        //     panic!("Unexpected EOF")
-        // }
     }
 }
