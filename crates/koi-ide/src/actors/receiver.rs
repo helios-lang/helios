@@ -3,21 +3,11 @@
 
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
-use koi_driver::tokenize;
-use koi_parser::{Ast, token};
-use koi_parser::source::{Position, Source};
-use koi_parser::reporter::{Diagnosis, Reporter};
+use koi_syntax::{Ast, token};
+use koi_syntax::source::{Position, Source};
 use lsp_types::Url;
 use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::Sender;
-
-struct IdeReporter;
-
-impl Reporter for IdeReporter {
-    fn report(&mut self, diagnosis: Diagnosis) {
-        eprintln!(">>> ERROR: {:?}", diagnosis);
-    }
-}
 
 pub struct Receiver {
     responder_channel: Sender<LspResponse>,
@@ -33,7 +23,7 @@ impl Receiver {
         match path.to_file_path() {
             Ok(path) => match Source::file(path) {
                 Ok(source) => {
-                    Ok(tokenize(source, Box::new(IdeReporter), true))
+                    Ok(koi_driver::tokenize(source))
                 },
                 Err(error) => Err(format!("Failed to load file from source: {}", error))
             },
@@ -72,121 +62,11 @@ impl Receiver {
     }
 
     fn send_hover_response(&self, id: usize, params: lsp_types::TextDocumentPositionParams) {
-        // if let Some((_, tokens)) = self.token_database.get(params.text_document.uri.as_str()) {
-        //     for token in tokens {
-        //         if token.range.contains(&Position::new(
-        //             params.position.line as usize,
-        //             params.position.character as usize
-        //         )) {
-        //             // use token::TokenKind;
-        //             match token.kind {
-        //                 // TokenKind::Keyword(_)
-        //                 // | TokenKind::Symbol(_)
-        //                 // | TokenKind::Eof => {
-        //                 //     self.responder_channel
-        //                 //         .clone()
-        //                 //         .send(LspResponse::HoverResult { id, params: None })
-        //                 //         .expect("Failed to send `HoverRequest` message to Responder.")
-        //                 // },
-        //                 _ => {
-        //                     self.responder_channel
-        //                         .clone()
-        //                         .send(LspResponse::HoverResult {
-        //                             id,
-        //                             params: Some(lsp_types::Hover {
-        //                                 contents: lsp_types::HoverContents::Scalar(
-        //                                     lsp_types::MarkedString::from_language_code(
-        //                                         "koi".to_string(),
-        //                                         format!("{:?}", token.kind)
-        //                                     )
-        //                                 ),
-        //                                 range: Some(
-        //                                     lsp_types::Range::new(
-        //                                         lsp_types::Position::new(
-        //                                             token.range.start.line as u64,
-        //                                             token.range.start.character as u64
-        //                                         ),
-        //                                         lsp_types::Position::new(
-        //                                             token.range.end.line as u64,
-        //                                             token.range.end.character as u64
-        //                                         )
-        //                                     )
-        //                                 )
-        //                             })
-        //                         })
-        //                         .expect("Failed to send `HoverRequest` message to Responder.")
-        //                 }
-        //             }
-        //         }
-        //     }
-        // } else {
-        //     eprintln!("Error: No AST has been cached for the given file url.");
-        // }
+        todo!("Receiver::send_hover_request")
     }
 
     fn publish_diagnostics(&self, uri: lsp_types::Url) {
-        // if let Some((version, tokens)) = self.token_database.get(uri.as_str()) {
-        //     let mut diagnostics = Vec::new();
-
-        //     for token in tokens {
-        //         let range = lsp_types::Range::new(
-        //             lsp_types::Position::new(
-        //                 token.range.start.line as u64,
-        //                 token.range.start.character as u64
-        //             ),
-        //             lsp_types::Position::new(
-        //                 token.range.end.line as u64,
-        //                 token.range.end.character as u64
-        //             ),
-        //         );
-
-        //         match token.kind {
-        //             token::TokenKind::Error(error) => {
-        //                 let related_information = error
-        //                     .related_information()
-        //                     .map(|message| vec![
-        //                         lsp_types::DiagnosticRelatedInformation {
-        //                             location: lsp_types::Location {
-        //                                 uri: uri.clone(),
-        //                                 range,
-        //                             },
-        //                             message
-        //                         }
-        //                     ]);
-
-        //                 diagnostics.push(lsp_types::Diagnostic {
-        //                     range,
-        //                     severity: Some(lsp_types::DiagnosticSeverity::Error),
-        //                     source: Some("koi".to_string()),
-        //                     message: error.message(),
-        //                     code: Some(lsp_types::NumberOrString::String(error.code())),
-        //                     related_information,
-        //                     ..lsp_types::Diagnostic::default()
-        //                 });
-        //             },
-        //             token::TokenKind::Unexpected(c) => {
-        //                 diagnostics.push(lsp_types::Diagnostic {
-        //                     range,
-        //                     severity: Some(lsp_types::DiagnosticSeverity::Error),
-        //                     source: Some("koi".to_string()),
-        //                     message: format!("Unexpected character {:?} (U+{:04X})", c, c as u32),
-        //                     code: Some(lsp_types::NumberOrString::String("E0012".to_string())),
-        //                     ..lsp_types::Diagnostic::default()
-        //                 });
-        //             },
-        //             _ => {}
-        //         }
-        //     }
-
-        //     self.responder_channel
-        //         .clone()
-        //         .send(LspResponse::PublishDiagnostics {
-        //             params: lsp_types::PublishDiagnosticsParams {
-        //                 uri, diagnostics, version: Some(*version)
-        //             }
-        //         })
-        //         .expect("Failed to send `PublishDiagnostics` notification to Responder.");
-        // }
+        todo!("Receiver::publish_diagnostics")
     }
 
     fn process_message(&mut self, message: LspMessage) {
