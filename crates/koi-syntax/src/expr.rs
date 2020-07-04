@@ -20,7 +20,10 @@ pub enum Expr {
     Grouping(Box<Expr>),
 
     /// A local binding expression.
-    LocalBinding(Pattern, Box<Expr>),
+    LocalBindingExpr(LocalBinding),
+
+    /// An if-branching expression.
+    IfExpr(IfExpr),
 }
 
 #[derive(Debug)]
@@ -42,4 +45,31 @@ pub enum ExprLiteral {
 pub enum Pattern {
     Identifier(String),
     Missing,
+}
+
+#[derive(Debug, Default)]
+pub struct LocalBinding {
+    pub pattern: Option<Pattern>,
+    pub equal_symbol: Option<Token>,
+    pub expression: Option<Box<Expr>>,
+}
+
+impl LocalBinding {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct IfExpr {
+    pub pattern: Option<Box<Expr>>,
+    pub then_keyword: Option<Token>,
+    pub expression: Option<Box<Expr>>,
+    pub else_clause: Option<Box<Expr>>,
+}
+
+impl IfExpr {
+    pub fn new() -> Self {
+        Self::default()
+    }
 }

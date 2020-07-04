@@ -1,5 +1,5 @@
 use crate::decl::Decl;
-use crate::expr::{Expr, ExprLiteral, Pattern};
+use crate::expr::{self, Expr, ExprLiteral, Pattern};
 use crate::lexer::{Lexer, LexerMode};
 use crate::token::*;
 
@@ -34,18 +34,19 @@ impl Parser {
 }
 
 impl Parser {
+    /// TODO: Would this work on all cases when the next token is EOF?
     fn peek(&mut self) -> Option<Token> {
         if self.peeked_token.is_none() {
-            self.peeked_token = self.lexer.next_token();
+            self.peeked_token = Some(self.lexer.next_token());
         }
 
         self.peeked_token.clone()
     }
 
-    fn next_token(&mut self) -> Option<Token> {
+    fn next_token(&mut self) -> Token {
         match self.peeked_token.take() {
-            Some(token) => Some(token),
-            None => Some(self.lexer.next_token()?)
+            Some(token) => token,
+            None => self.lexer.next_token()
         }
     }
 
@@ -75,11 +76,13 @@ impl Parser {
         }
     }
 
-    fn consume<S: Into<String>>(&mut self, kind: TokenKind, message: S) -> Token {
+    fn expect<S: Into<String>>(&mut self, kind: TokenKind, message: S) -> Option<Token> {
+        let old_pos = self.lexer.current_pos();
         if self.check(kind) {
-            self.next_token().unwrap()
+            Some(self.next_token())
         } else {
-            panic!("Error: {}", message.into())
+            eprintln!(">>> {}: {}", old_pos, message.into());
+            None
         }
     }
 }
@@ -100,28 +103,64 @@ impl Parser {
             return self.let_expression();
         }
 
+        if self.consume_when(TokenKind::Keyword(Keyword::If)) {
+            return self.if_expression();
+        }
+
         self.equality_expression()
     }
 
     fn let_expression(&mut self) -> Expr {
-        let identifier = match self.next_token() {
+        let mut local_binding = expr::LocalBinding::new();
+
+        local_binding.pattern = match self.peek() {
             Some(token) => match token.kind {
-                TokenKind::Identifier(s) => Pattern::Identifier(s),
+                TokenKind::Identifier(i) => {
+                    self.next_token();
+                    Some(Pattern::Identifier(i))
+                },
                 k => {
                     eprintln!("[Error]: Unexpected {:?}, expected pattern", k);
-                    Pattern::Missing
-                },
+                    None
+                }
             },
-            None => {
-                eprintln!("[Error]: Unexpected EOF, expected pattern");
-                Pattern::Missing
-            }
+            None => None
         };
 
-        self.consume(TokenKind::Symbol(Symbol::Eq), "Expected `=` after binding name");
-        let rhs = self.expression();
+        local_binding.equal_symbol =
+            self.expect(
+                TokenKind::Symbol(Symbol::Eq),
+                "Expected `=` after binding pattern"
+            );
 
-        Expr::LocalBinding(identifier, Box::new(rhs))
+        local_binding.expression = Some(Box::new(self.expression()));
+
+        Expr::LocalBindingExpr(local_binding)
+    }
+
+    fn if_expression(&mut self) -> Expr {
+        let mut if_expression = expr::IfExpr::new();
+
+        if_expression.pattern = Some(Box::new(self.expression()));
+        if_expression.then_keyword =
+            self.expect(TokenKind::Keyword(Keyword::Then),
+            "Expected keyword `then` after conditional expression pattern"
+        );
+        if_expression.expression = Some(Box::new(self.expression()));
+
+        if self.consume_when(TokenKind::Keyword(Keyword::Else)) {
+            if_expression.else_clause = Some(Box::new(self.else_clause()));
+        }
+
+        Expr::IfExpr(if_expression)
+    }
+
+    fn else_clause(&mut self) -> Expr {
+        if self.consume_when(TokenKind::Keyword(Keyword::If)) {
+            self.if_expression()
+        } else {
+            self.expression()
+        }
     }
 
     fn equality_expression(&mut self) -> Expr {
@@ -131,7 +170,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::BangEq),
             TokenKind::Symbol(Symbol::Eq),
         ]) {
-            let operator = self.next_token().unwrap();
+            let operator = self.next_token(); //.unwrap();
             let rhs = self.comparison_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -148,7 +187,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Gt),
             TokenKind::Symbol(Symbol::GtEq),
         ]) {
-            let operator = self.next_token().unwrap();
+            let operator = self.next_token(); //.unwrap();
             let rhs = self.additive_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -163,7 +202,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Plus),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
-            let operator = self.next_token().unwrap();
+            let operator = self.next_token(); //.unwrap();
             let rhs = self.multiplicative_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -178,7 +217,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Asterisk),
             TokenKind::Symbol(Symbol::ForwardSlash),
         ]) {
-            let operator = self.next_token().unwrap();
+            let operator = self.next_token(); //.unwrap();
             let rhs = self.unary_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
@@ -191,7 +230,7 @@ impl Parser {
             TokenKind::Symbol(Symbol::Bang),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
-            let operator = self.next_token().unwrap();
+            let operator = self.next_token(); //.unwrap();
             let rhs = self.additive_expression();
             return Expr::Unary(operator, Box::new(rhs))
         }
@@ -200,42 +239,76 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expr {
-        if let Some(token) = self.next_token() {
-            match token.kind {
-                TokenKind::Identifier(identifer) => {
-                    Expr::Identifier(identifer)
+        match self.next_token().kind {
+            TokenKind::Identifier(identifer) => {
+                Expr::Identifier(identifer)
+            },
+            TokenKind::Keyword(Keyword::False) => {
+                Expr::Literal(ExprLiteral::Bool(false))
+            },
+            TokenKind::Keyword(Keyword::True) => {
+                Expr::Literal(ExprLiteral::Bool(true))
+            },
+            TokenKind::Literal(literal) => match literal {
+                Literal::Int { value, .. } => {
+                    Expr::Literal(ExprLiteral::Int(value))
                 },
-                TokenKind::Keyword(Keyword::False) => {
-                    Expr::Literal(ExprLiteral::Bool(false))
+                Literal::Float { value, .. } => {
+                    Expr::Literal(ExprLiteral::Float(value))
                 },
-                TokenKind::Keyword(Keyword::True) => {
-                    Expr::Literal(ExprLiteral::Bool(true))
-                },
-                TokenKind::Literal(literal) => match literal {
-                    Literal::Int { value, .. } => {
-                        Expr::Literal(ExprLiteral::Int(value))
-                    },
-                    Literal::Float { value, .. } => {
-                        Expr::Literal(ExprLiteral::Float(value))
-                    },
-                    l => unimplemented!("Literal {:?}", l)
-                },
-                TokenKind::GroupingStart(GroupingDelimiter::Paren) => {
-                    self.lexer.push_mode(LexerMode::Grouping);
-                    let expr = self.expression();
+                l => unimplemented!("Literal {:?}", l)
+            },
+            TokenKind::GroupingStart(GroupingDelimiter::Paren) => {
+                self.lexer.push_mode(LexerMode::Grouping);
+                let expr = self.expression();
 
-                    if self.consume_when(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
-                        self.lexer.pop_mode();
-                    } else {
-                        eprintln!("Missing parenthesis grouping end delimiter!");
-                    }
+                if self.consume_when(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
+                    self.lexer.pop_mode();
+                } else {
+                    eprintln!("Missing parenthesis grouping end delimiter!");
+                }
 
-                    Expr::Grouping(Box::new(expr))
-                },
-                k => unimplemented!("Kind {:?}", k)
-            }
-        } else {
-            panic!("Unexpected EOF")
+                Expr::Grouping(Box::new(expr))
+            },
+            k => unimplemented!("Kind {:?}", k)
         }
+
+        // if let Some(token) = self.next_token() {
+        //     match token.kind {
+        //         TokenKind::Identifier(identifer) => {
+        //             Expr::Identifier(identifer)
+        //         },
+        //         TokenKind::Keyword(Keyword::False) => {
+        //             Expr::Literal(ExprLiteral::Bool(false))
+        //         },
+        //         TokenKind::Keyword(Keyword::True) => {
+        //             Expr::Literal(ExprLiteral::Bool(true))
+        //         },
+        //         TokenKind::Literal(literal) => match literal {
+        //             Literal::Int { value, .. } => {
+        //                 Expr::Literal(ExprLiteral::Int(value))
+        //             },
+        //             Literal::Float { value, .. } => {
+        //                 Expr::Literal(ExprLiteral::Float(value))
+        //             },
+        //             l => unimplemented!("Literal {:?}", l)
+        //         },
+        //         TokenKind::GroupingStart(GroupingDelimiter::Paren) => {
+        //             self.lexer.push_mode(LexerMode::Grouping);
+        //             let expr = self.expression();
+
+        //             if self.consume_when(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
+        //                 self.lexer.pop_mode();
+        //             } else {
+        //                 eprintln!("Missing parenthesis grouping end delimiter!");
+        //             }
+
+        //             Expr::Grouping(Box::new(expr))
+        //         },
+        //         k => unimplemented!("Kind {:?}", k)
+        //     }
+        // } else {
+        //     panic!("Unexpected EOF")
+        // }
     }
 }
