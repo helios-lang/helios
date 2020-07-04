@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::token::{Base, Token, TokenKind};
 
 #[derive(Debug)]
 pub enum Expr {
@@ -6,7 +6,7 @@ pub enum Expr {
     Literal(ExprLiteral),
 
     /// A named reference to an identifier.
-    Identifier(String),
+    Identifier,
 
     /// A unary expression holding a token (signifying the operator) and an
     /// expression (signifying the right hand side of the operation).
@@ -19,6 +19,7 @@ pub enum Expr {
     /// A grouped expression (constructed when an expression is parenthesised).
     Grouping(Box<Expr>),
 
+    /// An indented block of expressions.
     ExprBlock(Vec<Box<Expr>>),
 
     /// A local binding expression.
@@ -26,6 +27,12 @@ pub enum Expr {
 
     /// An if-branching expression.
     IfExpr(IfExpr),
+
+    /// An unexpected token.
+    Unexpected(TokenKind),
+
+    /// A missing expression node.
+    Missing,
 }
 
 #[derive(Debug)]
@@ -34,24 +41,18 @@ pub enum ExprLiteral {
     Bool(bool),
 
     /// A float literal.
-    Float(f64),
+    Float(Base),
 
     /// An integer literal.
-    Int(i32),
+    Integer(Base),
 
     /// A string literal.
-    Str(String),
-}
-
-#[derive(Debug)]
-pub enum Pattern {
-    Identifier(String),
-    Missing,
+    String(String),
 }
 
 #[derive(Debug, Default)]
 pub struct LocalBinding {
-    pub pattern: Option<Pattern>,
+    pub identifier: Option<Token>,
     pub equal_symbol: Option<Token>,
     pub expression: Option<Box<Expr>>,
 }

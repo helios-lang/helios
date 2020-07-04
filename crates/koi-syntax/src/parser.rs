@@ -1,6 +1,7 @@
 use crate::decl::Decl;
-use crate::expr::{self, Expr, ExprLiteral, Pattern};
-use crate::lexer::{Lexer, LexerMode};
+use crate::expr::{self, Expr, ExprLiteral};
+use crate::lexer::Lexer;
+use crate::source::Span;
 use crate::token::*;
 
 pub type Ast = Vec<AstNode>;
@@ -26,7 +27,7 @@ impl Parser {
         let mut nodes = Vec::new();
 
         while !self.lexer.is_at_end() {
-            nodes.push(self.program());
+            nodes.push(self.parse_program());
         }
 
         nodes
@@ -34,7 +35,6 @@ impl Parser {
 }
 
 impl Parser {
-    /// TODO: Would this work on all cases when the next token is EOF?
     fn peek(&mut self) -> Option<Token> {
         if self.peeked_token.is_none() {
             self.peeked_token = Some(self.lexer.next_token());
@@ -67,7 +67,22 @@ impl Parser {
         false
     }
 
-    fn consume_when(&mut self, kind: TokenKind) -> bool {
+    fn consume(&mut self, kind: TokenKind) -> Token {
+        if let Some(token) = self.peek() {
+            if token.kind == kind {
+                return self.next_token();
+            } else {
+                return Token::with(
+                    TokenKind::Missing(Box::new(kind)),
+                    Span::new(token.span.start, token.span.start)
+                );
+            }
+        }
+
+        panic!("Unhandled case: consuming when peeking has None value");
+    }
+
+    fn try_consume(&mut self, kind: TokenKind) -> bool {
         if self.check(kind) {
             self.next_token();
             true
@@ -75,139 +90,115 @@ impl Parser {
             false
         }
     }
-
-    fn expect<S: Into<String>>(&mut self, kind: TokenKind, message: S) -> Option<Token> {
-        let old_pos = self.lexer.current_pos();
-        if self.check(kind) {
-            Some(self.next_token())
-        } else {
-            eprintln!(">>> {}: {}", old_pos, message.into());
-            None
-        }
-    }
 }
 
 impl Parser {
-    fn program(&mut self) -> AstNode {
-        self.consume_when(TokenKind::Newline);
+    fn parse_program(&mut self) -> AstNode {
+        self.try_consume(TokenKind::Newline);
 
-        // This may not ever be called
-        if self.consume_when(TokenKind::Eof) {
+        // TODO: This may never be called
+        if self.try_consume(TokenKind::Eof) {
             return AstNode::Eof;
         }
 
-        AstNode::Expr(self.expression())
+        AstNode::Expr(self.parse_expression())
     }
 
-    fn expression(&mut self) -> Expr {
-        if self.consume_when(TokenKind::Keyword(Keyword::Let)) {
-            return self.let_expression();
+    fn parse_expression(&mut self) -> Expr {
+        if self.try_consume(TokenKind::Newline) {
+            return Expr::Unexpected(TokenKind::Newline);
         }
 
-        if self.consume_when(TokenKind::Keyword(Keyword::If)) {
-            return self.if_expression();
+        if self.try_consume(TokenKind::Eof) {
+            return Expr::Missing;
         }
 
-        self.equality_expression()
+        if self.try_consume(TokenKind::Keyword(Keyword::Let)) {
+            return self.parse_let_expression();
+        }
+
+        if self.try_consume(TokenKind::Keyword(Keyword::If)) {
+            return self.parse_if_expression();
+        }
+
+        self.parse_equality_expression()
     }
 
-    fn let_expression(&mut self) -> Expr {
+    fn parse_let_expression(&mut self) -> Expr {
         let mut local_binding = expr::LocalBinding::new();
 
-        local_binding.pattern = match self.peek() {
-            Some(token) => match token.kind {
-                TokenKind::Identifier(i) => {
-                    self.next_token();
-                    Some(Pattern::Identifier(i))
-                },
-                k => {
-                    eprintln!("[Error]: Unexpected {:?}, expected pattern", k);
-                    None
-                }
-            },
-            None => None
-        };
-
-        local_binding.equal_symbol =
-            self.expect(
-                TokenKind::Symbol(Symbol::Eq),
-                "Expected `=` after binding pattern"
-            );
-
-        local_binding.expression = Some(Box::new(self.expression_block()));
+        local_binding.identifier = Some(self.consume(TokenKind::Identifier));
+        local_binding.equal_symbol = Some(self.consume(TokenKind::Symbol(Symbol::Eq)));
+        local_binding.expression = Some(Box::new(self.parse_expression_block()));
 
         Expr::LocalBindingExpr(local_binding)
     }
 
-    fn if_expression(&mut self) -> Expr {
+    fn parse_if_expression(&mut self) -> Expr {
         let mut if_expression = expr::IfExpr::new();
 
-        if_expression.pattern = Some(Box::new(self.expression()));
-        if_expression.then_keyword =
-            self.expect(TokenKind::Keyword(Keyword::Then),
-            "Expected keyword `then` after conditional expression pattern"
-        );
-        if_expression.expression = Some(Box::new(self.expression_block()));
+        if_expression.pattern = Some(Box::new(self.parse_expression()));
+        if_expression.then_keyword = Some(self.consume(TokenKind::Keyword(Keyword::Then)));
+        if_expression.expression = Some(Box::new(self.parse_expression_block()));
 
-        self.consume_when(TokenKind::Newline);
-
-        if self.consume_when(TokenKind::Keyword(Keyword::Else)) {
-            if_expression.else_clause = Some(Box::new(self.else_clause()));
+        self.try_consume(TokenKind::Newline);
+        if self.try_consume(TokenKind::Keyword(Keyword::Else)) {
+            if_expression.else_clause = Some(Box::new(self.parse_else_clause()));
         }
 
         Expr::IfExpr(if_expression)
     }
 
-    fn else_clause(&mut self) -> Expr {
-        if self.consume_when(TokenKind::Keyword(Keyword::If)) {
-            self.if_expression()
+    fn parse_else_clause(&mut self) -> Expr {
+        if self.try_consume(TokenKind::Keyword(Keyword::If)) {
+            self.parse_if_expression()
         } else {
-            self.expression_block()
+            self.parse_expression_block()
         }
     }
 
-    fn expression_block(&mut self) -> Expr {
-        if self.consume_when(TokenKind::Begin) {
-            return self.expression_block_list();
+    fn parse_expression_block(&mut self) -> Expr {
+        if self.try_consume(TokenKind::Begin) {
+            return self.parse_expression_block_list();
         }
 
-        self.expression()
+        self.parse_expression()
     }
 
-    fn expression_block_list(&mut self) -> Expr {
+    fn parse_expression_block_list(&mut self) -> Expr {
         let mut expressions = Vec::new();
-        expressions.push(Box::new(self.expression()));
+        expressions.push(Box::new(self.parse_expression()));
 
         while self.check_all(&[
             TokenKind::Newline,
             TokenKind::Symbol(Symbol::Semicolon),
         ]) {
             self.next_token();
-            expressions.push(Box::new(self.expression()));
+            expressions.push(Box::new(self.parse_expression()));
         }
 
-        self.expect(TokenKind::End, "Expected outdent");
+        self.consume(TokenKind::End);
 
         Expr::ExprBlock(expressions)
     }
 
-    fn equality_expression(&mut self) -> Expr {
-        let mut lhs = self.comparison_expression();
+    fn parse_equality_expression(&mut self) -> Expr {
+        let mut lhs = self.parse_comparison_expression();
 
         while self.check_all(&[
             TokenKind::Symbol(Symbol::BangEq),
             TokenKind::Symbol(Symbol::Eq),
         ]) {
             let operator = self.next_token();
-            let rhs = self.comparison_expression();
+            let rhs = self.parse_comparison_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn comparison_expression(&mut self) -> Expr {
-        let mut lhs = self.additive_expression();
+    fn parse_comparison_expression(&mut self) -> Expr {
+        let mut lhs = self.parse_additive_expression();
 
         while self.check_all(&[
             TokenKind::Symbol(Symbol::Lt),
@@ -216,60 +207,60 @@ impl Parser {
             TokenKind::Symbol(Symbol::GtEq),
         ]) {
             let operator = self.next_token();
-            let rhs = self.additive_expression();
+            let rhs = self.parse_additive_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn additive_expression(&mut self) -> Expr {
-        let mut lhs = self.multiplicative_expression();
+    fn parse_additive_expression(&mut self) -> Expr {
+        let mut lhs = self.parse_multiplicative_expression();
 
         while self.check_all(&[
             TokenKind::Symbol(Symbol::Plus),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
             let operator = self.next_token();
-            let rhs = self.multiplicative_expression();
+            let rhs = self.parse_multiplicative_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn multiplicative_expression(&mut self) -> Expr {
-        let mut lhs = self.unary_expression();
+    fn parse_multiplicative_expression(&mut self) -> Expr {
+        let mut lhs = self.parse_unary_expression();
 
         while self.check_all(&[
             TokenKind::Symbol(Symbol::Asterisk),
             TokenKind::Symbol(Symbol::ForwardSlash),
         ]) {
             let operator = self.next_token();
-            let rhs = self.unary_expression();
+            let rhs = self.parse_unary_expression();
             lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn unary_expression(&mut self) -> Expr {
+    fn parse_unary_expression(&mut self) -> Expr {
         while self.check_all(&[
             TokenKind::Symbol(Symbol::Bang),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
             let operator = self.next_token();
-            let rhs = self.additive_expression();
+            let rhs = self.parse_additive_expression();
             return Expr::Unary(operator, Box::new(rhs))
         }
 
-        self.primary()
+        self.parse_primary()
     }
 
-    fn primary(&mut self) -> Expr {
+    fn parse_primary(&mut self) -> Expr {
         match self.next_token().kind {
-            TokenKind::Identifier(identifer) => {
-                Expr::Identifier(identifer)
+            TokenKind::Identifier => {
+                Expr::Identifier
             },
             TokenKind::Keyword(Keyword::False) => {
                 Expr::Literal(ExprLiteral::Bool(false))
@@ -278,25 +269,13 @@ impl Parser {
                 Expr::Literal(ExprLiteral::Bool(true))
             },
             TokenKind::Literal(literal) => match literal {
-                Literal::Int { value, .. } => {
-                    Expr::Literal(ExprLiteral::Int(value))
+                Literal::Integer(base) => {
+                    Expr::Literal(ExprLiteral::Integer(base))
                 },
-                Literal::Float { value, .. } => {
-                    Expr::Literal(ExprLiteral::Float(value))
+                Literal::Float(base) => {
+                    Expr::Literal(ExprLiteral::Float(base))
                 },
                 l => unimplemented!("Literal {:?}", l)
-            },
-            TokenKind::GroupingStart(GroupingDelimiter::Paren) => {
-                self.lexer.push_mode(LexerMode::Grouping);
-                let expr = self.expression();
-
-                if self.consume_when(TokenKind::GroupingEnd(GroupingDelimiter::Paren)) {
-                    self.lexer.pop_mode();
-                } else {
-                    eprintln!("Missing parenthesis grouping end delimiter!");
-                }
-
-                Expr::Grouping(Box::new(expr))
             },
             k => unimplemented!("TokenKind {:?}", k)
         }
