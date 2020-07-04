@@ -61,6 +61,8 @@ pub enum TokenKind {
 
     /// An unknown token. An error may be raised if such a token is encountered.
     Unknown(char),
+
+    Eof,
 }
 
 #[derive(Clone, Debug, PartialEq)]

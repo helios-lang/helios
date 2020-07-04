@@ -72,7 +72,7 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> Option<Token> {
+    pub fn next_token(&mut self) -> Token {
         #[allow(unreachable_patterns)]
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
@@ -81,11 +81,11 @@ impl Lexer {
         }
     }
 
-    pub fn push_mode(&mut self, mode: LexerMode) {
+    pub(crate) fn push_mode(&mut self, mode: LexerMode) {
         self.mode_stack.push(mode);
     }
 
-    pub fn pop_mode(&mut self) -> Option<LexerMode> {
+    pub(crate) fn pop_mode(&mut self) -> Option<LexerMode> {
         self.mode_stack.pop()
     }
 }
@@ -95,19 +95,20 @@ impl Lexer {
         self.mode_stack.last().cloned().unwrap_or_default()
     }
 
-    fn tokenize_normal(&mut self) -> Option<Token> {
+    fn tokenize_normal(&mut self) -> Token {
         let old_pos = self.current_pos();
 
         if self.did_enter_new_line {
-            return Some(
-                Token::with(
-                    self.indentation(),
-                    Span::new(old_pos, self.current_pos())
-                )
+            return Token::with(
+                self.indentation(),
+                Span::new(old_pos, self.current_pos())
             );
         }
 
-        let next_char = self.next_char()?;
+        let next_char = match self.next_char() {
+            Some(c) => c,
+            None => return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos())),
+        };
 
         if is_whitespace(next_char) {
             return self.next_token();
@@ -133,10 +134,10 @@ impl Lexer {
             c => TokenKind::Unknown(c)
         };
 
-        Some(Token::with(kind, Span::new(old_pos, self.current_pos())))
+        Token::with(kind, Span::new(old_pos, self.current_pos()))
     }
 
-    fn tokenize_grouping(&mut self) -> Option<Token> {
+    fn tokenize_grouping(&mut self) -> Token {
         // todo!("Lexer::tokenize_grouping")
         self.tokenize_normal()
     }
@@ -162,11 +163,11 @@ impl Lexer {
     }
 
     /// Checks if the `Cursor` has reached the end of the input.
-    pub fn is_at_end(&self) -> bool {
+    pub(crate) fn is_at_end(&self) -> bool {
         self.cursor.source_len() == 0
     }
 
-    fn current_pos(&self) -> Position {
+    pub(crate) fn current_pos(&self) -> Position {
         self.cursor.pos
     }
 
