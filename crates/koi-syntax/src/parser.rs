@@ -97,11 +97,11 @@ impl Parser {
 
     fn parse_expression(&mut self) -> ExpressionNode {
         if self.try_consume(TokenKind::Eof) {
-            return ExpressionNode::Missing;
+            return ExpressionNode::Missing(self.lexer.current_pos());
         }
 
         if self.try_consume(TokenKind::Newline) {
-            return ExpressionNode::Unexpected(TokenKind::Newline);
+            return ExpressionNode::Unexpected(TokenKind::Newline, self.lexer.current_pos());
         }
 
         if self.try_consume(TokenKind::Keyword(Keyword::Let)) {
@@ -254,23 +254,24 @@ impl Parser {
 
                 ExpressionNode::GroupedExpressionNode(grouped_expression)
             },
-            k => ExpressionNode::Unexpected(k.clone())
+            k => ExpressionNode::Unexpected(k.clone(), self.lexer.current_pos())
         }
     }
 }
 
 fn prefix_binding_power(symbol: Symbol) -> u8 {
     match symbol {
-        Symbol::Minus => 5,
+        Symbol::Minus | Symbol::Bang => 9,
         _ => panic!("Bad operator: {:?}", symbol)
     }
 }
 
 fn infix_binding_power(symbol: Symbol) -> (u8, u8) {
     match symbol {
-        Symbol::Eq => (2, 1),
-        Symbol::Plus | Symbol::Minus => (3, 4),
-        Symbol::Asterisk | Symbol::ForwardSlash => (5, 6),
+        Symbol::Eq | Symbol::BangEq => (2, 1),
+        Symbol::Lt | Symbol::Gt | Symbol::LtEq | Symbol::GtEq => (3, 4),
+        Symbol::Plus | Symbol::Minus => (5, 6),
+        Symbol::Asterisk | Symbol::ForwardSlash => (7, 8),
         _ => panic!("Bad operator: {:?}", symbol)
     }
 }

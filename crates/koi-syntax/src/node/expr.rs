@@ -1,3 +1,4 @@
+use crate::source::Position;
 use crate::token::*;
 use std::default::Default;
 use std::fmt::Debug;
@@ -31,10 +32,10 @@ pub enum ExpressionNode {
     BlockExpressionNode(Vec<Box<ExpressionNode>>),
 
     /// An unexpected token kind.
-    Unexpected(TokenKind),
+    Unexpected(TokenKind, Position),
 
     /// A missing expression node.
-    Missing,
+    Missing(Position),
 }
 
 #[derive(Clone, Debug, PartialEq)]
