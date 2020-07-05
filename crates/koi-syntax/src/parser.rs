@@ -1,17 +1,9 @@
-use crate::decl::Decl;
-use crate::expr::{self, Expr, ExprLiteral};
 use crate::lexer::Lexer;
+use crate::node::*;
 use crate::source::Span;
 use crate::token::*;
 
-pub type Ast = Vec<AstNode>;
-
-#[derive(Debug)]
-pub enum AstNode {
-    Expr(Expr),
-    Decl(Decl),
-    Eof,
-}
+pub type Ast = Vec<Node>;
 
 pub struct Parser {
     lexer: Lexer,
@@ -93,24 +85,24 @@ impl Parser {
 }
 
 impl Parser {
-    fn parse_program(&mut self) -> AstNode {
+    fn parse_program(&mut self) -> Node {
         self.try_consume(TokenKind::Newline);
 
         // TODO: This may never be called
         if self.try_consume(TokenKind::Eof) {
-            return AstNode::Eof;
+            return Node::Eof;
         }
 
-        AstNode::Expr(self.parse_expression())
+        Node::ExpressionNode(self.parse_expression())
     }
 
-    fn parse_expression(&mut self) -> Expr {
+    fn parse_expression(&mut self) -> ExpressionNode {
         if self.try_consume(TokenKind::Eof) {
-            return Expr::Missing;
+            return ExpressionNode::Missing;
         }
 
         if self.try_consume(TokenKind::Newline) {
-            return Expr::Unexpected(TokenKind::Newline);
+            return ExpressionNode::Unexpected(TokenKind::Newline);
         }
 
         if self.try_consume(TokenKind::Keyword(Keyword::Let)) {
@@ -124,19 +116,19 @@ impl Parser {
         self.parse_equality_expression()
     }
 
-    fn parse_let_expression(&mut self) -> Expr {
-        let mut local_binding = expr::LocalBinding::new();
+    fn parse_let_expression(&mut self) -> ExpressionNode {
+        let mut local_binding = LocalBindingNode::new();
 
         local_binding
             .identifier(self.consume(TokenKind::Identifier))
             .equal_symbol(self.consume(TokenKind::Symbol(Symbol::Eq)))
             .expression(self.parse_expression_block());
 
-        Expr::LocalBindingExpr(local_binding)
+        ExpressionNode::LocalBindingNode(local_binding)
     }
 
-    fn parse_if_expression(&mut self) -> Expr {
-        let mut if_expression = expr::IfExpr::new();
+    fn parse_if_expression(&mut self) -> ExpressionNode {
+        let mut if_expression = IfExpressionNode::new();
 
         if_expression
             .pattern(self.parse_expression())
@@ -148,10 +140,10 @@ impl Parser {
             if_expression.else_clause(self.parse_else_clause());
         }
 
-        Expr::IfExpr(if_expression)
+        ExpressionNode::IfExpressionNode(if_expression)
     }
 
-    fn parse_else_clause(&mut self) -> Expr {
+    fn parse_else_clause(&mut self) -> ExpressionNode {
         if self.try_consume(TokenKind::Keyword(Keyword::If)) {
             self.parse_if_expression()
         } else {
@@ -159,7 +151,7 @@ impl Parser {
         }
     }
 
-    fn parse_expression_block(&mut self) -> Expr {
+    fn parse_expression_block(&mut self) -> ExpressionNode {
         if self.try_consume(TokenKind::Begin) {
             return self.parse_expression_block_list();
         }
@@ -167,7 +159,7 @@ impl Parser {
         self.parse_expression()
     }
 
-    fn parse_expression_block_list(&mut self) -> Expr {
+    fn parse_expression_block_list(&mut self) -> ExpressionNode {
         let mut expressions = Vec::new();
         expressions.push(Box::new(self.parse_expression()));
 
@@ -181,10 +173,10 @@ impl Parser {
 
         self.consume(TokenKind::End);
 
-        Expr::ExprBlock(expressions)
+        ExpressionNode::BlockExpression(expressions)
     }
 
-    fn parse_equality_expression(&mut self) -> Expr {
+    fn parse_equality_expression(&mut self) -> ExpressionNode {
         let mut lhs = self.parse_comparison_expression();
 
         while self.check_all(&[
@@ -193,13 +185,13 @@ impl Parser {
         ]) {
             let operator = self.next_token();
             let rhs = self.parse_comparison_expression();
-            lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
+            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn parse_comparison_expression(&mut self) -> Expr {
+    fn parse_comparison_expression(&mut self) -> ExpressionNode {
         let mut lhs = self.parse_additive_expression();
 
         while self.check_all(&[
@@ -210,13 +202,13 @@ impl Parser {
         ]) {
             let operator = self.next_token();
             let rhs = self.parse_additive_expression();
-            lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
+            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn parse_additive_expression(&mut self) -> Expr {
+    fn parse_additive_expression(&mut self) -> ExpressionNode {
         let mut lhs = self.parse_multiplicative_expression();
 
         while self.check_all(&[
@@ -225,13 +217,13 @@ impl Parser {
         ]) {
             let operator = self.next_token();
             let rhs = self.parse_multiplicative_expression();
-            lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
+            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn parse_multiplicative_expression(&mut self) -> Expr {
+    fn parse_multiplicative_expression(&mut self) -> ExpressionNode {
         let mut lhs = self.parse_unary_expression();
 
         while self.check_all(&[
@@ -240,46 +232,46 @@ impl Parser {
         ]) {
             let operator = self.next_token();
             let rhs = self.parse_unary_expression();
-            lhs = Expr::Binary(operator, Box::new(lhs), Box::new(rhs))
+            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
         }
 
         lhs
     }
 
-    fn parse_unary_expression(&mut self) -> Expr {
+    fn parse_unary_expression(&mut self) -> ExpressionNode {
         while self.check_all(&[
             TokenKind::Symbol(Symbol::Bang),
             TokenKind::Symbol(Symbol::Minus),
         ]) {
             let operator = self.next_token();
             let rhs = self.parse_additive_expression();
-            return Expr::Unary(operator, Box::new(rhs))
+            return ExpressionNode::UnaryExpression(operator, Box::new(rhs))
         }
 
         self.parse_primary()
     }
 
-    fn parse_primary(&mut self) -> Expr {
+    fn parse_primary(&mut self) -> ExpressionNode {
         match self.next_token().kind {
             TokenKind::Identifier => {
-                Expr::Identifier
+                ExpressionNode::Identifier
             },
             TokenKind::Keyword(Keyword::False) => {
-                Expr::Literal(ExprLiteral::Bool(false))
+                ExpressionNode::LiteralNode(LiteralNode::Boolean(false))
             },
             TokenKind::Keyword(Keyword::True) => {
-                Expr::Literal(ExprLiteral::Bool(true))
+                ExpressionNode::LiteralNode(LiteralNode::Boolean(true))
             },
             TokenKind::Literal(literal) => match literal {
                 Literal::Integer(base) => {
-                    Expr::Literal(ExprLiteral::Integer(base))
+                    ExpressionNode::LiteralNode(LiteralNode::Integer(base))
                 },
                 Literal::Float(base) => {
-                    Expr::Literal(ExprLiteral::Float(base))
+                    ExpressionNode::LiteralNode(LiteralNode::Float(base))
                 },
                 l => unimplemented!("Literal {:?}", l)
             },
-            k => Expr::Unexpected(k)
+            k => ExpressionNode::Unexpected(k)
         }
     }
 }
