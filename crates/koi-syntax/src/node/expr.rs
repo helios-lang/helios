@@ -3,7 +3,7 @@ use crate::token::*;
 use std::default::Default;
 use std::fmt::Debug;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ExpressionNode {
     /// A named reference to an identifier.
     Identifier,
@@ -23,13 +23,13 @@ pub enum ExpressionNode {
 
     /// A binary expression holding a token (signifying the operator) and two
     /// expressions (signifying the left and right hand sides of the operation).
-    BinaryExpression(Token, Box<ExpressionNode>, Box<ExpressionNode>),
+    BinaryExpressionNode(BinaryExpressionNode),
 
     /// A grouped expression (constructed when an expression is parenthesised).
-    GroupedExpression(Box<ExpressionNode>),
+    GroupedExpressionNode(Box<ExpressionNode>),
 
     /// An indented block of expressions.
-    BlockExpression(Vec<Box<ExpressionNode>>),
+    BlockExpressionNode(Vec<Box<ExpressionNode>>),
 
     /// An unexpected token kind.
     Unexpected(TokenKind),
@@ -38,7 +38,7 @@ pub enum ExpressionNode {
     Missing,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum LiteralNode {
     Boolean(bool),
 
@@ -49,7 +49,7 @@ pub enum LiteralNode {
     Integer(Token),
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct LocalBindingNode {
     parent: Option<Box<Node>>,
     identifier: Option<Token>,
@@ -78,7 +78,7 @@ impl LocalBindingNode {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct IfExpressionNode {
     pattern: Option<Box<ExpressionNode>>,
     then_keyword: Option<Token>,
@@ -108,6 +108,34 @@ impl IfExpressionNode {
 
     pub fn else_clause(&mut self, else_clause: ExpressionNode) -> &mut Self {
         self.else_clause = Some(Box::new(else_clause));
+        self
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct BinaryExpressionNode {
+    operator: Option<Token>,
+    lhs: Option<Box<ExpressionNode>>,
+    rhs: Option<Box<ExpressionNode>>,
+}
+
+impl BinaryExpressionNode {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn operator<T: Into<Option<Token>>>(&mut self, operator: T) -> &mut Self {
+        self.operator = operator.into();
+        self
+    }
+
+    pub fn lhs(&mut self, lhs: ExpressionNode) -> &mut Self {
+        self.lhs = Some(Box::new(lhs));
+        self
+    }
+
+    pub fn rhs(&mut self, rhs: ExpressionNode) -> &mut Self {
+        self.rhs = Some(Box::new(rhs));
         self
     }
 }

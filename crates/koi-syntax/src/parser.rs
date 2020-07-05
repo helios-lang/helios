@@ -88,7 +88,6 @@ impl Parser {
     fn parse_program(&mut self) -> Node {
         self.try_consume(TokenKind::Newline);
 
-        // TODO: This may never be called
         if self.try_consume(TokenKind::Eof) {
             return Node::Eof;
         }
@@ -113,7 +112,7 @@ impl Parser {
             return self.parse_if_expression();
         }
 
-        self.parse_equality_expression()
+        self.parse_binary_expression(0)
     }
 
     fn parse_let_expression(&mut self) -> ExpressionNode {
@@ -173,82 +172,34 @@ impl Parser {
 
         self.consume(TokenKind::End);
 
-        ExpressionNode::BlockExpression(expressions)
+        ExpressionNode::BlockExpressionNode(expressions)
     }
 
-    fn parse_equality_expression(&mut self) -> ExpressionNode {
-        let mut lhs = self.parse_comparison_expression();
+    fn parse_binary_expression(&mut self, min_precedence: u8) -> ExpressionNode {
+        let mut lhs = self.parse_primary();
 
-        while self.check_all(&[
-            TokenKind::Symbol(Symbol::BangEq),
-            TokenKind::Symbol(Symbol::Eq),
-        ]) {
+        loop {
+            let operator = match self.peek() {
+                Some(token) => match token.kind {
+                    TokenKind::Symbol(symbol) => symbol,
+                    _ => break,
+                },
+                None => break
+            };
+
+            let (left_precedence, right_precedence) = infix_binding_power(operator);
+            if left_precedence < min_precedence {
+                break;
+            }
+
             let operator = self.next_token();
-            let rhs = self.parse_comparison_expression();
-            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
+            let rhs = self.parse_binary_expression(right_precedence);
+            let mut binary_expression = BinaryExpressionNode::new();
+            binary_expression.operator(operator).lhs(lhs.clone()).rhs(rhs);
+            lhs = ExpressionNode::BinaryExpressionNode(binary_expression);
         }
 
         lhs
-    }
-
-    fn parse_comparison_expression(&mut self) -> ExpressionNode {
-        let mut lhs = self.parse_additive_expression();
-
-        while self.check_all(&[
-            TokenKind::Symbol(Symbol::Lt),
-            TokenKind::Symbol(Symbol::LtEq),
-            TokenKind::Symbol(Symbol::Gt),
-            TokenKind::Symbol(Symbol::GtEq),
-        ]) {
-            let operator = self.next_token();
-            let rhs = self.parse_additive_expression();
-            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
-        }
-
-        lhs
-    }
-
-    fn parse_additive_expression(&mut self) -> ExpressionNode {
-        let mut lhs = self.parse_multiplicative_expression();
-
-        while self.check_all(&[
-            TokenKind::Symbol(Symbol::Plus),
-            TokenKind::Symbol(Symbol::Minus),
-        ]) {
-            let operator = self.next_token();
-            let rhs = self.parse_multiplicative_expression();
-            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
-        }
-
-        lhs
-    }
-
-    fn parse_multiplicative_expression(&mut self) -> ExpressionNode {
-        let mut lhs = self.parse_unary_expression();
-
-        while self.check_all(&[
-            TokenKind::Symbol(Symbol::Asterisk),
-            TokenKind::Symbol(Symbol::ForwardSlash),
-        ]) {
-            let operator = self.next_token();
-            let rhs = self.parse_unary_expression();
-            lhs = ExpressionNode::BinaryExpression(operator, Box::new(lhs), Box::new(rhs))
-        }
-
-        lhs
-    }
-
-    fn parse_unary_expression(&mut self) -> ExpressionNode {
-        while self.check_all(&[
-            TokenKind::Symbol(Symbol::Bang),
-            TokenKind::Symbol(Symbol::Minus),
-        ]) {
-            let operator = self.next_token();
-            let rhs = self.parse_additive_expression();
-            return ExpressionNode::UnaryExpression(operator, Box::new(rhs))
-        }
-
-        self.parse_primary()
     }
 
     fn parse_primary(&mut self) -> ExpressionNode {
@@ -274,5 +225,21 @@ impl Parser {
             },
             k => ExpressionNode::Unexpected(k.clone())
         }
+    }
+}
+
+fn prefix_binding_power(symbol: Symbol) -> u8 {
+    match symbol {
+        Symbol::Minus => 5,
+        _ => panic!("3 Bad operator: {:?}", symbol)
+    }
+}
+
+fn infix_binding_power(symbol: Symbol) -> (u8, u8) {
+    match symbol {
+        Symbol::Eq => (2, 1),
+        Symbol::Plus | Symbol::Minus => (3, 4),
+        Symbol::Asterisk | Symbol::ForwardSlash => (5, 6),
+        _ => panic!("Bad operator: {:?}")
     }
 }
