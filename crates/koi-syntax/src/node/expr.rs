@@ -50,9 +50,9 @@ pub enum LiteralNode {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct LocalBindingNode {
-    identifier: Option<Token>,
-    equal_symbol: Option<Token>,
-    expression: Option<Box<ExpressionNode>>,
+    pub(crate) identifier: Option<Token>,
+    pub(crate) equal_symbol: Option<Token>,
+    pub(crate) expression: Option<Box<ExpressionNode>>,
 }
 
 impl LocalBindingNode {
@@ -78,10 +78,10 @@ impl LocalBindingNode {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct IfExpressionNode {
-    pattern: Option<Box<ExpressionNode>>,
-    then_keyword: Option<Token>,
-    expression: Option<Box<ExpressionNode>>,
-    else_clause: Option<Box<ExpressionNode>>,
+    pub(crate) pattern: Option<Box<ExpressionNode>>,
+    pub(crate) then_keyword: Option<Token>,
+    pub(crate) expression: Option<Box<ExpressionNode>>,
+    pub(crate) else_clause: Option<Box<ExpressionNode>>,
 }
 
 impl IfExpressionNode {
@@ -112,9 +112,9 @@ impl IfExpressionNode {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct BinaryExpressionNode {
-    operator: Option<Token>,
-    lhs: Option<Box<ExpressionNode>>,
-    rhs: Option<Box<ExpressionNode>>,
+    pub(crate) operator: Option<Token>,
+    pub(crate) lhs: Option<Box<ExpressionNode>>,
+    pub(crate) rhs: Option<Box<ExpressionNode>>,
 }
 
 impl BinaryExpressionNode {
@@ -140,9 +140,9 @@ impl BinaryExpressionNode {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct GroupedExpressionNode {
-    start_delimiter: Option<Token>,
-    expression: Option<Box<ExpressionNode>>,
-    end_delimiter: Option<Token>,
+    pub(crate) start_delimiter: Option<Token>,
+    pub(crate) expression: Option<Box<ExpressionNode>>,
+    pub(crate) end_delimiter: Option<Token>,
 }
 
 impl GroupedExpressionNode {
