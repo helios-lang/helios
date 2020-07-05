@@ -52,9 +52,9 @@ pub enum ExprLiteral {
 
 #[derive(Debug, Default)]
 pub struct LocalBinding {
-    pub identifier: Option<Token>,
-    pub equal_symbol: Option<Token>,
-    pub expression: Option<Box<Expr>>,
+    identifier: Option<Token>,
+    equal_symbol: Option<Token>,
+    expression: Option<Box<Expr>>,
 }
 
 impl LocalBinding {
@@ -80,14 +80,34 @@ impl LocalBinding {
 
 #[derive(Debug, Default)]
 pub struct IfExpr {
-    pub pattern: Option<Box<Expr>>,
-    pub then_keyword: Option<Token>,
-    pub expression: Option<Box<Expr>>,
-    pub else_clause: Option<Box<Expr>>,
+    pattern: Option<Box<Expr>>,
+    then_keyword: Option<Token>,
+    expression: Option<Box<Expr>>,
+    else_clause: Option<Box<Expr>>,
 }
 
 impl IfExpr {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn pattern(&mut self, pattern: Expr) -> &mut Self {
+        self.pattern = Some(Box::new(pattern));
+        self
+    }
+
+    pub fn then_keyword<T: Into<Option<Token>>>(&mut self, then_keyword: T) -> &mut Self {
+        self.then_keyword = then_keyword.into();
+        self
+    }
+
+    pub fn expression(&mut self, expression: Expr) -> &mut Self {
+        self.expression = Some(Box::new(expression));
+        self
+    }
+
+    pub fn else_clause(&mut self, else_clause: Expr) -> &mut Self {
+        self.else_clause = Some(Box::new(else_clause));
+        self
     }
 }

@@ -105,12 +105,12 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Expr {
-        if self.try_consume(TokenKind::Newline) {
-            return Expr::Unexpected(TokenKind::Newline);
-        }
-
         if self.try_consume(TokenKind::Eof) {
             return Expr::Missing;
+        }
+
+        if self.try_consume(TokenKind::Newline) {
+            return Expr::Unexpected(TokenKind::Newline);
         }
 
         if self.try_consume(TokenKind::Keyword(Keyword::Let)) {
@@ -138,13 +138,14 @@ impl Parser {
     fn parse_if_expression(&mut self) -> Expr {
         let mut if_expression = expr::IfExpr::new();
 
-        if_expression.pattern = Some(Box::new(self.parse_expression()));
-        if_expression.then_keyword = Some(self.consume(TokenKind::Keyword(Keyword::Then)));
-        if_expression.expression = Some(Box::new(self.parse_expression_block()));
+        if_expression
+            .pattern(self.parse_expression())
+            .then_keyword(self.consume(TokenKind::Keyword(Keyword::Then)))
+            .expression(self.parse_expression_block());
 
         self.try_consume(TokenKind::Newline);
         if self.try_consume(TokenKind::Keyword(Keyword::Else)) {
-            if_expression.else_clause = Some(Box::new(self.parse_else_clause()));
+            if_expression.else_clause(self.parse_else_clause());
         }
 
         Expr::IfExpr(if_expression)
@@ -278,7 +279,7 @@ impl Parser {
                 },
                 l => unimplemented!("Literal {:?}", l)
             },
-            k => unimplemented!("TokenKind {:?}", k)
+            k => Expr::Unexpected(k)
         }
     }
 }
