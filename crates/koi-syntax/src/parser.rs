@@ -252,7 +252,8 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> ExpressionNode {
-        match self.next_token().kind {
+        let token = self.next_token();
+        match &token.kind {
             TokenKind::Identifier => {
                 ExpressionNode::Identifier
             },
@@ -263,15 +264,15 @@ impl Parser {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(true))
             },
             TokenKind::Literal(literal) => match literal {
-                Literal::Integer(base) => {
-                    ExpressionNode::LiteralNode(LiteralNode::Integer(base))
+                Literal::Integer(_) => {
+                    ExpressionNode::LiteralNode(LiteralNode::Integer(token))
                 },
-                Literal::Float(base) => {
-                    ExpressionNode::LiteralNode(LiteralNode::Float(base))
+                Literal::Float(_) => {
+                    ExpressionNode::LiteralNode(LiteralNode::Float(token))
                 },
                 l => unimplemented!("Literal {:?}", l)
             },
-            k => ExpressionNode::Unexpected(k)
+            k => ExpressionNode::Unexpected(k.clone())
         }
     }
 }
