@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::fmt::{self, Display};
-use std::io::{self, BufRead, BufReader, Read};
-use std::path::Path;
+use std::io::{BufRead, BufReader, Read, Result, Stdin};
+use std::path::PathBuf;
 use std::vec::IntoIter;
 
 pub const EOF_CHAR: char = '\0';
@@ -57,34 +57,46 @@ pub enum SourceType {
 
 pub struct Source<'a> {
     pub source_type: SourceType,
+    pub file_name: Option<PathBuf>,
     input: Box<dyn BufRead + 'a>,
 }
 
 impl<'a> Source<'a> {
-    pub fn stdin(stdin: &'a io::Stdin) -> io::Result<Self> {
-        Ok(Self { source_type: SourceType::Stdin, input: Box::new(stdin.lock()) })
-    }
-
-    pub fn file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        File::open(path).map(|file| Self {
-            source_type: SourceType::File,
-            input: Box::new(BufReader::new(file)),
+    pub fn stdin(stdin: &'a Stdin) -> Result<Self> {
+        Ok(Self {
+            source_type: SourceType::Stdin,
+            file_name: None,
+            input: Box::new(stdin.lock())
         })
     }
 
-    pub fn stream(input: &'a mut dyn BufRead) -> io::Result<Self> {
-        Ok(Self { source_type: SourceType::Stream, input: Box::new(input) })
+    pub fn file<P: Into<PathBuf> + Clone>(path: P) -> Result<Self> {
+        File::open(path.clone().into()).map(|file|
+            Self {
+                source_type: SourceType::File,
+                file_name: Some(path.into()),
+                input: Box::new(BufReader::new(file)),
+            }
+        )
+    }
+
+    pub fn stream(input: &'a mut dyn BufRead) -> Result<Self> {
+        Ok(Self {
+            source_type: SourceType::Stream,
+            file_name: None,
+            input: Box::new(input)
+        })
     }
 }
 
 impl<'a> Read for Source<'a> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.input.read(buf)
     }
 }
 
 impl<'a> BufRead for Source<'a> {
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
+    fn fill_buf(&mut self) -> Result<&[u8]> {
         self.input.fill_buf()
     }
 
