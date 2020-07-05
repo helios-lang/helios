@@ -62,11 +62,11 @@ impl Receiver {
     }
 
     fn send_hover_response(&self, id: usize, params: lsp_types::TextDocumentPositionParams) {
-        todo!("Receiver::send_hover_request")
+        eprintln!("Receiver::send_hover_request")
     }
 
     fn publish_diagnostics(&self, uri: lsp_types::Url) {
-        todo!("Receiver::publish_diagnostics")
+        eprintln!("Receiver::publish_diagnostics")
     }
 
     fn process_message(&mut self, message: LspMessage) {
