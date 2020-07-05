@@ -1,4 +1,4 @@
-use crate::lexer::Lexer;
+use crate::lexer::{Lexer, LexerMode};
 use crate::node::*;
 use crate::source::Span;
 use crate::token::*;
@@ -176,7 +176,11 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self, min_precedence: u8) -> ExpressionNode {
-        let mut lhs = self.parse_primary();
+        if self.check(TokenKind::Begin) {
+            return self.parse_expression_block();
+        }
+
+        let mut lhs = self.parse_unary_expression();
 
         loop {
             let operator = match self.peek() {
@@ -202,6 +206,22 @@ impl Parser {
         lhs
     }
 
+    fn parse_unary_expression(&mut self) -> ExpressionNode {
+        if let Some(token) = self.peek() {
+            match token.kind {
+                TokenKind::Symbol(symbol) => {
+                    self.next_token();
+                    let right_precedence = prefix_binding_power(symbol);
+                    let operand = self.parse_binary_expression(right_precedence);
+                    return ExpressionNode::UnaryExpression(token, Box::new(operand));
+                },
+                _ => return self.parse_primary()
+            }
+        }
+
+        self.parse_primary()
+    }
+
     fn parse_primary(&mut self) -> ExpressionNode {
         let token = self.next_token();
         match &token.kind {
@@ -223,6 +243,13 @@ impl Parser {
                 },
                 l => unimplemented!("Literal {:?}", l)
             },
+            TokenKind::GroupingStart(delimiter) => {
+                self.lexer.push_mode(LexerMode::Grouping);
+                let expr = self.parse_binary_expression(0);
+                self.consume(TokenKind::GroupingEnd(delimiter.clone()));
+                self.lexer.pop_mode();
+                ExpressionNode::GroupedExpressionNode(Box::new(expr))
+            },
             k => ExpressionNode::Unexpected(k.clone())
         }
     }
@@ -240,6 +267,6 @@ fn infix_binding_power(symbol: Symbol) -> (u8, u8) {
         Symbol::Eq => (2, 1),
         Symbol::Plus | Symbol::Minus => (3, 4),
         Symbol::Asterisk | Symbol::ForwardSlash => (5, 6),
-        _ => panic!("Bad operator: {:?}")
+        _ => panic!("Bad operator: {:?}", symbol)
     }
 }

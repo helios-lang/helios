@@ -145,8 +145,41 @@ impl Lexer {
     }
 
     fn tokenize_grouping(&mut self) -> Token {
-        // todo!("Lexer::tokenize_grouping")
-        self.tokenize_normal()
+        let old_pos = self.current_pos();
+
+        let next_char = match self.next_char() {
+            Some(c) => c,
+            None => {
+                // if !self.indentation_stack.is_empty() {
+                //     self.indentation_stack.pop();
+                //     return Token::with(TokenKind::End, Span::new(old_pos, self.current_pos()));
+                // } else {
+                    return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos()))
+                // }
+            }
+        };
+
+        // Skip whitespace
+        if is_whitespace(next_char) || next_char == '\n' {
+            return self.next_token();
+        }
+
+        let kind = match next_char {
+            '/' => {
+                if self.peek() == '/' {
+                    self.line_comment()
+                } else {
+                    self.symbol(next_char)
+                }
+            },
+            c if is_grouping_delimiter(c) => self.grouping(c),
+            c if is_symbol(c) => self.symbol(c),
+            c if is_identifier_start(c) => self.identifier(c),
+            c @ '0'..='9' => self.number(c),
+            c => TokenKind::Unknown(c)
+        };
+
+        Token::with(kind, Span::new(old_pos, self.current_pos()))
     }
 }
 
