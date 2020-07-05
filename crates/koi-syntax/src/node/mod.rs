@@ -4,7 +4,7 @@ mod decl;
 pub use decl::*;
 pub use expr::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Node {
     DeclarationNode(DeclarationNode),
     ExpressionNode(ExpressionNode),

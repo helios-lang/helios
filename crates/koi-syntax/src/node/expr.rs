@@ -3,7 +3,7 @@ use crate::token::*;
 use std::default::Default;
 use std::fmt::Debug;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ExpressionNode {
     /// A named reference to an identifier.
     Identifier,
@@ -38,18 +38,18 @@ pub enum ExpressionNode {
     Missing,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LiteralNode {
     Boolean(bool),
 
     /// A float literal.
-    Float(Base),
+    Float(Token),
 
     /// An integer literal.
-    Integer(Base),
+    Integer(Token),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct LocalBindingNode {
     parent: Option<Box<Node>>,
     identifier: Option<Token>,
@@ -78,7 +78,7 @@ impl LocalBindingNode {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct IfExpressionNode {
     pattern: Option<Box<ExpressionNode>>,
     then_keyword: Option<Token>,
