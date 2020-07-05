@@ -1,20 +1,21 @@
 use crate::token::*;
-use crate::lexer::*;
-use crate::source::{Position, Span};
 use super::read_from_string;
 
 macro_rules! test_integer {
     ($string:expr, $base:expr) => {
-        create_test! {
+        create_lexer_test! {
             $string,
             vec! {
-                Token::with(
-                    TokenKind::Literal(Literal::Integer($base)),
-                    Span::new(Position::new(0, 0, 0), Position::new(0, $string.len(), $string.len()))
+                $crate::token::Token::with(
+                    $crate::token::TokenKind::Literal(Literal::Integer($base)),
+                    $crate::source::Span::new(
+                        $crate::source::Position::new(0, 0, 0),
+                        $crate::source::Position::new(0, $string.len(), $string.len())
+                    )
                 )
             }
         }
-    }
+    };
 }
 
 #[test]

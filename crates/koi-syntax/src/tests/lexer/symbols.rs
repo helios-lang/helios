@@ -1,5 +1,4 @@
 use crate::token::*;
-use crate::lexer::*;
 use crate::source::{Position, Span};
 use super::read_from_string;
 
@@ -8,16 +7,19 @@ macro_rules! test_symbol {
         test_symbol!($string, $symbol, $string.len())
     };
     ($string:expr, $symbol:expr, $size:expr) => {
-        create_test! {
+        create_lexer_test! {
             $string,
             vec! {
-                Token::with(
-                    TokenKind::Symbol($symbol),
-                    Span::new(Position::new(0, 0, 0), Position::new(0, $size, $size))
+                $crate::token::Token::with(
+                    $crate::token::TokenKind::Symbol($symbol),
+                    $crate::source::Span::new(
+                        $crate::source::Position::new(0, 0, 0),
+                        $crate::source::Position::new(0, $size, $size)
+                    )
                 )
             }
         }
-    }
+    };
 }
 
 #[test]
@@ -64,7 +66,7 @@ fn test_valid_composed_symbols() {
 
 #[test]
 fn test_invalid_composed_symbols() {
-    create_test! {
+    create_lexer_test! {
         "=!",
         vec! {
             Token::with(
@@ -78,7 +80,7 @@ fn test_invalid_composed_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "=<",
         vec! {
             Token::with(
@@ -92,7 +94,7 @@ fn test_invalid_composed_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "-<",
         vec! {
             Token::with(
@@ -106,7 +108,7 @@ fn test_invalid_composed_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         ">-",
         vec! {
             Token::with(
@@ -123,7 +125,7 @@ fn test_invalid_composed_symbols() {
 
 #[test]
 fn test_misleading_symbols() {
-    create_test! {
+    create_lexer_test! {
         ";",
         vec! {
             Token::with(
@@ -133,7 +135,7 @@ fn test_misleading_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "–",
         vec! {
             Token::with(
@@ -143,7 +145,7 @@ fn test_misleading_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "—",
         vec! {
             Token::with(
@@ -153,7 +155,7 @@ fn test_misleading_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "–>",
         vec! {
             Token::with(
@@ -167,7 +169,7 @@ fn test_misleading_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "—>",
         vec! {
             Token::with(
@@ -181,7 +183,7 @@ fn test_misleading_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "<–",
         vec! {
             Token::with(
@@ -195,7 +197,7 @@ fn test_misleading_symbols() {
         }
     }
 
-    create_test! {
+    create_lexer_test! {
         "<—",
         vec! {
             Token::with(
@@ -212,7 +214,7 @@ fn test_misleading_symbols() {
 
 // #[test]
 // fn test_erroneous_grouping_delimiters() {
-//     create_test! {
+//     create_lexer_test! {
 //         "{",
 //         vec! {
 //             Token::with(
@@ -226,7 +228,7 @@ fn test_misleading_symbols() {
 //         }
 //     }
 
-//     create_test! {
+//     create_lexer_test! {
 //         "[",
 //         vec! {
 //             Token::with(
@@ -240,7 +242,7 @@ fn test_misleading_symbols() {
 //         }
 //     }
 
-//     create_test! {
+//     create_lexer_test! {
 //         "(",
 //         vec! {
 //             Token::with(
@@ -254,7 +256,7 @@ fn test_misleading_symbols() {
 //         }
 //     }
 
-//     create_test! {
+//     create_lexer_test! {
 //         "}",
 //         vec! {
 //             Token::with(
@@ -264,7 +266,7 @@ fn test_misleading_symbols() {
 //         }
 //     }
 
-//     create_test! {
+//     create_lexer_test! {
 //         "]",
 //         vec! {
 //             Token::with(
@@ -274,7 +276,7 @@ fn test_misleading_symbols() {
 //         }
 //     }
 
-//     create_test! {
+//     create_lexer_test! {
 //         ")",
 //         vec! {
 //             Token::with(

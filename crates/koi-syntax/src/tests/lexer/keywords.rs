@@ -1,6 +1,4 @@
 use crate::token::*;
-use crate::lexer::*;
-use crate::source::{Position, Span};
 use super::read_from_string;
 
 macro_rules! test_keyword {
@@ -8,16 +6,19 @@ macro_rules! test_keyword {
         test_keyword!($string, $keyword, $string.len())
     };
     ($string:expr, $keyword:expr, $size:expr) => {
-        create_test! {
+        create_lexer_test! {
             $string,
             vec! {
-                Token::with(
-                    TokenKind::Keyword($keyword),
-                    Span::new(Position::new(0, 0, 0), Position::new(0, $size, $size))
+                $crate::token::Token::with(
+                    $crate::token::TokenKind::Keyword($keyword),
+                    $crate::source::Span::new(
+                        $crate::source::Position::new(0, 0, 0),
+                        $crate::source::Position::new(0, $size, $size)
+                    )
                 )
             }
         }
-    }
+    };
 }
 
 #[test]

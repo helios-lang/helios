@@ -1,25 +1,22 @@
 #[macro_export]
-/// Creates a new simple test.
+/// Creates a new simple lexer test.
 ///
 /// Requires a `str` literal (representing the source code) and a `Vec<Token>`
-/// (representing the expected tokenized form). This macro will then tokenize
-/// the source code, after which its result will be checked with the expected
-/// form.
-macro_rules! create_test {
+/// (representing the final tokenized form). This macro will tokenize the `str`
+/// literal and its result will be determined if it is equal to the expected
+/// tokens.
+macro_rules! create_lexer_test {
     ($string:expr, $expected:expr) => {
         let string = $string;
         let mut s = read_from_string(string);
-        let source = $crate::Source::stream(&mut s);
+        let source = $crate::source::Source::stream(&mut s);
         match source {
             Ok(source) => {
                 let mut tokens = Vec::new();
-                let mut lexer = Lexer::with(source);
+                let mut lexer = $crate::lexer::Lexer::with(source);
 
-                loop {
-                    match lexer.next_token() {
-                        token if token.kind == TokenKind::Eof => break,
-                        token => tokens.push(token),
-                    }
+                while !lexer.is_at_end() {
+                    tokens.push(lexer.next_token());
                 }
 
                 assert_eq!(tokens, $expected)
