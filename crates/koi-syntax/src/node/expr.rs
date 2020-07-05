@@ -1,4 +1,3 @@
-use super::Node;
 use crate::token::*;
 use std::default::Default;
 use std::fmt::Debug;
@@ -26,7 +25,7 @@ pub enum ExpressionNode {
     BinaryExpressionNode(BinaryExpressionNode),
 
     /// A grouped expression (constructed when an expression is parenthesised).
-    GroupedExpressionNode(Box<ExpressionNode>),
+    GroupedExpressionNode(GroupedExpressionNode),
 
     /// An indented block of expressions.
     BlockExpressionNode(Vec<Box<ExpressionNode>>),
@@ -51,7 +50,6 @@ pub enum LiteralNode {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct LocalBindingNode {
-    parent: Option<Box<Node>>,
     identifier: Option<Token>,
     equal_symbol: Option<Token>,
     expression: Option<Box<ExpressionNode>>,
@@ -136,6 +134,34 @@ impl BinaryExpressionNode {
 
     pub fn rhs(&mut self, rhs: ExpressionNode) -> &mut Self {
         self.rhs = Some(Box::new(rhs));
+        self
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct GroupedExpressionNode {
+    start_delimiter: Option<Token>,
+    expression: Option<Box<ExpressionNode>>,
+    end_delimiter: Option<Token>,
+}
+
+impl GroupedExpressionNode {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn start_delimiter<T: Into<Option<Token>>>(&mut self, start_delimiter: T) -> &mut Self {
+        self.start_delimiter = start_delimiter.into();
+        self
+    }
+
+    pub fn expression(&mut self, expression: ExpressionNode) -> &mut Self {
+        self.expression = Some(Box::new(expression));
+        self
+    }
+
+    pub fn end_delimiter<T: Into<Option<Token>>>(&mut self, end_delimiter: T) -> &mut Self {
+        self.end_delimiter = end_delimiter.into();
         self
     }
 }

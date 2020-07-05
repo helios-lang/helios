@@ -245,10 +245,14 @@ impl Parser {
             },
             TokenKind::GroupingStart(delimiter) => {
                 self.lexer.push_mode(LexerMode::Grouping);
-                let expr = self.parse_binary_expression(0);
-                self.consume(TokenKind::GroupingEnd(delimiter.clone()));
-                self.lexer.pop_mode();
-                ExpressionNode::GroupedExpressionNode(Box::new(expr))
+                let mut grouped_expression = GroupedExpressionNode::new();
+
+                grouped_expression
+                    .start_delimiter(token.clone())
+                    .expression(self.parse_expression())
+                    .end_delimiter(self.consume(TokenKind::GroupingEnd(delimiter.clone())));
+
+                ExpressionNode::GroupedExpressionNode(grouped_expression)
             },
             k => ExpressionNode::Unexpected(k.clone())
         }
@@ -258,7 +262,7 @@ impl Parser {
 fn prefix_binding_power(symbol: Symbol) -> u8 {
     match symbol {
         Symbol::Minus => 5,
-        _ => panic!("3 Bad operator: {:?}", symbol)
+        _ => panic!("Bad operator: {:?}", symbol)
     }
 }
 
