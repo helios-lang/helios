@@ -3,7 +3,7 @@
 
 use super::{LspMessage, LspResponse};
 use koi_actor::Actor;
-use koi_syntax::{Ast, token};
+use koi_syntax::Ast;
 use koi_syntax::source::{Position, Source};
 use lsp_types::Url;
 use std::collections::{HashMap, VecDeque};
@@ -103,7 +103,8 @@ impl Receiver {
             },
             LspMessage::TextDocumentCompletionRequest { id, params } => {
                 use lsp_types::{CompletionItem, CompletionItemKind};
-                let keywords: Vec<CompletionItem> = token::Keyword::keyword_list()
+                use koi_syntax::token::Keyword;
+                let keywords: Vec<CompletionItem> = Keyword::keyword_list()
                     .into_iter()
                     .map(|keyword| {
                         lsp_types::CompletionItem {
