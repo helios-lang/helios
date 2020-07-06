@@ -1,8 +1,7 @@
 use crate::errors::LexerError;
 use crate::source::Span;
-use std::fmt::{self, Debug};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
@@ -15,12 +14,6 @@ impl Token {
             format!("Invalid span `{}..{}`", span.start, span.end)
         );
         Self { kind, span }
-    }
-}
-
-impl Debug for Token {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Token({:?}, {}..{})", self.kind, self.span.start, self.span.end)
     }
 }
 

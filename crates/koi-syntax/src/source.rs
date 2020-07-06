@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::fmt::{self, Display};
+use std::fmt::{self, Debug, Display};
 use std::io::{BufRead, BufReader, Read, Result, Stdin};
 use std::path::PathBuf;
 use std::vec::IntoIter;
@@ -45,6 +45,12 @@ pub struct Span {
 impl Span {
     pub fn new(start: Position, end: Position) -> Self {
         Self { start, end }
+    }
+}
+
+impl Display for Span {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}..{}", self.start, self.end)
     }
 }
 
