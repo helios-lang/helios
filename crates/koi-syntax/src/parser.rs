@@ -27,6 +27,7 @@ impl Parser {
 }
 
 impl Parser {
+    /// Peeks the next token without consuming it.
     fn peek(&mut self) -> Option<Token> {
         if self.peeked_token.is_none() {
             self.peeked_token = Some(self.lexer.next_token());
@@ -35,6 +36,7 @@ impl Parser {
         self.peeked_token.clone()
     }
 
+    /// Retrieves the next token.
     fn next_token(&mut self) -> Token {
         match self.peeked_token.take() {
             Some(token) => token,
@@ -42,6 +44,7 @@ impl Parser {
         }
     }
 
+    /// Checks if the next token is of the expected `TokenKind`.
     fn check(&mut self, kind: TokenKind) -> bool {
         match self.peek() {
             Some(token) => token.kind == kind,
@@ -49,6 +52,7 @@ impl Parser {
         }
     }
 
+    /// Checks if the next token is any one of the expected `TokenKind`s.
     fn check_all(&mut self, kinds: &[TokenKind]) -> bool {
         for kind in kinds {
             if self.check(kind.clone()) {
@@ -59,6 +63,8 @@ impl Parser {
         false
     }
 
+    /// Consumes the next token if it is of the expected `TokenKind`, otherwise
+    /// returns a `Missing` token.
     fn consume(&mut self, kind: TokenKind) -> Token {
         if let Some(token) = self.peek() {
             if token.kind == kind {
@@ -71,10 +77,12 @@ impl Parser {
             }
         }
 
-        panic!("Unhandled case: consuming when peeking has None value");
+        panic!("Unhandled case: consuming when peeking gives None value");
     }
 
-    fn try_consume(&mut self, kind: TokenKind) -> bool {
+    /// Consumes the next token if it is of the expected `TokenKind`, otherwise
+    /// does NOT move to the next token.
+    fn consume_optional(&mut self, kind: TokenKind) -> bool {
         if self.check(kind) {
             self.next_token();
             true
@@ -86,9 +94,9 @@ impl Parser {
 
 impl Parser {
     fn parse_program(&mut self) -> Node {
-        self.try_consume(TokenKind::Newline);
+        self.consume_optional(TokenKind::Newline);
 
-        if self.try_consume(TokenKind::Eof) {
+        if self.consume_optional(TokenKind::Eof) {
             return Node::Eof;
         }
 
@@ -96,19 +104,19 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> ExpressionNode {
-        if self.try_consume(TokenKind::Eof) {
+        if self.consume_optional(TokenKind::Eof) {
             return ExpressionNode::Missing(self.lexer.current_pos());
         }
 
-        if self.try_consume(TokenKind::Newline) {
+        if self.consume_optional(TokenKind::Newline) {
             return ExpressionNode::Unexpected(TokenKind::Newline, self.lexer.current_pos());
         }
 
-        if self.try_consume(TokenKind::Keyword(Keyword::Let)) {
+        if self.consume_optional(TokenKind::Keyword(Keyword::Let)) {
             return self.parse_let_expression();
         }
 
-        if self.try_consume(TokenKind::Keyword(Keyword::If)) {
+        if self.consume_optional(TokenKind::Keyword(Keyword::If)) {
             return self.parse_if_expression();
         }
 
@@ -134,8 +142,8 @@ impl Parser {
             .then_keyword(self.consume(TokenKind::Keyword(Keyword::Then)))
             .expression(self.parse_expression_block());
 
-        self.try_consume(TokenKind::Newline);
-        if self.try_consume(TokenKind::Keyword(Keyword::Else)) {
+        self.consume_optional(TokenKind::Newline);
+        if self.consume_optional(TokenKind::Keyword(Keyword::Else)) {
             if_expression.else_clause(self.parse_else_clause());
         }
 
@@ -143,7 +151,7 @@ impl Parser {
     }
 
     fn parse_else_clause(&mut self) -> ExpressionNode {
-        if self.try_consume(TokenKind::Keyword(Keyword::If)) {
+        if self.consume_optional(TokenKind::Keyword(Keyword::If)) {
             self.parse_if_expression()
         } else {
             self.parse_expression_block()
@@ -151,7 +159,7 @@ impl Parser {
     }
 
     fn parse_expression_block(&mut self) -> ExpressionNode {
-        if self.try_consume(TokenKind::Begin) {
+        if self.consume_optional(TokenKind::Begin) {
             return self.parse_expression_block_list();
         }
 
@@ -184,39 +192,43 @@ impl Parser {
 
         loop {
             let operator = match self.peek() {
-                Some(token) => match token.kind {
-                    TokenKind::Symbol(symbol) => symbol,
-                    _ => break,
-                },
-                None => break
+                Some(Token { kind: TokenKind::Symbol(symbol), .. }) => symbol,
+                _ => break
             };
 
-            let (left_precedence, right_precedence) = infix_binding_power(operator);
-            if left_precedence < min_precedence {
-                break;
+            if let Some((left_precedence, right_precedence)) = infix_binding_power(operator) {
+                if left_precedence < min_precedence {
+                    break;
+                }
+
+                let operator = self.next_token();
+                let rhs = self.parse_binary_expression(right_precedence);
+                let mut binary_expression = BinaryExpressionNode::new();
+                binary_expression
+                    .operator(operator)
+                    .lhs(lhs.clone())
+                    .rhs(rhs);
+
+                lhs = ExpressionNode::BinaryExpressionNode(binary_expression);
+                continue;
             }
 
-            let operator = self.next_token();
-            let rhs = self.parse_binary_expression(right_precedence);
-            let mut binary_expression = BinaryExpressionNode::new();
-            binary_expression.operator(operator).lhs(lhs.clone()).rhs(rhs);
-            lhs = ExpressionNode::BinaryExpressionNode(binary_expression);
+            break;
         }
 
         lhs
     }
 
     fn parse_unary_expression(&mut self) -> ExpressionNode {
-        if let Some(token) = self.peek() {
-            match token.kind {
-                TokenKind::Symbol(symbol) => {
-                    self.next_token();
-                    let right_precedence = prefix_binding_power(symbol);
-                    let operand = self.parse_binary_expression(right_precedence);
-                    return ExpressionNode::UnaryExpression(token, Box::new(operand));
-                },
-                _ => return self.parse_primary()
+        if let Some(Token { kind: TokenKind::Symbol(symbol), .. }) = self.peek() {
+            let token = self.next_token();
+
+            if let Some(right_precedence) = prefix_binding_power(symbol) {
+                let operand = self.parse_binary_expression(right_precedence);
+                return ExpressionNode::UnaryExpression(token, Box::new(operand));
             }
+
+            return ExpressionNode::Unexpected(TokenKind::Symbol(symbol), self.lexer.current_pos());
         }
 
         self.parse_primary()
@@ -230,6 +242,9 @@ impl Parser {
             },
             TokenKind::Keyword(Keyword::False) => {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(false))
+            },
+            TokenKind::Keyword(Keyword::Unimplemented) => {
+                ExpressionNode::Unimplemented
             },
             TokenKind::Keyword(Keyword::True) => {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(true))
@@ -259,19 +274,28 @@ impl Parser {
     }
 }
 
-fn prefix_binding_power(symbol: Symbol) -> u8 {
-    match symbol {
+/// Determines the prefix binding power of the given symbol. Currently, the only
+/// legal prefix symbols are `Symbol::Minus` and `Symbol::Bang`.
+fn prefix_binding_power(symbol: Symbol) -> Option<u8> {
+    let power = match symbol {
         Symbol::Minus | Symbol::Bang => 9,
-        _ => panic!("Bad operator: {:?}", symbol)
-    }
+        _ => return None,
+    };
+
+    Some(power)
 }
 
-fn infix_binding_power(symbol: Symbol) -> (u8, u8) {
-    match symbol {
+/// Determines the infix binding power of the given symbol. A higher binding
+/// power means higher precedence, meaning that it is more likely to hold onto
+/// its adjacent operands.
+fn infix_binding_power(symbol: Symbol) -> Option<(u8, u8)> {
+    let power = match symbol {
         Symbol::Eq | Symbol::BangEq => (2, 1),
         Symbol::Lt | Symbol::Gt | Symbol::LtEq | Symbol::GtEq => (3, 4),
         Symbol::Plus | Symbol::Minus => (5, 6),
         Symbol::Asterisk | Symbol::ForwardSlash => (7, 8),
-        _ => panic!("Bad operator: {:?}", symbol)
-    }
+        _ => return None,
+    };
+
+    Some(power)
 }

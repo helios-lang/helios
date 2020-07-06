@@ -31,6 +31,9 @@ pub enum ExpressionNode {
     /// An indented block of expressions.
     BlockExpressionNode(Vec<Box<ExpressionNode>>),
 
+    /// A placeholder for unimplemented expressions.
+    Unimplemented,
+
     /// An unexpected token kind.
     Unexpected(TokenKind, Position),
 
