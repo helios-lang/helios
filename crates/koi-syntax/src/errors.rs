@@ -1,9 +1,10 @@
+use crate::token::Base;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LexerError {
     BadIndent { expected: usize, found: usize },
 
-    OverflowedIntLiteral,
-    OverflowedFloatLiteral,
+    UnsupportedFloatLiteralBase(Base),
 
     EmptyCharLiteral,
     UnterminatedCharLiteral,

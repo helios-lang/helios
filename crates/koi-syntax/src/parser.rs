@@ -269,6 +269,9 @@ impl Parser {
 
                 ExpressionNode::GroupedExpressionNode(grouped_expression)
             },
+            TokenKind::Error(error) => {
+                ExpressionNode::Error(error.clone())
+            },
             k => ExpressionNode::Unexpected(k.clone(), self.lexer.current_pos())
         }
     }
@@ -290,10 +293,11 @@ fn prefix_binding_power(symbol: Symbol) -> Option<u8> {
 /// its adjacent operands.
 fn infix_binding_power(symbol: Symbol) -> Option<(u8, u8)> {
     let power = match symbol {
-        Symbol::Eq | Symbol::BangEq => (2, 1),
-        Symbol::Lt | Symbol::Gt | Symbol::LtEq | Symbol::GtEq => (3, 4),
-        Symbol::Plus | Symbol::Minus => (5, 6),
-        Symbol::Asterisk | Symbol::ForwardSlash => (7, 8),
+        Symbol::LThinArrow => (2, 1),
+        Symbol::Eq | Symbol::BangEq => (3, 2),
+        Symbol::Lt | Symbol::Gt | Symbol::LtEq | Symbol::GtEq => (4, 5),
+        Symbol::Plus | Symbol::Minus => (6, 7),
+        Symbol::Asterisk | Symbol::ForwardSlash => (8, 9),
         _ => return None,
     };
 

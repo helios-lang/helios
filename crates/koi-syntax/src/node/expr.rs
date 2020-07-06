@@ -1,3 +1,4 @@
+use crate::errors::LexerError;
 use crate::source::Position;
 use crate::token::*;
 use std::default::Default;
@@ -33,6 +34,10 @@ pub enum ExpressionNode {
 
     /// A placeholder for unimplemented expressions.
     Unimplemented,
+
+    /// An error token produced by the lexer, for example when a string
+    /// literal is not terminated.
+    Error(LexerError),
 
     /// An unexpected token kind.
     Unexpected(TokenKind, Position),

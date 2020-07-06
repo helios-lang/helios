@@ -33,15 +33,14 @@ pub enum TokenKind {
     /// A reserved identifier.
     Keyword(Keyword),
 
-    /// A literal type represented the same as, or as close to, the Robin
-    /// source code.
+    /// A literal type.
     Literal(Literal),
 
     /// A character or delimiter with significant meaning of the structure of
     /// the code.
     Symbol(Symbol),
 
-    /// A line comment starting with two forward slashes (`//`).
+    /// A line comment starting with two or three forward slashes (`/`).
     LineComment { is_doc_comment: bool },
 
     /// Signifies the end of the current line (if it is still part of the
@@ -54,16 +53,23 @@ pub enum TokenKind {
     /// Signifies the end of a scope.
     End,
 
+    /// Signifies the beginning of a grouping delimiter.
     GroupingStart(GroupingDelimiter),
+
+    /// Signifies the end of a grouping delimiter.
     GroupingEnd(GroupingDelimiter),
 
+    /// A token signifying an error, for example when a string literal is not
+    /// terminated properly.
     Error(LexerError),
 
+    /// A missing token.
     Missing(Box<Self>),
 
-    /// An unknown token. An error may be raised if such a token is encountered.
+    /// An unknown token.
     Unknown(char),
 
+    /// An end of file token.
     Eof,
 }
 
@@ -115,27 +121,30 @@ impl Keyword {
 }
 
 /// Describes the base system used by the number literal encoding.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Base {
     /// The binary base system (radix = 2). Number literals in binary base start
     /// with `0b`, for example `0b01`.
     Binary,
+
     /// The octal base system (radix = 8). Number literals in octal base start
-    /// with `0o`, for example `0b07`.
+    /// with `0o`, for example `0o07`.
     Octal,
+
     /// The hexadecimal base system (radix = 16). Number literals in hexadecimal
     /// base start with `0x`, for example `0x0f`.
     Hexadecimal,
+
     /// The decimal base system (radix = 10). This is the default base.
     Decimal,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Literal {
     Character,
     Float(Base),
     Integer(Base),
-    String(String),
+    String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -270,7 +279,7 @@ impl Symbol {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum WhitespaceKind {
     Space,
     Tab,

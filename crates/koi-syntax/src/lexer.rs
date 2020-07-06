@@ -397,7 +397,7 @@ impl Lexer {
 
     /// Matches any character that is a valid symbol.
     ///
-    /// _TODO:_ Perhaps we should handle cases with confused symbols, such as
+    /// _TODO:_ Perhaps we could handle cases with confused symbols, such as
     /// U+037E, the Greek question mark, which looks like a semicolon (compare
     /// ';' with ';').
     fn symbol(&mut self, symbol: char) -> TokenKind {
@@ -413,12 +413,11 @@ impl Lexer {
                 }
             },
             _ => {
-                match Symbol::compose(symbol, self.peek()) {
-                    Some(symbol) => {
-                        self.next_char();
-                        TokenKind::Symbol(symbol)
-                    },
-                    None => TokenKind::Symbol(Symbol::from_char(symbol))
+                if let Some(symbol) = Symbol::compose(symbol, self.peek()) {
+                    self.next_char();
+                    TokenKind::Symbol(symbol)
+                } else {
+                    TokenKind::Symbol(Symbol::from_char(symbol))
                 }
             }
         }
@@ -516,7 +515,11 @@ impl Lexer {
         if !has_fractional_part {
             TokenKind::Literal(Literal::Integer(base))
         } else {
-            TokenKind::Literal(Literal::Float(base))
+            if base == Base::Decimal {
+                TokenKind::Literal(Literal::Float(base))
+            } else {
+                TokenKind::Error(LexerError::UnsupportedFloatLiteralBase(base))
+            }
         }
     }
 }
