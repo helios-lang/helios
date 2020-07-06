@@ -33,7 +33,10 @@ pub enum ExpressionNode {
     BlockExpressionNode(Vec<Box<ExpressionNode>>),
 
     /// A placeholder for unimplemented expressions.
-    Unimplemented,
+    UnimplementedExpression,
+
+    /// A missing expression node.
+    MissingExpression(Position),
 
     /// An error token produced by the lexer, for example when a string
     /// literal is not terminated.
@@ -41,9 +44,6 @@ pub enum ExpressionNode {
 
     /// An unexpected token kind.
     Unexpected(TokenKind, Position),
-
-    /// A missing expression node.
-    Missing(Position),
 }
 
 #[derive(Clone, Debug, PartialEq)]

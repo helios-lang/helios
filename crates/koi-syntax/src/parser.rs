@@ -105,7 +105,7 @@ impl Parser {
 
     fn parse_expression(&mut self) -> ExpressionNode {
         if self.consume_optional(TokenKind::Eof) {
-            return ExpressionNode::Missing(self.lexer.current_pos());
+            return ExpressionNode::MissingExpression(self.lexer.current_pos());
         }
 
         if self.consume_optional(TokenKind::Newline) {
@@ -244,7 +244,7 @@ impl Parser {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(false))
             },
             TokenKind::Keyword(Keyword::Unimplemented) => {
-                ExpressionNode::Unimplemented
+                ExpressionNode::UnimplementedExpression
             },
             TokenKind::Keyword(Keyword::True) => {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(true))
@@ -268,6 +268,9 @@ impl Parser {
                     .end_delimiter(self.consume(TokenKind::GroupingEnd(delimiter.clone())));
 
                 ExpressionNode::GroupedExpressionNode(grouped_expression)
+            },
+            TokenKind::Newline | TokenKind::Eof => {
+                ExpressionNode::MissingExpression(self.lexer.current_pos())
             },
             TokenKind::Error(error) => {
                 ExpressionNode::Error(error.clone())
