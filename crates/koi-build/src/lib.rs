@@ -6,7 +6,7 @@ pub fn build(file_name: &str) {
     match Source::file(file_name) {
         Ok(source) => {
             let time = std::time::Instant::now();
-            tokenize(source).iter().for_each(|node| println!("{:?}", node));
+            tokenize(source).iter().for_each(|node| println!("{:#?}", node));
             println!("Time elapsed: {} ms", time.elapsed().as_millis());
         },
         Err(error) => {
