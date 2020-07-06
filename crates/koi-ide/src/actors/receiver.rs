@@ -23,7 +23,7 @@ impl Receiver {
         match path.to_file_path() {
             Ok(path) => match Source::file(path) {
                 Ok(source) => {
-                    Ok(koi_driver::tokenize(source))
+                    Ok(koi_driver::parse(source))
                 },
                 Err(error) => Err(format!("Failed to load file from source: {}", error))
             },
