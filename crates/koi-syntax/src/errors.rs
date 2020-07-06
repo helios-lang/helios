@@ -1,6 +1,6 @@
 use crate::token::Base;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LexerError {
     BadIndent { expected: usize, found: usize },
 

@@ -2,7 +2,7 @@ use crate::errors::LexerError;
 use crate::source::{Position, Span};
 use crate::token::*;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Eq, Debug, PartialEq)]
 pub enum ExpressionNode {
     /// A reference to an identifier.
     Identifier(Span),
@@ -65,7 +65,7 @@ pub enum ExpressionNode {
     Unexpected(TokenKind, Position),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LiteralNode {
     Boolean(bool),
 

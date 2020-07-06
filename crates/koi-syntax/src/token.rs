@@ -1,7 +1,7 @@
 use crate::errors::LexerError;
 use crate::source::Span;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
@@ -18,7 +18,7 @@ impl Token {
 }
 
 /// An enum representing all the possible token types.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TokenKind {
     /// A tag that identifies a variable, type, module, etc.
     Identifier,
@@ -66,7 +66,7 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Keyword {
     And,
     Def,
@@ -114,7 +114,7 @@ impl Keyword {
 }
 
 /// Describes the base system used by the number literal encoding.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Base {
     /// The binary base system (radix = 2). Number literals in binary base start
     /// with `0b`, for example `0b01`.
@@ -132,7 +132,7 @@ pub enum Base {
     Decimal,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Literal {
     Character,
     Float(Base),
@@ -140,7 +140,7 @@ pub enum Literal {
     String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Symbol {
     /// The `&` token.
     Ampersand,
@@ -278,7 +278,7 @@ pub enum WhitespaceKind {
     Tab,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum GroupingDelimiter {
     Brace,
     Bracket,

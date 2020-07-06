@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Eq, Debug, PartialEq)]
 pub enum DeclarationNode {
     GlobalBindingDeclaration,
     ModuleDeclaration,
