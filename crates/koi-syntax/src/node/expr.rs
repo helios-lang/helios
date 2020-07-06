@@ -1,5 +1,5 @@
 use crate::errors::LexerError;
-use crate::source::Position;
+use crate::source::{Position, Span};
 use crate::token::*;
 use std::default::Default;
 use std::fmt::Debug;
@@ -7,10 +7,10 @@ use std::fmt::Debug;
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExpressionNode {
     /// A named reference to an identifier.
-    Identifier,
+    Identifier(Span),
 
     /// A literal expression that is translated exactly as written in source.
-    LiteralNode(LiteralNode),
+    LiteralNode(LiteralNode, Span),
 
     /// A local binding expression.
     LocalBindingNode(LocalBindingNode),
@@ -51,10 +51,10 @@ pub enum LiteralNode {
     Boolean(bool),
 
     /// A float literal.
-    Float(Token),
+    Float,
 
     /// An integer literal.
-    Integer(Token),
+    Integer(Base),
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

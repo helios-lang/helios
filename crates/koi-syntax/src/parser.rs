@@ -238,23 +238,23 @@ impl Parser {
         let token = self.next_token();
         match &token.kind {
             TokenKind::Identifier => {
-                ExpressionNode::Identifier
+                ExpressionNode::Identifier(token.span)
             },
             TokenKind::Keyword(Keyword::False) => {
-                ExpressionNode::LiteralNode(LiteralNode::Boolean(false))
+                ExpressionNode::LiteralNode(LiteralNode::Boolean(false), token.span)
+            },
+            TokenKind::Keyword(Keyword::True) => {
+                ExpressionNode::LiteralNode(LiteralNode::Boolean(true), token.span)
             },
             TokenKind::Keyword(Keyword::Unimplemented) => {
                 ExpressionNode::UnimplementedExpressionNode
             },
-            TokenKind::Keyword(Keyword::True) => {
-                ExpressionNode::LiteralNode(LiteralNode::Boolean(true))
-            },
             TokenKind::Literal(literal) => match literal {
-                Literal::Integer(_) => {
-                    ExpressionNode::LiteralNode(LiteralNode::Integer(token))
+                Literal::Integer(base) => {
+                    ExpressionNode::LiteralNode(LiteralNode::Integer(base.clone()), token.span)
                 },
                 Literal::Float(_) => {
-                    ExpressionNode::LiteralNode(LiteralNode::Float(token))
+                    ExpressionNode::LiteralNode(LiteralNode::Float, token.span)
                 },
                 l => unimplemented!("Literal {:?}", l)
             },

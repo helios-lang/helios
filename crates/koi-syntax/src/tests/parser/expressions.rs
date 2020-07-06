@@ -52,16 +52,10 @@ fn test_let_expressions() {
     test_let_expression! {
         "let x = 10.0", 4 => 5, 6 => 7,
         ExpressionNode::LiteralNode(
-            LiteralNode::Float(
-                Token::with(
-                    TokenKind::Literal(
-                        Literal::Float(crate::token::Base::Decimal)
-                    ),
-                    Span::new(
-                        Position::new(0, 8, 8),
-                        Position::new(0, 12, 12),
-                    )
-                )
+            LiteralNode::Float,
+            Span::new(
+                Position::new(0, 8, 8),
+                Position::new(0, 12, 12),
             )
         )
     }
@@ -69,7 +63,11 @@ fn test_let_expressions() {
     test_let_expression! {
         "let   foo   =   true", 6 => 9, 12 => 13,
         ExpressionNode::LiteralNode(
-            LiteralNode::Boolean(true)
+            LiteralNode::Boolean(true),
+            Span::new(
+                Position::new(0, 16, 16),
+                Position::new(0, 20, 20),
+            )
         )
     }
 }
@@ -93,25 +91,17 @@ fn test_binary_expressions() {
             )
         )
         .lhs(ExpressionNode::LiteralNode(
-            LiteralNode::Integer(
-                Token::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    Span::new(
-                        Position::new(0, 13, 13),
-                        Position::new(0, 15, 15)
-                    )
-                )
+            LiteralNode::Integer(Base::Decimal),
+            Span::new(
+                Position::new(0, 13, 13),
+                Position::new(0, 15, 15)
             )
         ))
         .rhs(ExpressionNode::LiteralNode(
-            LiteralNode::Integer(
-                Token::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    Span::new(
-                        Position::new(0, 18, 18),
-                        Position::new(0, 19, 19)
-                    )
-                )
+            LiteralNode::Integer(Base::Decimal),
+            Span::new(
+                Position::new(0, 18, 18),
+                Position::new(0, 19, 19)
             )
         ));
 
@@ -127,14 +117,10 @@ fn test_binary_expressions() {
         )
         .lhs(ExpressionNode::BinaryExpressionNode(binary_expr1))
         .rhs(ExpressionNode::LiteralNode(
-            LiteralNode::Integer(
-                Token::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    Span::new(
-                        Position::new(0, 22, 22),
-                        Position::new(0, 23, 23)
-                    )
-                )
+            LiteralNode::Integer(Base::Decimal),
+            Span::new(
+                Position::new(0, 22, 22),
+                Position::new(0, 23, 23)
             )
         ));
 
@@ -149,25 +135,17 @@ fn test_binary_expressions() {
             )
         )
         .lhs(ExpressionNode::LiteralNode(
-            LiteralNode::Integer(
-                Token::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    Span::new(
-                        Position::new(0, 5, 5),
-                        Position::new(0, 6, 6)
-                    )
-                )
+            LiteralNode::Integer(Base::Decimal),
+            Span::new(
+                Position::new(0, 5, 5),
+                Position::new(0, 6, 6)
             )
         ))
         .rhs(ExpressionNode::LiteralNode(
-            LiteralNode::Integer(
-                Token::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    Span::new(
-                        Position::new(0, 9, 9),
-                        Position::new(0, 10, 10)
-                    )
-                )
+            LiteralNode::Integer(Base::Decimal),
+            Span::new(
+                Position::new(0, 9, 9),
+                Position::new(0, 10, 10)
             )
         ));
 
@@ -182,14 +160,10 @@ fn test_binary_expressions() {
             )
         )
         .lhs(ExpressionNode::LiteralNode(
-            LiteralNode::Integer(
-                Token::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    Span::new(
-                        Position::new(0, 0, 0),
-                        Position::new(0, 2, 2)
-                    )
-                )
+            LiteralNode::Integer(Base::Decimal),
+            Span::new(
+                Position::new(0, 0, 0),
+                Position::new(0, 2, 2)
             )
         ))
         .rhs(ExpressionNode::BinaryExpressionNode(binary_expr3));
