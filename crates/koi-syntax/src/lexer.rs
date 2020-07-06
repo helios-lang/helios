@@ -25,8 +25,12 @@ fn is_whitespace(c: char) -> bool {
     c == ' ' || c == '\r' || c == '\t'
 }
 
+/// Checks if the given character is a grouping delimiter.
 fn is_grouping_delimiter(c: char) -> bool {
-    c == '{' || c == '}' || c == '[' || c == ']' || c == '(' || c == ')'
+    match c {
+        '{' | '}' | '[' | ']' | '(' | ')' => true,
+        _ => false,
+    }
 }
 
 /// Checks if the given character is a recognised symbol.
@@ -35,7 +39,7 @@ fn is_symbol(c: char) -> bool {
         '&' | '*' | '@' | '!' | '^' | ':' | ',' | '$' | '.' | '–' | '—' | '=' |
         '-' | '%' | '+' | '#' | '?' | ';' | '£' | '~' | '|' | '/' | '\\'| '<' |
         '>' | '{' | '}' | '[' | ']' | '(' | ')' => true,
-        _ => false
+        _ => false,
     }
 }
 
@@ -150,12 +154,12 @@ impl Lexer {
         let next_char = match self.next_char() {
             Some(c) => c,
             None => {
-                // if !self.indentation_stack.is_empty() {
-                //     self.indentation_stack.pop();
-                //     return Token::with(TokenKind::End, Span::new(old_pos, self.current_pos()));
-                // } else {
+                if !self.indentation_stack.is_empty() {
+                    self.indentation_stack.pop();
+                    return Token::with(TokenKind::End, Span::new(old_pos, self.current_pos()));
+                } else {
                     return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos()))
-                // }
+                }
             }
         };
 
@@ -238,10 +242,10 @@ impl Lexer {
         vec
     }
 
-    /// Consumes the `input` for all the valid digits of the given `base` up
-    /// until a non-digit character is reached, building a `Vec<char>` for all
-    /// the digit characters eaten. Underscores (`_`) are also consumed, being
-    /// ignored when found.
+    /// Consumes all the valid digits of the given `base` up until a non-digit
+    /// character is reached, building a `Vec<char>` for all the digit
+    /// characters eaten. Underscores (`_`) are also consumed, but are ignored
+    /// when encountered.
     fn consume_digits(&mut self, base: Base, first_digit: Option<char>) -> Vec<char> {
         let mut vec = Vec::new();
         if let Some(d) = first_digit { vec.push(d); }
@@ -278,18 +282,10 @@ impl Lexer {
         };
 
         match base {
-            Base::Binary => {
-                match_digits!('0' => '1');
-            },
-            Base::Octal => {
-                match_digits!('0' => '7');
-            },
-            Base::Hexadecimal => {
-                match_digits!('0' => '9', 'a' => 'f', 'A' => 'F');
-            },
-            Base::Decimal => {
-                match_digits!('0' => '9');
-            },
+            Base::Binary => match_digits!('0' => '1'),
+            Base::Octal => match_digits!('0' => '7'),
+            Base::Hexadecimal => match_digits!('0' => '9', 'a' => 'f', 'A' => 'F'),
+            Base::Decimal => match_digits!('0' => '9'),
         }
 
         vec
@@ -300,9 +296,12 @@ impl Lexer {
     /// Consumes indentation and returns the appropriate indentation token kind.
     ///
     /// The following outlines which token kind is determined:
+    ///
     /// * If we've increased our indentation, we'll return `TokenKind::Begin`.
+    ///
     /// * If we did not change the level of indentation, we'll return
     ///   `TokenKind::Newline`.
+    ///
     /// * Otherwise, we've decreased our indentation level and so we'll emit as
     ///   many `TokenKind::End` tokens as required to go back to the new
     ///   indentation level.
@@ -383,6 +382,7 @@ impl Lexer {
         TokenKind::LineComment { is_doc_comment }
     }
 
+    /// Returns the appropriate grouping delimiter for the given character.
     fn grouping(&mut self, delimiter: char) -> TokenKind {
         match delimiter {
             '{' => TokenKind::GroupingStart(GroupingDelimiter::Bracket),
