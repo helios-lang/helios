@@ -105,7 +105,7 @@ impl Parser {
 
     fn parse_expression(&mut self) -> ExpressionNode {
         if self.consume_optional(TokenKind::Eof) {
-            return ExpressionNode::MissingExpression(self.lexer.current_pos());
+            return ExpressionNode::MissingExpressionNode(self.lexer.current_pos());
         }
 
         if self.consume_optional(TokenKind::Newline) {
@@ -225,7 +225,7 @@ impl Parser {
 
             if let Some(right_precedence) = prefix_binding_power(symbol) {
                 let operand = self.parse_binary_expression(right_precedence);
-                return ExpressionNode::UnaryExpression(token, Box::new(operand));
+                return ExpressionNode::UnaryExpressionNode(token, Box::new(operand));
             }
 
             return ExpressionNode::Unexpected(TokenKind::Symbol(symbol), self.lexer.current_pos());
@@ -244,7 +244,7 @@ impl Parser {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(false))
             },
             TokenKind::Keyword(Keyword::Unimplemented) => {
-                ExpressionNode::UnimplementedExpression
+                ExpressionNode::UnimplementedExpressionNode
             },
             TokenKind::Keyword(Keyword::True) => {
                 ExpressionNode::LiteralNode(LiteralNode::Boolean(true))
@@ -270,7 +270,7 @@ impl Parser {
                 ExpressionNode::GroupedExpressionNode(grouped_expression)
             },
             TokenKind::Newline | TokenKind::Eof => {
-                ExpressionNode::MissingExpression(self.lexer.current_pos())
+                ExpressionNode::MissingExpressionNode(self.lexer.current_pos())
             },
             TokenKind::Error(error) => {
                 ExpressionNode::Error(error.clone())

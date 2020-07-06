@@ -20,7 +20,7 @@ pub enum ExpressionNode {
 
     /// A unary expression holding a token (signifying the operator) and an
     /// expression (signifying the right hand side of the operation).
-    UnaryExpression(Token, Box<ExpressionNode>),
+    UnaryExpressionNode(Token, Box<ExpressionNode>),
 
     /// A binary expression holding a token (signifying the operator) and two
     /// expressions (signifying the left and right hand sides of the operation).
@@ -33,10 +33,10 @@ pub enum ExpressionNode {
     BlockExpressionNode(Vec<Box<ExpressionNode>>),
 
     /// A placeholder for unimplemented expressions.
-    UnimplementedExpression,
+    UnimplementedExpressionNode,
 
     /// A missing expression node.
-    MissingExpression(Position),
+    MissingExpressionNode(Position),
 
     /// An error token produced by the lexer, for example when a string
     /// literal is not terminated.
