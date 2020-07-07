@@ -1,11 +1,10 @@
 use crate::token::Token;
 use super::*;
-use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BlockExpressionNode {
     pub(crate) begin_token: Token,
-    pub(crate) expression_list: Vec<Arc<dyn ExpressionNode>>,
+    pub(crate) expression_list: Vec<Box<dyn ExpressionNode>>,
     pub(crate) end_token: Token,
 }
 

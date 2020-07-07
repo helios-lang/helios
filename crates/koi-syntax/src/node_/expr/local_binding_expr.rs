@@ -1,13 +1,21 @@
 use crate::token::Token;
 use super::*;
-use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq)]
 pub struct LocalBindingExpressionNode {
     pub(crate) let_keyword: Token,
     pub(crate) identifier: Token,
     pub(crate) equal_symbol: Token,
-    pub(crate) expression: Arc<dyn ExpressionNode>,
+    pub(crate) expression: Box<dyn ExpressionNode>,
+}
+
+impl PartialEq for LocalBindingExpressionNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.let_keyword == other.let_keyword
+            && self.identifier == other.identifier
+            && self.equal_symbol == other.equal_symbol
+            && &self.expression == &other.expression
+    }
 }
 
 impl ExpressionNode for LocalBindingExpressionNode {

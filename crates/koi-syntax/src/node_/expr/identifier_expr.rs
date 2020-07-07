@@ -1,7 +1,7 @@
 use crate::token::Token;
 use super::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IdentifierExpressionNode {
     pub(crate) identifier: Token,
 }

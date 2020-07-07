@@ -6,16 +6,39 @@ pub mod function_decl;
 pub mod module_decl;
 pub mod type_decl;
 
-pub trait DeclarationNode: Debug {
+pub trait DeclarationNode: DeclarationNodeClone + Debug {
     fn span(&self) -> Span;
 }
+
+pub trait DeclarationNodeClone {
+    fn clone_box(&self) -> Box<dyn DeclarationNode>;
+}
+
+impl<T: 'static + DeclarationNode + Clone> DeclarationNodeClone for T {
+    fn clone_box(&self) -> Box<dyn DeclarationNode> {
+        Box::new(self.clone())
+    }
+}
+
+impl Clone for Box<dyn DeclarationNode> {
+    fn clone(&self) -> Box<dyn DeclarationNode> {
+        self.clone_box()
+    }
+}
+
+impl<'a> PartialEq for Box<dyn DeclarationNode + 'a> {
+    fn eq(&self, other: &Self) -> bool {
+        &*self == &*other
+    }
+}
+
+impl Eq for Box<dyn DeclarationNode> {}
 
 #[cfg(test)]
 mod tests {
     use crate::source::Position;
     use crate::token::*;
     use super::*;
-    use std::sync::Arc;
 
     #[test]
     fn test_module_decl_node() {
@@ -44,7 +67,7 @@ mod tests {
                     Position::new(0, 10, 10),
                 )
             ),
-            decl_block: Arc::new(block_decl::BlockDeclarationNode {
+            decl_block: Box::new(block_decl::BlockDeclarationNode {
                 begin_token: Token::with(
                     TokenKind::Begin,
                     Span::new(
@@ -53,7 +76,7 @@ mod tests {
                     )
                 ),
                 declaration_list: vec![
-                    Arc::new(
+                    Box::new(
                         type_decl::TypeDeclarationNode {
                             type_keyword: Token::with(
                                 TokenKind::Keyword(Keyword::Type),
@@ -76,7 +99,7 @@ mod tests {
                                     Position::new(1, 12, 12),
                                 )
                             ),
-                            decl_block: Arc::new(function_decl::FunctionDeclarationNode),
+                            decl_block: Box::new(function_decl::FunctionDeclarationNode),
                         }
                     ),
                 ],

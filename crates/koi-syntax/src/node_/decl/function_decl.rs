@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FunctionDeclarationNode;
 
 impl DeclarationNode for FunctionDeclarationNode {
