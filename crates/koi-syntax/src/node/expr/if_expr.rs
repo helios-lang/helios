@@ -7,7 +7,7 @@ pub struct IfExpressionNode {
     pub(crate) condition: Box<dyn ExpressionNode>,
     pub(crate) then_keyword: Token,
     pub(crate) expression: Box<dyn ExpressionNode>,
-    pub(crate) else_clause: Option<Box<ElseClauseExpressionNode>>,
+    pub(crate) else_clause: Option<ElseClauseExpressionNode>,
 }
 
 impl ExpressionNode for IfExpressionNode {

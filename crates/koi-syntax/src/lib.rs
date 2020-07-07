@@ -2,7 +2,7 @@
 
 mod errors;
 mod lexer;
-mod node;
+pub mod node;
 mod parser;
 pub mod source;
 pub mod token;

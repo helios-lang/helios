@@ -11,7 +11,7 @@ use std::sync::mpsc::Sender;
 
 pub struct Receiver {
     responder_channel: Sender<LspResponse>,
-    token_database: HashMap<String, (i64, Ast)>,
+    token_database: HashMap<String, i64>,
 }
 
 impl Receiver {
@@ -35,12 +35,12 @@ impl Receiver {
         let version = version.into().unwrap_or(0);
         let key = url.to_string();
         match self.token_database.get(&key) {
-            Some((cached_version, _)) => {
+            Some(cached_version) => {
                 if cached_version != &version {
                     match self.generate_tokens(url) {
                         Ok(tokens) => {
                             tokens.iter().for_each(|token| eprintln!("{:?}", token));
-                            self.token_database.insert(key, (version, tokens));
+                            self.token_database.insert(key, version);
                         },
                         Err(error) => {
                             eprintln!("Failed to generate tokens: {}", error);
@@ -51,7 +51,7 @@ impl Receiver {
             None => {
                 match self.generate_tokens(url) {
                     Ok(tokens) => {
-                        self.token_database.insert(key, (version, tokens));
+                        self.token_database.insert(key, version);
                     },
                     Err(error) => {
                         eprintln!("Failed to generate tokens: {}", error)

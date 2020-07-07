@@ -1,9 +1,8 @@
 use crate::lexer::{Lexer, LexerMode};
+pub use crate::node::{self, Ast};
 use crate::node::*;
 use crate::source::Span;
 use crate::token::*;
-
-pub type Ast = Vec<Node>;
 
 pub struct Parser {
     lexer: Lexer,
@@ -22,7 +21,7 @@ impl Parser {
             nodes.push(self.parse_program());
         }
 
-        nodes
+        Ast(nodes)
     }
 }
 
@@ -103,91 +102,101 @@ impl Parser {
         Node::ExpressionNode(self.parse_expression())
     }
 
-    fn parse_expression(&mut self) -> ExpressionNode {
+    fn parse_expression(&mut self) -> Box<dyn ExpressionNode> {
         if self.consume_optional(TokenKind::Eof) {
-            return ExpressionNode::MissingExpressionNode(self.lexer.current_pos());
+            return Box::new(missing_expr::MissingExpressionNode {
+                position: self.lexer.current_pos(),
+            });
         }
 
         if self.consume_optional(TokenKind::Newline) {
-            return ExpressionNode::Unexpected(TokenKind::Newline, self.lexer.current_pos());
+            return Box::new(missing_expr::MissingExpressionNode {
+                position: self.lexer.current_pos(),
+            });
         }
 
-        if self.consume_optional(TokenKind::Keyword(Keyword::Let)) {
+        if self.check(TokenKind::Keyword(Keyword::Let)) {
             return self.parse_let_expression();
         }
 
-        if self.consume_optional(TokenKind::Keyword(Keyword::If)) {
+        if self.check(TokenKind::Keyword(Keyword::If)) {
             return self.parse_if_expression();
         }
 
         self.parse_binary_expression(0)
     }
 
-    fn parse_let_expression(&mut self) -> ExpressionNode {
-        ExpressionNode::LocalBindingNode {
+    fn parse_let_expression(&mut self) -> Box<dyn ExpressionNode> {
+        let local_binding_expr = local_binding_expr::LocalBindingExpressionNode {
+            let_keyword: self.next_token(),
             identifier: self.consume(TokenKind::Identifier),
             equal_symbol: self.consume(TokenKind::Symbol(Symbol::Eq)),
-            expression: Box::new(self.parse_expression_block()),
-        }
+            expression: self.parse_expression_block(),
+        };
+
+        Box::new(local_binding_expr)
     }
 
-    fn parse_if_expression(&mut self) -> ExpressionNode {
-        ExpressionNode::IfExpressionNode {
-            pattern: Box::new(self.parse_expression()),
+    fn parse_if_expression(&mut self) -> Box<dyn ExpressionNode> {
+        let if_expr = if_expr::IfExpressionNode {
+            if_keyword: self.next_token(),
+            condition: self.parse_expression(),
             then_keyword: self.consume(TokenKind::Keyword(Keyword::Then)),
-            expression: Box::new(self.parse_expression_block()),
+            expression: self.parse_expression_block(),
             else_clause: {
                 self.consume_optional(TokenKind::Newline);
-                if self.consume_optional(TokenKind::Keyword(Keyword::Else)) {
-                    Some(Box::new(self.parse_else_clause()))
+                if self.check(TokenKind::Keyword(Keyword::Else)) {
+                    Some(self.parse_else_clause())
                 } else {
                     None
                 }
             },
+        };
+
+        Box::new(if_expr)
+    }
+
+    fn parse_else_clause(&mut self) -> if_expr::ElseClauseExpressionNode {
+        if_expr::ElseClauseExpressionNode {
+            else_keyword: self.next_token(),
+            expression: self.parse_expression(),
         }
     }
 
-    fn parse_else_clause(&mut self) -> ExpressionNode {
-        if self.check(TokenKind::Newline) {
-            return ExpressionNode::MissingExpressionNode(self.lexer.current_pos());
-        }
-
-        if self.consume_optional(TokenKind::Keyword(Keyword::If)) {
-            return self.parse_if_expression();
-        }
-
-        self.parse_expression_block()
-    }
-
-    fn parse_expression_block(&mut self) -> ExpressionNode {
-        if self.consume_optional(TokenKind::Begin) {
+    fn parse_expression_block(&mut self) -> Box<dyn ExpressionNode> {
+        if self.check(TokenKind::Begin) {
             return self.parse_expression_block_list();
         }
 
         self.parse_expression()
     }
 
-    fn parse_expression_block_list(&mut self) -> ExpressionNode {
-        if self.consume_optional(TokenKind::End) {
-            return ExpressionNode::MissingExpressionNode(self.lexer.current_pos());
-        }
+    fn parse_expression_block_list(&mut self) -> Box<dyn ExpressionNode> {
+        // if self.consume_optional(TokenKind::End) {
+        //     return Box::new(missing_expr::MissingExpressionNode {
+        //         position: self.lexer.current_pos(),
+        //     });
+        // }
 
-        ExpressionNode::BlockExpressionNode {
-            expressions: {
+        let block_expr = block_expr::BlockExpressionNode {
+            begin_token: self.next_token(),
+            expression_list: {
                 let mut expressions = Vec::new();
-                expressions.push(Box::new(self.parse_expression()));
+                expressions.push(self.parse_expression());
 
                 while self.consume_optional(TokenKind::Newline) {
-                    expressions.push(Box::new(self.parse_expression()));
+                    expressions.push(self.parse_expression());
                 }
 
                 expressions
             },
             end_token: self.consume(TokenKind::End),
-        }
+        };
+
+        Box::new(block_expr)
     }
 
-    fn parse_binary_expression(&mut self, min_precedence: u8) -> ExpressionNode {
+    fn parse_binary_expression(&mut self, min_precedence: u8) -> Box<dyn ExpressionNode> {
         if self.check(TokenKind::Begin) {
             return self.parse_expression_block();
         }
@@ -205,11 +214,11 @@ impl Parser {
                     break;
                 }
 
-                lhs = ExpressionNode::BinaryExpressionNode {
+                lhs = Box::new(binary_expr::BinaryExpressionNode {
                     operator: self.next_token(),
-                    rhs: Box::new(self.parse_binary_expression(right_precedence)),
-                    lhs: Box::new(lhs.clone()),
-                };
+                    lhs: lhs.clone(),
+                    rhs: self.parse_binary_expression(right_precedence),
+                });
                 continue;
             }
 
@@ -219,66 +228,60 @@ impl Parser {
         lhs
     }
 
-    fn parse_unary_expression(&mut self) -> ExpressionNode {
+    fn parse_unary_expression(&mut self) -> Box<dyn ExpressionNode> {
         if let Some(Token { kind: TokenKind::Symbol(symbol), .. }) = self.peek() {
             let token = self.next_token();
 
             if let Some(right_precedence) = prefix_binding_power(symbol) {
-                return ExpressionNode::UnaryExpressionNode {
+                return Box::new(unary_expr::UnaryExpressionNode {
                     operator: token,
-                    expression: Box::new(self.parse_binary_expression(right_precedence)),
-                };
+                    operand: self.parse_binary_expression(right_precedence),
+                });
             }
 
-            return ExpressionNode::Unexpected(TokenKind::Symbol(symbol), self.lexer.current_pos());
+            return Box::new(unexpected_expr::UnexpectedExpressionNode {
+                token: self.lexer.next_token(),
+            });
         }
 
         self.parse_primary()
     }
 
-    fn parse_primary(&mut self) -> ExpressionNode {
+    fn parse_primary(&mut self) -> Box<dyn ExpressionNode> {
         let token = self.next_token();
         match &token.kind {
             TokenKind::Identifier => {
-                ExpressionNode::Identifier(token.span)
-            },
-            TokenKind::Keyword(Keyword::False) => {
-                ExpressionNode::LiteralNode(LiteralNode::Boolean(false), token.span)
-            },
-            TokenKind::Keyword(Keyword::True) => {
-                ExpressionNode::LiteralNode(LiteralNode::Boolean(true), token.span)
+                Box::new(identifier_expr::IdentifierExpressionNode { identifier: token })
             },
             TokenKind::Keyword(Keyword::Unimplemented) => {
-                ExpressionNode::UnimplementedExpressionNode
+                Box::new(unimplemented_expr::UnimplementedExpressionNode { token })
             },
-            TokenKind::Literal(literal) => match literal {
-                Literal::Integer(base) => {
-                    ExpressionNode::LiteralNode(LiteralNode::Integer(base.clone()), token.span)
-                },
-                Literal::Float(_) => {
-                    ExpressionNode::LiteralNode(LiteralNode::Float, token.span)
-                },
-                l => unimplemented!("Literal {:?}", l)
+            TokenKind::Keyword(Keyword::False)
+            | TokenKind::Keyword(Keyword::True)
+            | TokenKind::Literal(_) => {
+                Box::new(literal_expr::LiteralExpressionNode { literal: token })
             },
             TokenKind::GroupingStart(delimiter) => {
                 self.lexer.push_mode(LexerMode::Grouping);
 
-                let grouped_expression = ExpressionNode::GroupedExpressionNode {
+                let grouped_expression = grouped_expr::GroupedExpressionNode {
                     start_delimiter: token.clone(),
-                    expression: Box::new(self.parse_expression()),
+                    expression: self.parse_expression(),
                     end_delimiter: self.consume(TokenKind::GroupingEnd(delimiter.clone())),
                 };
 
                 self.lexer.pop_mode();
-                grouped_expression
+                Box::new(grouped_expression)
             },
             TokenKind::Newline | TokenKind::Eof => {
-                ExpressionNode::MissingExpressionNode(self.lexer.current_pos())
+                Box::new(missing_expr::MissingExpressionNode {
+                    position: self.lexer.current_pos(),
+                })
             },
-            TokenKind::Error(error) => {
-                ExpressionNode::Error(error.clone())
+            TokenKind::Error(_) => {
+                Box::new(error_expr::ErrorExpressionNode { token })
             },
-            k => ExpressionNode::Unexpected(k.clone(), self.lexer.current_pos())
+            _ => Box::new(unexpected_expr::UnexpectedExpressionNode { token })
         }
     }
 }
