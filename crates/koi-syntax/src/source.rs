@@ -36,7 +36,7 @@ impl Display for Position {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Span {
     pub start: Position,
     pub end: Position,
@@ -44,7 +44,13 @@ pub struct Span {
 
 impl Span {
     pub fn new(start: Position, end: Position) -> Self {
+        assert!(end >= start, "start position of Span must not be greater than its end position");
         Self { start, end }
+    }
+
+    pub fn from_bounds(first: Self, second: Self) -> Self {
+        assert!(second >= first, "start position of Span must not be greater than its end position");
+        Self { start: first.start, end: second.end }
     }
 }
 
