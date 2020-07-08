@@ -3,11 +3,14 @@ use super::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LocalBindingExpressionNode {
-    pub(crate) literal: Token,
+    pub(crate) let_keyword: Token,
+    pub(crate) identifier: Token,
+    pub(crate) equal_symbol: Token,
+    pub(crate) expression: Box<ExpressionNode>,
 }
 
 impl Spanning for LocalBindingExpressionNode {
     fn span(&self) -> Span {
-        self.literal.span
+        Span::from_bounds(self.let_keyword.span, self.expression.span())
     }
 }

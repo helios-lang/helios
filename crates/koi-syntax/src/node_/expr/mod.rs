@@ -55,7 +55,7 @@ pub enum ExpressionNode {
     BlockExpressionNode(BlockExpressionNode),
 
     /// A placeholder for unimplemented expressions.
-    UnimplementedExpressionNode(UnaryExpressionNode),
+    UnimplementedExpressionNode(UnimplementedExpressionNode),
 
     /// A missing expression node.
     MissingExpressionNode(MissingExpressionNode),

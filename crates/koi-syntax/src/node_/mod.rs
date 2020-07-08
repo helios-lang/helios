@@ -1,12 +1,25 @@
 pub mod expr;
 pub mod decl;
 
-pub use expr::ExpressionNode;
+pub use expr::*;
 pub use decl::DeclarationNode;
 use crate::source::Span;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Ast(pub(crate) Vec<Node>);
+
+impl Ast {
+    pub fn span(&self) -> Span {
+        Span::from_bounds(
+            self.0.first().map(|node| node.span()).unwrap_or_default(),
+            self.0.last().map(|node| node.span()).unwrap_or_default()
+        )
+    }
+
+    pub fn nodes(&self) -> &Vec<Node> {
+        &self.0
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Node {
