@@ -44,12 +44,28 @@ pub struct Span {
 
 impl Span {
     pub fn new(start: Position, end: Position) -> Self {
-        assert!(end >= start, "start position of Span must not be greater than its end position");
+        assert! {
+            end >= start,
+            format! {
+                "start position of Span ({}) must not be greater than its end position ({})",
+                start,
+                end,
+            }
+        }
+
         Self { start, end }
     }
 
     pub fn from_bounds(first: Self, second: Self) -> Self {
-        assert!(second >= first, "start position of Span must not be greater than its end position");
+        assert! {
+            second.end >= first.start,
+            format! {
+                "illegal bounds of Span: start = {}, end = {}",
+                first.start,
+                second.end,
+            }
+        }
+
         Self { start: first.start, end: second.end }
     }
 }
