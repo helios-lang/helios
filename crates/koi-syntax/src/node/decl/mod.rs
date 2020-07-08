@@ -6,7 +6,7 @@ pub mod function_decl;
 pub mod module_decl;
 pub mod type_decl;
 
-pub trait DeclarationNode: DeclarationNodeClone + Debug {
+pub trait DeclarationNode: DeclarationNodeClone + Debug + Send {
     fn span(&self) -> Span;
 }
 

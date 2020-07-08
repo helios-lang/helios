@@ -28,7 +28,7 @@ pub use self::{
 use crate::source::Span;
 use std::fmt::Debug;
 
-pub trait ExpressionNode: ExpressionNodeClone + Debug {
+pub trait ExpressionNode: ExpressionNodeClone + Debug + Send {
     fn span(&self) -> Span;
 }
 
