@@ -4,7 +4,6 @@ pub mod decl;
 use crate::source::Span;
 pub use expr::*;
 pub use decl::*;
-use std::slice::Iter;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Ast(pub(crate) Vec<Node>);
@@ -17,8 +16,8 @@ impl Ast {
         )
     }
 
-    pub fn iter(&self) -> Iter<'_, Node> {
-        self.0.iter()
+    pub fn nodes(&self) -> &Vec<Node> {
+        &self.0
     }
 }
 

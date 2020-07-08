@@ -39,7 +39,7 @@ impl Receiver {
                 if cached_version != &version {
                     match self.generate_tokens(url) {
                         Ok(tokens) => {
-                            tokens.iter().for_each(|token| eprintln!("{:?}", token));
+                            tokens.nodes().iter().for_each(|token| eprintln!("{:?}", token));
                             self.token_database.insert(key, version);
                         },
                         Err(error) => {
