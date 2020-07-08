@@ -6,7 +6,9 @@ pub fn build(file_name: &str) {
     match Source::file(file_name) {
         Ok(source) => {
             let time = std::time::Instant::now();
-            println!("Program span: {}", parse(source).span());
+            let ast = parse(source);
+            println!("{:#?}", ast.nodes());
+            println!("Program span: {}", ast.span());
             println!("Time elapsed: {} ms", time.elapsed().as_millis());
         },
         Err(error) => {
