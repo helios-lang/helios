@@ -166,12 +166,6 @@ impl Parser {
     }
 
     fn parse_expression_block_list(&mut self) -> Box<dyn ExpressionNode> {
-        // if self.consume_optional(TokenKind::End) {
-        //     return Box::new(missing_expr::MissingExpressionNode {
-        //         position: self.lexer.current_pos(),
-        //     });
-        // }
-
         Box::new(BlockExpressionNode {
             begin_token: self.next_token(),
             expression_list: {
@@ -189,8 +183,12 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self, min_precedence: u8) -> Box<dyn ExpressionNode> {
+        if self.check(TokenKind::End) {
+            return Box::new(MissingExpressionNode { position: self.lexer.current_pos() });
+        }
+
         if self.check(TokenKind::Begin) {
-            return self.parse_expression_block();
+            return self.parse_expression_block_list();
         }
 
         let mut lhs = self.parse_unary_expression();
