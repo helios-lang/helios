@@ -2,8 +2,7 @@
 
 mod errors;
 mod lexer;
-// pub mod node;
-pub mod node_;
+pub mod node;
 mod parser;
 pub mod source;
 pub mod token;
