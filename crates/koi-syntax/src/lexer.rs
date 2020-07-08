@@ -516,7 +516,7 @@ impl Lexer {
             TokenKind::Literal(Literal::Integer(base))
         } else {
             if base == Base::Decimal {
-                TokenKind::Literal(Literal::Float(base))
+                TokenKind::Literal(Literal::Float)
             } else {
                 TokenKind::Error(LexerError::UnsupportedFloatLiteralBase(base))
             }

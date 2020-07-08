@@ -135,7 +135,7 @@ pub enum Base {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Literal {
     Character,
-    Float(Base),
+    Float,
     Integer(Base),
     String,
 }

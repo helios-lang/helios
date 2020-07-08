@@ -10,7 +10,7 @@ macro_rules! create_parser_test {
         let mut s = super::read_from_string($string);
         let source = $crate::source::Source::stream(&mut s);
         match source {
-            Ok(source) => assert_eq!(crate::parse(source), $expected),
+            Ok(source) => assert_eq!(crate::parse(source), crate::Ast($expected)),
             Err(error) => panic!("Failed to create Source from stream: {}", error)
         }
     };
