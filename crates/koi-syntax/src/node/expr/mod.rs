@@ -1,6 +1,3 @@
-use crate::source::Span;
-use std::fmt::Debug;
-
 pub mod binary_expr;
 pub mod block_expr;
 pub mod error_expr;
@@ -14,7 +11,24 @@ pub mod unary_expr;
 pub mod unexpected_expr;
 pub mod unimplemented_expr;
 
-pub trait ExpressionNode: ExpressionNodeClone + Debug {
+pub use self::{
+    binary_expr::*,
+    block_expr::*,
+    error_expr::*,
+    identifier_expr::*,
+    if_expr::*,
+    grouped_expr::*,
+    literal_expr::*,
+    local_binding_expr::*,
+    missing_expr::*,
+    unary_expr::*,
+    unexpected_expr::*,
+    unimplemented_expr::*,
+};
+use crate::source::Span;
+use std::fmt::Debug;
+
+pub trait ExpressionNode: ExpressionNodeClone + Debug + Send {
     fn span(&self) -> Span;
 }
 
