@@ -116,7 +116,7 @@ impl Lexer {
                     self.indentation_stack.pop();
                     return Token::with(TokenKind::End, Span::new(old_pos, self.current_pos()));
                 } else {
-                    return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos()))
+                    return Token::with(TokenKind::Eof, Span::new(old_pos, self.current_pos()));
                 }
             }
         };

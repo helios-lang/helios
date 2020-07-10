@@ -5,16 +5,33 @@ use crate::source::Span;
 pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
+    pub leading_trivia: Vec<Trivia>,
+    pub trailing_trivia: Vec<Trivia>,
 }
 
 impl Token {
     pub fn with(kind: TokenKind, span: Span) -> Self {
-        assert!(
-            span.end >= span.start,
-            format!("Invalid span `{}..{}`", span.start, span.end)
-        );
-        Self { kind, span }
+        Self::with_trivia(kind, span, Vec::new(), Vec::new())
     }
+
+    pub fn with_trivia(kind: TokenKind,
+                       span: Span,
+                       leading_trivia: Vec<Trivia>,
+                       trailing_trivia: Vec<Trivia>) -> Self
+    {
+        assert! {
+            span.end >= span.start,
+            format!("invalid token span: {}..{}", span.start, span.end)
+        }
+
+        Self { kind, span, leading_trivia, trailing_trivia }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Trivia {
+    Spaces(usize),
+    LineComments(usize),
 }
 
 /// An enum representing all the possible token types.
