@@ -1,12 +1,12 @@
-use crate::token::Token;
+use crate::token::*;
 use super::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct UnexpectedTokenNode {
+pub struct SkippedTokenNode {
     pub(crate) token: Token,
 }
 
-impl ExpressionNode for UnexpectedTokenNode {
+impl ExpressionNode for SkippedTokenNode {
     fn span(&self) -> Span {
         self.token.span
     }

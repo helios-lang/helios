@@ -113,6 +113,10 @@ impl Parser {
             });
         }
 
+        if self.check(TokenKind::End) {
+            return Box::new(SkippedTokenNode { token: self.next_token() });
+        }
+
         if self.check(TokenKind::Keyword(Keyword::Let)) {
             return self.parse_let_expression();
         }
@@ -229,9 +233,7 @@ impl Parser {
                 });
             }
 
-            return Box::new(UnexpectedExpressionNode {
-                token: self.lexer.next_token(),
-            });
+            return Box::new(UnexpectedTokenNode { token: self.lexer.next_token() });
         }
 
         self.parse_primary()
@@ -269,7 +271,7 @@ impl Parser {
             TokenKind::Error(_) => {
                 Box::new(ErrorExpressionNode { token })
             },
-            _ => Box::new(UnexpectedExpressionNode { token })
+            _ => Box::new(UnexpectedTokenNode { token })
         }
     }
 }

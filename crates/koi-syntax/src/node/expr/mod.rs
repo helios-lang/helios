@@ -7,6 +7,7 @@ pub mod if_expr;
 pub mod literal_expr;
 pub mod local_binding_expr;
 pub mod missing_expr;
+pub mod skipped_expr;
 pub mod unary_expr;
 pub mod unexpected_expr;
 pub mod unimplemented_expr;
@@ -21,6 +22,7 @@ pub use self::{
     literal_expr::*,
     local_binding_expr::*,
     missing_expr::*,
+    skipped_expr::*,
     unary_expr::*,
     unexpected_expr::*,
     unimplemented_expr::*,
