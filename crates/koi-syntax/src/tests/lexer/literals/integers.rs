@@ -12,7 +12,14 @@ macro_rules! test_integer {
                         $crate::source::Position::new(0, 0, 0),
                         $crate::source::Position::new(0, $string.len(), $string.len())
                     )
-                )
+                ),
+                $crate::token::Token::with(
+                    $crate::token::TokenKind::Eof,
+                    $crate::source::Span::new(
+                        $crate::source::Position::new(0, $string.len(), $string.len()),
+                        $crate::source::Position::new(0, $string.len(), $string.len())
+                    )
+                ),
             }
         }
     };

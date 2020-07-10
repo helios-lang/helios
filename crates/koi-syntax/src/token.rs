@@ -31,7 +31,9 @@ impl Token {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Trivia {
     Spaces(usize),
-    LineComments(usize),
+    Tabs(usize),
+    CarriageReturn(usize),
+    LineComment { is_doc_comment: bool, span: Span },
 }
 
 /// An enum representing all the possible token types.

@@ -15,7 +15,14 @@ macro_rules! test_keyword {
                         $crate::source::Position::new(0, 0, 0),
                         $crate::source::Position::new(0, $size, $size)
                     )
-                )
+                ),
+                $crate::token::Token::with(
+                    $crate::token::TokenKind::Eof,
+                    $crate::source::Span::new(
+                        $crate::source::Position::new(0, $size, $size),
+                        $crate::source::Position::new(0, $size, $size)
+                    )
+                ),
             }
         }
     };

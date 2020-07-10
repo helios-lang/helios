@@ -133,13 +133,13 @@ impl<'a> BufRead for Source<'a> {
     }
 }
 
-pub struct Cursor {
+pub(crate) struct Cursor {
     chars: IntoIter<char>,
-    pub pos: Position,
+    pub(crate) pos: Position,
 }
 
 impl Cursor {
-    pub fn with(mut source: Source) -> Self {
+    pub(crate) fn with(mut source: Source) -> Self {
         let mut buffer = String::new();
         let chars = match source.read_to_string(&mut buffer) {
             Ok(0) => None,
@@ -156,19 +156,8 @@ impl Cursor {
         }
     }
 
-    /// Advances to the next character in the `Cursor` iterator.
-    ///
-    /// * If we still have characters left in the line, we'll return the next
-    ///   character in queue.
-    ///
-    /// * If we received `None` (which means we reached the end of the line),
-    ///   then we'll ask our `source` to give us the next line.
-    ///
-    /// * If we are given a new line (and thus the file still has contents in to
-    ///   be processed), then we'll return the next character in our new queue.
-    ///
-    /// * Otherwise, we've reached the end of the file and so we'll return `None`.
-    pub fn advance(&mut self) -> Option<char> {
+    /// Advances to the next character in the iterator.
+    pub(crate) fn advance(&mut self) -> Option<char> {
         self.chars.next().map(|next_char| {
             if next_char == '\n' {
                 self.pos.advance_line();
@@ -180,11 +169,11 @@ impl Cursor {
         })
     }
 
-    pub fn source_len(&self) -> usize {
+    pub(crate) fn source_len(&self) -> usize {
         self.chars.len()
     }
 
-    pub fn nth(&self, n: usize) -> char {
+    pub(crate) fn nth(&self, n: usize) -> char {
         self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
     }
 }

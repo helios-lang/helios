@@ -16,7 +16,14 @@ macro_rules! test_symbol {
                         $crate::source::Position::new(0, 0, 0),
                         $crate::source::Position::new(0, $size, $size)
                     )
-                )
+                ),
+                $crate::token::Token::with(
+                    $crate::token::TokenKind::Eof,
+                    $crate::source::Span::new(
+                        $crate::source::Position::new(0, $size, $size),
+                        $crate::source::Position::new(0, $size, $size)
+                    )
+                ),
             }
         }
     };
@@ -77,6 +84,10 @@ fn test_invalid_composed_symbols() {
                 TokenKind::Symbol(Symbol::Bang),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
+            ),
         }
     }
 
@@ -90,6 +101,10 @@ fn test_invalid_composed_symbols() {
             Token::with(
                 TokenKind::Symbol(Symbol::Lt),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
+            ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
             ),
         }
     }
@@ -105,6 +120,10 @@ fn test_invalid_composed_symbols() {
                 TokenKind::Symbol(Symbol::Lt),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
+            ),
         }
     }
 
@@ -119,6 +138,10 @@ fn test_invalid_composed_symbols() {
                 TokenKind::Symbol(Symbol::Minus),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
+            ),
         }
     }
 }
@@ -132,6 +155,10 @@ fn test_misleading_symbols() {
                 TokenKind::Unknown('\u{037e}'),
                 Span::new(Position::new(0, 0, 0), Position::new(0, 1, 1))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 1, 1), Position::new(0, 1, 1))
+            ),
         }
     }
 
@@ -142,6 +169,10 @@ fn test_misleading_symbols() {
                 TokenKind::Symbol(Symbol::EnDash),
                 Span::new(Position::new(0, 0, 0), Position::new(0, 1, 1))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 1, 1), Position::new(0, 1, 1))
+            ),
         }
     }
 
@@ -151,6 +182,10 @@ fn test_misleading_symbols() {
             Token::with(
                 TokenKind::Symbol(Symbol::EmDash),
                 Span::new(Position::new(0, 0, 0), Position::new(0, 1, 1))
+            ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 1, 1), Position::new(0, 1, 1))
             ),
         }
     }
@@ -166,6 +201,10 @@ fn test_misleading_symbols() {
                 TokenKind::Symbol(Symbol::Gt),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
+            ),
         }
     }
 
@@ -179,6 +218,10 @@ fn test_misleading_symbols() {
             Token::with(
                 TokenKind::Symbol(Symbol::Gt),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
+            ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
             ),
         }
     }
@@ -194,6 +237,10 @@ fn test_misleading_symbols() {
                 TokenKind::Symbol(Symbol::EnDash),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
             ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
+            ),
         }
     }
 
@@ -207,6 +254,10 @@ fn test_misleading_symbols() {
             Token::with(
                 TokenKind::Symbol(Symbol::EmDash),
                 Span::new(Position::new(0, 1, 1), Position::new(0, 2, 2))
+            ),
+            Token::with(
+                TokenKind::Eof,
+                Span::new(Position::new(0, 2, 2), Position::new(0, 2, 2))
             ),
         }
     }
