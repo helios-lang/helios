@@ -290,11 +290,12 @@ fn prefix_binding_power(symbol: Symbol) -> Option<u8> {
 /// its adjacent operands.
 fn infix_binding_power(symbol: Symbol) -> Option<(u8, u8)> {
     let power = match symbol {
-        Symbol::LThinArrow => (2, 1),
-        Symbol::Eq | Symbol::BangEq => (3, 2),
-        Symbol::Lt | Symbol::Gt | Symbol::LtEq | Symbol::GtEq => (4, 5),
-        Symbol::Plus | Symbol::Minus => (6, 7),
-        Symbol::Asterisk | Symbol::ForwardSlash => (8, 9),
+        Symbol::Semicolon => (1, 2),
+        Symbol::LThinArrow => (3, 2),
+        Symbol::Eq | Symbol::BangEq => (4, 3),
+        Symbol::Lt | Symbol::Gt | Symbol::LtEq | Symbol::GtEq => (5, 6),
+        Symbol::Plus | Symbol::Minus => (7, 8),
+        Symbol::Asterisk | Symbol::ForwardSlash => (9, 10),
         _ => return None,
     };
 
