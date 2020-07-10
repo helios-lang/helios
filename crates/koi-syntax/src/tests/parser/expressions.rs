@@ -1,10 +1,10 @@
-// use crate::node::*;
+use crate::node::*;
 // use crate::source::*;
 // use crate::token::*;
 
 #[test]
 fn test_expressions() {
-    create_parser_test!("", Vec::new());
+    create_parser_test!("", vec![Node::Eof]);
 
     // -- THIS PRODUCES A STACK OVERFLOW
     // create_parser_test! {
