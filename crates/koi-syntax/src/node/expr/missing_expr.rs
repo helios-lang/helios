@@ -8,6 +8,6 @@ pub struct MissingExpressionNode {
 
 impl ExpressionNode for MissingExpressionNode {
     fn span(&self) -> Span {
-        Span::new(self.position, self.position)
+        Span::zero_width(self.position)
     }
 }

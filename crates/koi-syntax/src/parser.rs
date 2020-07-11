@@ -72,7 +72,7 @@ impl Parser {
             } else {
                 return Token::with(
                     TokenKind::Missing(Box::new(kind)),
-                    Span::new(token.span.start, token.span.start)
+                    Span::zero_width(token.span.start)
                 );
             }
         }
@@ -133,7 +133,7 @@ impl Parser {
             let_keyword: self.next_token(),
             identifier: self.consume(TokenKind::Identifier),
             equal_symbol: self.consume(TokenKind::Symbol(Symbol::Eq)),
-            expression: self.parse_expression_block()
+            expression: self.parse_expression_block(),
         })
     }
 
@@ -144,7 +144,7 @@ impl Parser {
             then_keyword: self.consume(TokenKind::Keyword(Keyword::Then)),
             expression: self.parse_expression_block(),
             else_clause: {
-                self.consume_optional(TokenKind::Newline);
+                // self.consume_optional(TokenKind::Newline);
                 if self.check(TokenKind::Keyword(Keyword::Else)) {
                     Some(self.parse_else_clause())
                 } else {
@@ -157,23 +157,25 @@ impl Parser {
     fn parse_else_clause(&mut self) -> ElseClauseExpressionNode {
         ElseClauseExpressionNode {
             else_keyword: self.next_token(),
-            expression: self.parse_expression(),
+            expression: self.parse_expression_block(),
         }
     }
 
     fn parse_expression_block(&mut self) -> Box<dyn ExpressionNode> {
-        if self.check(TokenKind::Begin) {
-            return self.parse_expression_block_list();
-        }
+        self.lexer.push_mode(LexerMode::IndentedBlock);
+        let expr_block = self.parse_expression_block_list();
+        self.lexer.pop_mode();
 
-        self.parse_expression()
+        expr_block
     }
 
     fn parse_expression_block_list(&mut self) -> Box<dyn ExpressionNode> {
+        let begin_token = self.next_token();
         Box::new(BlockExpressionNode {
-            begin_token: self.next_token(),
+            begin_token: begin_token.clone(),
             expression_list: {
                 let mut expressions = Vec::new();
+                self.lexer.pop_mode();
                 expressions.push(self.parse_expression());
 
                 while self.consume_optional(TokenKind::Newline) {
@@ -182,7 +184,25 @@ impl Parser {
 
                 expressions
             },
-            end_token: self.consume(TokenKind::End),
+            end_token: {
+                match self.peek() {
+                    Some(Token { kind: TokenKind::End, .. }) => {
+                        self.next_token()
+                    },
+                    Some(token) => {
+                        Token::with(
+                            TokenKind::End,
+                            Span::zero_width(token.span.start)
+                        )
+                    },
+                    None => {
+                        Token::with(
+                            TokenKind::End,
+                            Span::zero_width(self.lexer.current_pos())
+                        )
+                    }
+                }
+            },
         })
     }
 

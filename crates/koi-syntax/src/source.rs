@@ -56,6 +56,10 @@ impl Span {
         Self { start, end }
     }
 
+    pub fn zero_width(position: Position) -> Self {
+        Self::new(position, position)
+    }
+
     pub fn from_bounds(first: Self, second: Self) -> Self {
         assert! {
             second.end >= first.start,

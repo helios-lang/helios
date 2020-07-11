@@ -56,6 +56,7 @@ fn is_symbol(c: char) -> bool {
 pub enum LexerMode {
     Normal,
     Grouping,
+    IndentedBlock,
 }
 
 impl Default for LexerMode {
@@ -69,9 +70,7 @@ pub struct Lexer {
     current_indentation: usize,
     indentation_stack: Vec<usize>,
     mode_stack: Vec<LexerMode>,
-    did_enter_new_line: bool,
     did_emit_end_token: bool,
-    should_emit_end_token: bool,
 }
 
 impl Lexer {
@@ -79,11 +78,9 @@ impl Lexer {
         Self {
             cursor: Cursor::with(source),
             current_indentation: 0,
-            indentation_stack: vec![],
+            indentation_stack: Vec::new(),
             mode_stack: vec![LexerMode::Normal],
-            did_enter_new_line: false,
             did_emit_end_token: false,
-            should_emit_end_token: false,
         }
     }
 
@@ -92,7 +89,7 @@ impl Lexer {
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
             LexerMode::Grouping => self.tokenize_grouping(),
-            _ => unimplemented!(),
+            LexerMode::IndentedBlock => self.tokenize_indented_block(),
         }
     }
 
@@ -113,18 +110,10 @@ impl Lexer {
     fn tokenize_normal(&mut self) -> Token {
         let old_pos = self.current_pos();
 
-        if self.did_enter_new_line {
-            return Token::with(
-                self.lex_indentation(),
-                Span::new(self.current_pos(), self.current_pos())
-            );
-        }
-
         let next_char = match self.next_char() {
             Some(next_char) => {
                 if next_char == '\n' {
-                    self.did_enter_new_line = true;
-                    return self.tokenize_normal();
+                    return self.tokenize_indented_block();
                 } else if is_whitespace(next_char) {
                     return self.tokenize_normal();
                 } else {
@@ -194,6 +183,32 @@ impl Lexer {
         };
 
         Token::with(kind, Span::new(old_pos, self.current_pos()))
+    }
+
+    /// _FIXME_: Return a `LexerError::BadIndent` if the new indentation is
+    /// not equal to the expected indentation.
+    fn tokenize_indented_block(&mut self) -> Token {
+        // Consume any trailing whitespace
+        self.consume_while(is_whitespace);
+
+        // Consume indentation at the start of the next line
+        if self.consume('\n') { self.consume_while(is_whitespace); }
+
+        self.current_indentation = self.current_pos().column;
+        let previous_indentation = *self.indentation_stack.last().unwrap_or(&0);
+
+        let kind =
+            if self.current_indentation > previous_indentation {
+                self.indentation_stack.push(self.current_indentation);
+                TokenKind::Begin
+            } else if self.current_indentation < previous_indentation {
+                self.indentation_stack.pop();
+                TokenKind::End
+            } else {
+                TokenKind::Newline
+            };
+
+        Token::with(kind, Span::zero_width(self.current_pos()))
     }
 }
 
@@ -343,73 +358,6 @@ impl Lexer {
         }
 
         trivia
-    }
-
-    /// Consumes indentation and returns the appropriate indentation token kind.
-    ///
-    /// The following outlines which token kind is determined:
-    ///
-    /// * If we've increased our indentation, we'll return `TokenKind::Begin`.
-    ///
-    /// * If we did not change the level of indentation, we'll return
-    ///   `TokenKind::Newline`.
-    ///
-    /// * Otherwise, we've decreased our indentation level and so we'll emit as
-    ///   many `TokenKind::End` tokens as required to go back to the new
-    ///   indentation level.
-    fn lex_indentation(&mut self) -> TokenKind {
-        if self.should_emit_end_token {
-            let previous_indentation = *self.indentation_stack.last().unwrap_or(&0);
-
-            // We have encountered bad indentation (it is larger than expected)
-            if self.current_indentation > previous_indentation {
-                self.did_enter_new_line = false;
-                self.should_emit_end_token = false;
-                TokenKind::Error(
-                    LexerError::BadIndent {
-                        expected: previous_indentation,
-                        found: self.current_indentation
-                    }
-                )
-
-            // We still have to decrease our indentation
-            } else if self.current_indentation < previous_indentation {
-                self.indentation_stack.pop();
-                TokenKind::End
-
-            // We have decreased by a sufficient amount
-            } else {
-                self.did_enter_new_line = false;
-                self.should_emit_end_token = false;
-                TokenKind::Newline
-            }
-        } else {
-            self.current_indentation = self.consume_while(is_whitespace);
-            let previous_indentation = *self.indentation_stack.last().unwrap_or(&0);
-
-            // Skip line if it's empty
-            if self.consume('\n') {
-                self.did_enter_new_line = false;
-                return self.lex_indentation();
-            }
-
-            // We have increased our indentation
-            if self.current_indentation > previous_indentation {
-                self.indentation_stack.push(self.current_indentation);
-                self.did_enter_new_line = false;
-                TokenKind::Begin
-
-            // We have decreased our indentation
-            } else if self.current_indentation < previous_indentation {
-                self.should_emit_end_token = true;
-                self.lex_indentation()
-
-            // We have the same level of indentation
-            } else {
-                self.did_enter_new_line = false;
-                TokenKind::Newline
-            }
-        }
     }
 
     /// Matches any character that is a valid symbol.
