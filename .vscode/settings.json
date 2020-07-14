@@ -4,4 +4,5 @@
   "editor.rulers": [80],
   "rust-analyzer.inlayHints.parameterHints": false,
   "editor.fontFamily": "'JetBrains Mono', 'IBM Plex Mono', Menlo, Monaco, 'Courier New', monospace",
+  "rust-analyzer.inlayHints.enable": false,
 }
