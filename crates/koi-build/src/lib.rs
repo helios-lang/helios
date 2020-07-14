@@ -1,5 +1,5 @@
 use koi_driver::parse;
-use koi_syntax::source::Source;
+use koi_syntax_old::source::Source;
 
 /// Starts the build process with the given file.
 pub fn build(file_name: &str) {

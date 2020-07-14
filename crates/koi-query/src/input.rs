@@ -1,5 +1,5 @@
-use koi_syntax::Ast;
-use koi_syntax::source::Source;
+use koi_syntax_old::Ast;
+use koi_syntax_old::source::Source;
 use std::sync::Arc;
 
 #[salsa::query_group(InputStorage)]
@@ -16,7 +16,7 @@ fn ast(db: &impl Input, path: String) -> Arc<Ast> {
     let contents = db.source_text(path);
     let mut contents = contents.as_bytes();
     let source = Source::stream(&mut contents).unwrap();
-    Arc::new(koi_syntax::parse(source))
+    Arc::new(koi_syntax_old::parse(source))
 }
 
 fn length(db: &impl Input, path: String) -> usize {
