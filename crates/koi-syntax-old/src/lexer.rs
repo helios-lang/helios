@@ -415,25 +415,28 @@ impl Lexer {
     /// `TokenKind::Identifier`.
     fn lex_keyword_or_identifier(&mut self, string: String) -> TokenKind {
         match &*string {
-            "and"   => TokenKind::Keyword(Keyword::And),
-            "def"   => TokenKind::Keyword(Keyword::Def),
-            "do"    => TokenKind::Keyword(Keyword::Do),
-            "else"  => TokenKind::Keyword(Keyword::Else),
-            "false" => TokenKind::Keyword(Keyword::False),
-            "if"    => TokenKind::Keyword(Keyword::If),
-            "let"   => TokenKind::Keyword(Keyword::Let),
-            "match" => TokenKind::Keyword(Keyword::Match),
-            "module"=> TokenKind::Keyword(Keyword::Module),
-            "not"   => TokenKind::Keyword(Keyword::Not),
-            "or"    => TokenKind::Keyword(Keyword::Or),
-            "public"=> TokenKind::Keyword(Keyword::Public),
-            "then"  => TokenKind::Keyword(Keyword::Then),
-            "true"  => TokenKind::Keyword(Keyword::True),
-            "type"  => TokenKind::Keyword(Keyword::Type),
-            "using" => TokenKind::Keyword(Keyword::Using),
-            "val"   => TokenKind::Keyword(Keyword::Val),
-            "with"  => TokenKind::Keyword(Keyword::With),
-            _       => TokenKind::Identifier
+            "and"       => TokenKind::Keyword(Keyword::And),
+            "case"      => TokenKind::Keyword(Keyword::Case),
+            "def"       => TokenKind::Keyword(Keyword::Def),
+            "else"      => TokenKind::Keyword(Keyword::Else),
+            "enum"      => TokenKind::Keyword(Keyword::Enum),
+            "if"        => TokenKind::Keyword(Keyword::If),
+            "interal"   => TokenKind::Keyword(Keyword::Internal),
+            "let"       => TokenKind::Keyword(Keyword::Let),
+            "match"     => TokenKind::Keyword(Keyword::Match),
+            "module"    => TokenKind::Keyword(Keyword::Module),
+            "mut"       => TokenKind::Keyword(Keyword::Mut),
+            "not"       => TokenKind::Keyword(Keyword::Not),
+            "or"        => TokenKind::Keyword(Keyword::Or),
+            "public"    => TokenKind::Keyword(Keyword::Public),
+            "ref"       => TokenKind::Keyword(Keyword::Ref),
+            "return"    => TokenKind::Keyword(Keyword::Return),
+            "struct"    => TokenKind::Keyword(Keyword::Struct),
+            "type"      => TokenKind::Keyword(Keyword::Type),
+            "using"     => TokenKind::Keyword(Keyword::Using),
+            "val"       => TokenKind::Keyword(Keyword::Val),
+            "with"      => TokenKind::Keyword(Keyword::With),
+            _           => TokenKind::Identifier
         }
     }
 

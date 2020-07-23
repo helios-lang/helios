@@ -114,7 +114,25 @@ impl Receiver {
                         .collect();
 
                 let primitive_types: Vec<CompletionItem> =
-                    vec!["bool", "char", "float", "int", "uint", "string"]
+                    vec![
+                        "Array", "Bool", "Char",
+                        "Float", "Float32", "Float64",
+                        "Int", "Int8", "Int16", "Int32", "Int64",
+                        "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+                        "String",
+                    ]
+                        .into_iter()
+                        .map(|r#type| {
+                            CompletionItem {
+                                label: r#type.to_string(),
+                                kind: Some(lsp_types::CompletionItemKind::Struct),
+                                ..CompletionItem::default()
+                            }
+                        })
+                        .collect();
+
+                let special_identifiers: Vec<CompletionItem> =
+                    vec!["True", "False", "None", "Self"]
                         .into_iter()
                         .map(|r#type| {
                             CompletionItem {
@@ -136,7 +154,8 @@ impl Receiver {
                                     lsp_types::CompletionResponse::Array(
                                         [
                                             &keywords[..],
-                                            &primitive_types[..]
+                                            &primitive_types[..],
+                                            &special_identifiers[..],
                                         ].concat()
                                     )
                                 )

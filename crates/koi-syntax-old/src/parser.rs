@@ -141,7 +141,7 @@ impl Parser {
         Box::new(IfExpressionNode {
             if_keyword: self.next_token(),
             condition: self.parse_expression(),
-            then_keyword: self.consume(TokenKind::Keyword(Keyword::Then)),
+            // then_keyword: self.consume(TokenKind::Keyword(Keyword::Then)),
             expression: self.parse_expression_block(),
             else_clause: {
                 // self.consume_optional(TokenKind::Newline);
@@ -268,9 +268,9 @@ impl Parser {
             TokenKind::Keyword(Keyword::Unimplemented) => {
                 Box::new(UnimplementedExpressionNode { token })
             },
-            TokenKind::Keyword(Keyword::False)
-            | TokenKind::Keyword(Keyword::True)
-            | TokenKind::Literal(_) => {
+            // TokenKind::Keyword(Keyword::False)
+            // | TokenKind::Keyword(Keyword::True)
+            TokenKind::Literal(_) => {
                 Box::new(LiteralExpressionNode { literal: token })
             },
             TokenKind::GroupingStart(delimiter) => {
