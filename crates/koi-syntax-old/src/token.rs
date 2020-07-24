@@ -116,9 +116,10 @@ pub enum Keyword {
 impl Keyword {
     pub fn keyword_list() -> Vec<String> {
         vec![
-            "and", "as", "case", "def", "else", "enum", "extend", "external",
-            "if", "internal", "let", "match", "module", "mut", "not", "or",
-            "public", "ref", "return", "struct", "type", "using", "val", "with",
+            "and ", "as ", "case ", "def ", "else ", "enum ", "extend ",
+            "external ", "if ", "internal ", "let ", "match ", "module ", "mut ",
+            "not ", "or ", "public ", "ref ", "return ", "struct ", "type ",
+            "using ", "val ", "with ",
         ].into_iter().map(String::from).collect()
     }
 }
