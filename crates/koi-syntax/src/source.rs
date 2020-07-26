@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+use std::vec::IntoIter;
+
+pub const EOF_CHAR: char = '\0';
+
 /// Describes the start offset and length of a given node, token or trivia.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct TextSpan {
@@ -45,5 +49,35 @@ impl TextSpan {
     /// The end position of the given spanning item.
     pub fn end(&self) -> usize {
         self.start + self.length
+    }
+}
+
+pub struct Cursor {
+    chars: IntoIter<char>,
+    pub(crate) pos: usize,
+}
+
+impl Cursor {
+    pub(crate) fn new(source: String) -> Self {
+        Self {
+            chars: source.chars().collect::<Vec<_>>().into_iter(),
+            pos: 0,
+        }
+    }
+
+    /// Advances to the next character in the iterator.
+    pub(crate) fn advance(&mut self) -> Option<char> {
+        self.chars.next().map(|next_char| {
+            self.pos += 1;
+            next_char
+        })
+    }
+
+    pub(crate) fn source_len(&self) -> usize {
+        self.chars.len()
+    }
+
+    pub(crate) fn nth(&self, n: usize) -> char {
+        self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
     }
 }

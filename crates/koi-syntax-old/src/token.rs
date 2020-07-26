@@ -106,6 +106,7 @@ pub enum Keyword {
     Ref,
     Return,
     Struct,
+    Trait,
     Type,
     Unimplemented,
     Using,
@@ -118,8 +119,8 @@ impl Keyword {
         vec![
             "and ", "as ", "case ", "def ", "else ", "enum ", "extend ",
             "external ", "if ", "internal ", "let ", "match ", "module ", "mut ",
-            "not ", "or ", "public ", "ref ", "return ", "struct ", "type ",
-            "using ", "val ", "with ",
+            "not ", "or ", "public ", "ref ", "return ", "struct ", "trait ",
+            "type ", "using ", "val ", "with ",
         ].into_iter().map(String::from).collect()
     }
 }

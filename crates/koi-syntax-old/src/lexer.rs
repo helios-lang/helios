@@ -432,6 +432,7 @@ impl Lexer {
             "ref"       => TokenKind::Keyword(Keyword::Ref),
             "return"    => TokenKind::Keyword(Keyword::Return),
             "struct"    => TokenKind::Keyword(Keyword::Struct),
+            "trait"     => TokenKind::Keyword(Keyword::Trait),
             "type"      => TokenKind::Keyword(Keyword::Type),
             "using"     => TokenKind::Keyword(Keyword::Using),
             "val"       => TokenKind::Keyword(Keyword::Val),
