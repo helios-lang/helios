@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
+use std::hash::Hash;
 
 #[macro_export]
 macro_rules! cache {
@@ -19,7 +20,7 @@ macro_rules! cache {
 #[derive(Debug)]
 pub struct Cache<K, V>(HashMap<K, V>);
 
-impl<K, V> Cache<K, V> where K: std::hash::Hash + std::cmp::Eq + Clone {
+impl<K, V> Cache<K, V> where K: Hash + Eq + Clone {
     /// Creates an empty `Cache`.
     pub fn new() -> Self {
         Self(HashMap::new())
