@@ -121,7 +121,7 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone {
 mod tests {
     #[test]
     fn test_cache_lookup() {
-        // Create a cache with two key-value pars.
+        // Create a cache with two entries.
         let mut cache = cache!["one" => 1, "two" => 2];
         assert_eq!(cache.len(), 2);
 
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_cache_lookup_with() {
-        // Create a cache with two key-value pars.
+        // Create a cache with two entries.
         let mut cache = cache!["one" => 1, "two" => 2];
         assert_eq!(cache.len(), 2);
 
