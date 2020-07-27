@@ -47,15 +47,6 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone {
     /// Looks up a value with the given key and, if found, returns the value,
     /// otherwise inserts a new value (the provided default value) at the
     /// given key before returning it.
-    pub fn lookup(&mut self, key: K, default: V) -> &V {
-        let value = self.0.entry(key.clone()).or_insert(default);
-        value
-    }
-
-    /// Looks up a value with the given key and, if found, returns the value,
-    /// otherwise inserts a new value (by calling the provided function) at the
-    /// given key before returning it. If the new value is expensive to compute,
-    /// this method is recommended. Otherwise, use `Cache::lookup`.
     ///
     /// # Examples
     ///
@@ -70,10 +61,47 @@ impl<K, V> Cache<K, V> where K: Hash + Eq + Clone {
     /// assert_eq!(cache.get(&"ten".to_string()), None);
     ///
     /// // Lookup an existing key-value pair.
-    /// assert_eq!(cache.lookup("one".to_string(), || 1), &1);
+    /// assert_eq!(cache.lookup("one".to_string(), 1), &1);
     ///
     /// // Lookup a non-existing key-value pair.
-    /// assert_eq!(cache.lookup("ten".to_string(), || 10), &10);
+    /// assert_eq!(cache.lookup("ten".to_string(), 10), &10);
+    ///
+    /// // The new key-value pair is now in the cache.
+    /// assert_eq!(cache.get(&"ten".to_string()), Some(&10));
+    /// ```
+    pub fn lookup(&mut self, key: K, default: V) -> &V {
+        let value = self.0.entry(key.clone()).or_insert(default);
+        value
+    }
+
+    /// Looks up a value with the given key and, if found, returns the value,
+    /// otherwise inserts a new value (by calling the provided function) at the
+    /// given key before returning it.
+    ///
+    /// # Discussion
+    ///
+    /// It is recommended to use this method if the new value is expensive to
+    /// compute. The closure will not be evaluated until after it has been
+    /// determined that the key does not exist. Otherwise, use `Cache::lookup`
+    /// to pass the new value directly.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use koi_syntax::cache::Cache;
+    ///
+    /// let mut cache = Cache::new();
+    /// cache.insert("one".to_string(), 1);
+    /// cache.insert("two".to_string(), 2);
+    ///
+    /// // The key `"ten"` does not exist.
+    /// assert_eq!(cache.get(&"ten".to_string()), None);
+    ///
+    /// // Lookup an existing key-value pair.
+    /// assert_eq!(cache.lookup_with("one".to_string(), || 1), &1);
+    ///
+    /// // Lookup a non-existing key-value pair.
+    /// assert_eq!(cache.lookup_with("ten".to_string(), || 10), &10);
     ///
     /// // The new key-value pair is now in the cache.
     /// assert_eq!(cache.get(&"ten".to_string()), Some(&10));
