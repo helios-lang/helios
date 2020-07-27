@@ -1,3 +1,4 @@
-mod lexer;
-mod source;
-mod tree;
+pub mod cache;
+pub mod lexer;
+pub mod source;
+pub mod tree;
