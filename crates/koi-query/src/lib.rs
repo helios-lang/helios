@@ -22,9 +22,9 @@ impl SalsaDatabase for KoiDatabase {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use crate::input::Input;
     use super::*;
+    use std::sync::Arc;
 
     #[test]
     fn test_source_text() {
@@ -35,7 +35,7 @@ mod tests {
         let mut power = 1;
 
         while num <= 10_000 {
-            db.set_source_text(file_name.clone(), Arc::new(format!("{}", num)));
+            db.set_source_text(file_name.clone(), Arc::new(num.to_string()));
             assert_eq!(db.source_length(file_name.clone()), power);
 
             num = num * 10;
