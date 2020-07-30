@@ -36,7 +36,7 @@ mod tests {
 
         while num <= 10_000 {
             db.set_source_text(file_name.clone(), Arc::new(format!("{}", num)));
-            assert_eq!(db.length(file_name.clone()), power);
+            assert_eq!(db.source_length(file_name.clone()), power);
 
             num = num * 10;
             power += 1;
@@ -44,31 +44,22 @@ mod tests {
     }
 
     #[test]
-    fn test_ast() {
+    fn test_line_offsets_with_line_feed() {
         let mut db = KoiDatabase::default();
         let file_name = "foo.koi".to_string();
-        db.set_source_text(file_name.clone(), Arc::new("10".to_string()));
+        let source = "let a = 10\nlet b = foo(a)\n\nIO.println(a + b)\n";
+        db.set_source_text(file_name.clone(), Arc::new(source.to_string()));
 
-        let mut step = 1;
-        let mut lines = 1;
-        while lines <= 50 {
-            println!("{}", db.length(file_name.clone()));
+        assert_eq!(db.line_offsets(file_name), vec![0, 11, 26, 27, 45]);
+    }
 
-            if step % 5 == 0 {
-                db.set_source_text(
-                    file_name.clone(),
-                    Arc::new(
-                        format!(
-                            "{}{}",
-                            db.source_text(file_name.clone()),
-                            "\n10",
-                        )
-                    )
-                );
-                lines += 1;
-            }
+    #[test]
+    fn test_line_offsets_with_carriage_return_line_feed() {
+        let mut db = KoiDatabase::default();
+        let file_name = "foo.koi".to_string();
+        let source = "let a = 10\r\nlet b = foo(a)\r\n\r\nIO.println(a + b)\r\n";
+        db.set_source_text(file_name.clone(), Arc::new(source.to_string()));
 
-            step += 1;
-        }
+        assert_eq!(db.line_offsets(file_name), vec![0, 12, 28, 30, 49]);
     }
 }
