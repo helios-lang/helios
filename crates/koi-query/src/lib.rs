@@ -46,20 +46,30 @@ mod tests {
     #[test]
     fn test_line_offsets_with_line_feed() {
         let mut db = KoiDatabase::default();
-        let file_name = "foo.koi".to_string();
-        let source = "let a = 10\nlet b = foo(a)\n\nIO.println(a + b)\n";
-        db.set_source_text(file_name.clone(), Arc::new(source.to_string()));
+        let source = "let a = 10\nlet b = foo(a)\n\nIO.println(a + b)";
+        let _file_name = "foo.koi".to_string();
+        macro_rules! file_name { () => { _file_name.clone() } };
 
-        assert_eq!(db.line_offsets(file_name), vec![0, 11, 26, 27, 45]);
+        db.set_source_text(file_name!(), Arc::new(source.to_string()));
+        assert_eq!(db.source_line_offsets(file_name!()), vec![0, 11, 26, 27, 44]);
+
+        // let b = fo|o(a) <- {1,10}
+        let (line, column) = (1, 10);
+        assert_eq!(db.source_offset_at_position(file_name!(), line, column), 21);
     }
 
     #[test]
     fn test_line_offsets_with_carriage_return_line_feed() {
         let mut db = KoiDatabase::default();
-        let file_name = "foo.koi".to_string();
         let source = "let a = 10\r\nlet b = foo(a)\r\n\r\nIO.println(a + b)\r\n";
-        db.set_source_text(file_name.clone(), Arc::new(source.to_string()));
+        let _file_name = "foo.koi".to_string();
+        macro_rules! file_name { () => { _file_name.clone() } };
 
-        assert_eq!(db.line_offsets(file_name), vec![0, 12, 28, 30, 49]);
+        db.set_source_text(file_name!(), Arc::new(source.to_string()));
+        assert_eq!(db.source_line_offsets(file_name!()), vec![0, 12, 28, 30, 49]);
+
+        // let b = fo|o(a) <- {1,10}
+        let (line, column) = (1, 10);
+        assert_eq!(db.source_offset_at_position(file_name!(), line, column), 22);
     }
 }

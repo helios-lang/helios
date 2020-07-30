@@ -7,10 +7,21 @@ pub trait Input: salsa::Database {
     #[salsa::input]
     fn source_text(&self, path: String) -> Arc<String>;
 
+    /// The length of the source's text.
     fn source_length(&self, path: String) -> usize;
 
-    fn line_offsets(&self, path: String) -> Vec<usize>;
+    /// Returns a vector of offsets for each line in the source. As a result,
+    /// the last element is the length of the whole source text.
+    fn source_line_offsets(&self, path: String) -> Vec<usize>;
 
+    /// Retrieves the absolute source offset of a zero-based line and character
+    /// editor offset.
+    fn source_offset_at_position(&self,
+                                 path: String,
+                                 line: usize,
+                                 column: usize) -> usize;
+
+    /// Returns a parsed syntax tree of the given file.
     fn ast(&self, path: String) -> Arc<Ast>;
 }
 
@@ -19,13 +30,12 @@ fn source_length(db: &impl Input, path: String) -> usize {
     contents.len()
 }
 
-/// Returns a vector of offsets for each line in the source. The last element
-/// is the length of the whole source text.
-fn line_offsets(db: &impl Input, path: String) -> Vec<usize> {
+fn source_line_offsets(db: &impl Input, path: String) -> Vec<usize> {
     let mut accumulator = 0;
     let contents = &db.source_text(path)[..];
 
-    contents.lines()
+    contents
+        .lines()
         .map(|line| {
             let line_start = accumulator;
             accumulator += line.len();
@@ -40,6 +50,15 @@ fn line_offsets(db: &impl Input, path: String) -> Vec<usize> {
         })
         .chain(std::iter::once(contents.len()))
         .collect()
+}
+
+fn source_offset_at_position(db: &impl Input,
+                             path: String,
+                             line: usize,
+                             column: usize) -> usize
+{
+    let line_offsets = db.source_line_offsets(path);
+    line_offsets[line] + column
 }
 
 fn ast(db: &impl Input, path: String) -> Arc<Ast> {
