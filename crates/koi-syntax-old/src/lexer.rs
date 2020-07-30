@@ -421,7 +421,7 @@ impl Lexer {
             "else"      => TokenKind::Keyword(Keyword::Else),
             "enum"      => TokenKind::Keyword(Keyword::Enum),
             "if"        => TokenKind::Keyword(Keyword::If),
-            "interal"   => TokenKind::Keyword(Keyword::Internal),
+            "internal"  => TokenKind::Keyword(Keyword::Internal),
             "let"       => TokenKind::Keyword(Keyword::Let),
             "match"     => TokenKind::Keyword(Keyword::Match),
             "module"    => TokenKind::Keyword(Keyword::Module),
@@ -435,7 +435,7 @@ impl Lexer {
             "trait"     => TokenKind::Keyword(Keyword::Trait),
             "type"      => TokenKind::Keyword(Keyword::Type),
             "using"     => TokenKind::Keyword(Keyword::Using),
-            "val"       => TokenKind::Keyword(Keyword::Val),
+            "var"       => TokenKind::Keyword(Keyword::Var),
             "with"      => TokenKind::Keyword(Keyword::With),
             _           => TokenKind::Identifier
         }
