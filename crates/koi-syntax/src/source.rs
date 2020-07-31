@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::io::Result as IOResult;
-use std::path::PathBuf;
 use std::vec::IntoIter;
 
 pub const EOF_CHAR: char = '\0';
@@ -54,36 +52,15 @@ impl TextSpan {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum SourceType {
-    File(PathBuf),
-    Stdin,
-    Stream,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Source {
-    pub(crate) source_type: SourceType,
-    pub(crate) text: String,
-}
-
-impl Source {
-    pub fn file<P: Into<PathBuf> + Clone>(path: P) -> IOResult<Self> {
-        std::fs::read_to_string(path.clone().into()).map(|text|
-            Self { source_type: SourceType::File(path.into()), text }
-        )
-    }
-}
-
 pub(crate) struct Cursor {
     chars: IntoIter<char>,
     pub(crate) pos: usize,
 }
 
 impl Cursor {
-    pub(crate) fn with(source: Source) -> Self {
+    pub(crate) fn with(source: String) -> Self {
         Self {
-            chars: source.text.chars().collect::<Vec<_>>().into_iter(),
+            chars: source.chars().collect::<Vec<_>>().into_iter(),
             pos: 0,
         }
     }

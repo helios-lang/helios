@@ -1,5 +1,3 @@
-use koi_syntax_old::Ast;
-use koi_syntax_old::source::Source;
 use std::sync::Arc;
 
 #[salsa::query_group(InputStorage)]
@@ -29,8 +27,8 @@ pub trait Input: salsa::Database {
                                  path: String,
                                  offset: usize) -> (usize, usize);
 
-    /// Returns a parsed syntax tree of the given file.
-    fn ast(&self, path: String) -> Arc<Ast>;
+    // /// Returns a parsed syntax tree of the given file.
+    // fn ast(&self, path: String) -> Arc<Ast>;
 }
 
 fn source_length(db: &impl Input, path: String) -> usize {
@@ -87,9 +85,9 @@ fn source_position_at_offset(db: &impl Input,
     }
 }
 
-fn ast(db: &impl Input, path: String) -> Arc<Ast> {
-    let contents = db.source_text(path);
-    let mut contents = contents.as_bytes();
-    let source = Source::stream(&mut contents).unwrap();
-    Arc::new(koi_syntax_old::parse(source))
-}
+// fn ast(db: &impl Input, path: String) -> Arc<Ast> {
+//     let contents = db.source_text(path);
+//     let mut contents = contents.as_bytes();
+//     let source = Source::stream(&mut contents).unwrap();
+//     Arc::new(koi_syntax_old::parse(source))
+// }
