@@ -3,6 +3,8 @@
 use crate::source::Cursor;
 use std::default::Default;
 
+pub type _LexerOut = ();
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerMode {
     Normal,
@@ -28,7 +30,7 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> ! {
+    pub fn next_token(&mut self) -> _LexerOut {
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
             LexerMode::Grouping => self.tokenize_grouping(),
@@ -115,11 +117,11 @@ impl Lexer {
 }
 
 impl Lexer {
-    fn tokenize_normal(&mut self) -> ! {
+    fn tokenize_normal(&mut self) -> _LexerOut {
         todo!("Lexer::tokenize_normal")
     }
 
-    fn tokenize_grouping(&mut self) -> ! {
+    fn tokenize_grouping(&mut self) -> _LexerOut {
         todo!("Lexer::tokenize_grouping")
     }
 }
