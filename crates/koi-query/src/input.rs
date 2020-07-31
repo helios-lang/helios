@@ -81,7 +81,7 @@ fn source_position_at_offset(db: &impl Input,
         // line-offset position
         Err(expected_index) => {
             let last_line = expected_index.checked_sub(1).unwrap_or(0);
-            let column = offset - offsets[last_line];
+            let column = offset.checked_sub(offsets[last_line]).unwrap_or(0);
             (last_line, column)
         },
     }
