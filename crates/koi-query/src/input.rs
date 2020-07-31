@@ -14,12 +14,20 @@ pub trait Input: salsa::Database {
     /// the last element is the length of the whole source text.
     fn source_line_offsets(&self, path: String) -> Vec<usize>;
 
-    /// Retrieves the absolute source offset of a zero-based line and character
-    /// editor offset.
+    /// Retrieves the absolute source offset at a zero-based line and character
+    /// editor offset. Suitable for mapping the text index of a character to its
+    /// editor location.
     fn source_offset_at_position(&self,
                                  path: String,
                                  line: usize,
                                  column: usize) -> usize;
+
+    /// Retrieves the zero-based line and character editor offset at an absolute
+    /// source offset. Suitable for mapping the editor location of a character
+    /// to its text index.
+    fn source_position_at_offset(&self,
+                                 path: String,
+                                 offset: usize) -> (usize, usize);
 
     /// Returns a parsed syntax tree of the given file.
     fn ast(&self, path: String) -> Arc<Ast>;
@@ -59,6 +67,24 @@ fn source_offset_at_position(db: &impl Input,
 {
     let line_offsets = db.source_line_offsets(path);
     line_offsets[line] + column
+}
+
+fn source_position_at_offset(db: &impl Input,
+                             path: String,
+                             offset: usize) -> (usize, usize)
+{
+    let offsets = &db.source_line_offsets(path)[..];
+    match offsets.binary_search(&offset) {
+        // The offset was a line-offset position
+        Ok(line) => (line, 0),
+        // Otherwise, we need to calculate the actual offset from the last
+        // line-offset position
+        Err(expected_index) => {
+            let last_line = expected_index.checked_sub(1).unwrap_or(0);
+            let column = offset - offsets[last_line];
+            (last_line, column)
+        },
+    }
 }
 
 fn ast(db: &impl Input, path: String) -> Arc<Ast> {
