@@ -95,8 +95,8 @@ impl SyntaxTrivia {
             Self::Tab(n)
                 | Self::Space(n)
                 | Self::LineFeed(n)
-                | Self::CarriageReturn(n)
-                | Self::CarriageReturnLineFeed(n) => *n,
+                | Self::CarriageReturn(n) => *n,
+            Self::CarriageReturnLineFeed(n) => *n * 2,
             Self::LineComment { len, .. } => *len
         }
     }

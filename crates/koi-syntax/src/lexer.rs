@@ -246,6 +246,7 @@ impl Lexer {
                         .iter()
                         .map(|trivia| trivia.len())
                         .sum::<usize>();
+                assert!(start >= trailing_trivia_len);
 
                 let kind = TokenKind::Eof;
                 let text = "\0".to_string();
@@ -293,20 +294,23 @@ impl Lexer {
 }
 
 impl Lexer {
-    /// Builds a collection of `Trivia`.
+    /// Builds a collection of `SyntaxTrivia`.
     ///
-    /// Trivia are pieces of syntax that are not essential to the semantics of
-    /// the program, such as whitespace and line comments. This information is
-    /// tacked on to most tokens, establishing any trivia that appears before
-    /// or after it.
+    /// SyntaxTrivia are pieces of syntax that are not essential to the
+    /// semantics of the program, such as whitespace and line comments. This
+    /// information is tacked on to most tokens, establishing any trivia that
+    /// appears before or after it.
     fn lex_trivia(&mut self, is_leading: bool) -> Vec<SyntaxTrivia> {
         let mut trivia = Vec::new();
         let start = self.current_pos();
 
         loop {
             match (self.peek(), self.peek_at(1)) {
+                ('\n', _) if is_leading => {
+                    let count = self.consume_while(|c| c == '\n');
+                    if count > 0 { trivia.push(SyntaxTrivia::LineFeed(count))}
+                },
                 ('\r', '\n') if is_leading => {
-                    println!("HERE!");
                     // Consume peeked tokens
                     self.next_char();
                     self.next_char();
@@ -319,9 +323,9 @@ impl Lexer {
 
                     if count > 0 { trivia.push(SyntaxTrivia::CarriageReturnLineFeed(count)) }
                 },
-                ('\n', _) if is_leading => {
-                    let count = self.consume_while(|c| c == '\n');
-                    if count > 0 { trivia.push(SyntaxTrivia::LineFeed(count))}
+                ('\r', c) if c != '\n' => {
+                    let count = self.consume_while(|c| c == '\r');
+                    if count > 0 { trivia.push(SyntaxTrivia::CarriageReturn(count)) }
                 },
                 (' ', _) => {
                     let count = self.consume_while(|c| c == ' ');
@@ -330,10 +334,6 @@ impl Lexer {
                 ('\t', _) => {
                     let count = self.consume_while(|c| c == '\t');
                     if count > 0 { trivia.push(SyntaxTrivia::Tab(count)) }
-                },
-                ('\r', _) => {
-                    let count = self.consume_while(|c| c == '\r');
-                    if count > 0 { trivia.push(SyntaxTrivia::CarriageReturn(count)) }
                 },
                 ('/', '/') => {
                     // Consume peeked tokens
@@ -384,7 +384,7 @@ impl Lexer {
     }
 
     /// Matches every character that can be part of an identifier. This includes
-    /// upper and lower-case letters, the underscore, and the hyphen.
+    /// upper and lower-case letters, decimal digits and the underscore.
     fn lex_identifier(&mut self, first_char: char) -> TokenKind {
         let rest = self.consume_build(is_identifier_continue);
         let vec = [&vec![first_char], &rest[..]].concat();
@@ -431,32 +431,29 @@ impl Lexer {
 
         if first_digit == '0' {
             match self.peek() {
-                // Binary literal.
+                // Binary literal
                 'b' => {
                     base = Base::Binary;
                     self.next_char();
                     self.consume_digits(Base::Binary, None);
                 },
-                // Octal literal.
+                // Octal literal
                 'o' => {
                     base = Base::Octal;
                     self.next_char();
                     self.consume_digits(Base::Octal, None);
                 },
-                // Hexadecimal literal.
+                // Hexadecimal literal
                 'x' => {
                     base = Base::Hexadecimal;
                     self.next_char();
                     self.consume_digits(Base::Hexadecimal, None);
                 },
-                // Decimal literal. We ignore the decimal point to avoid it
-                // from being pushed into the `integer_part` vector (it'll
-                // be the first element of the `fractional_part` vector
-                // later on instead).
+                // Decimal literal
                 '0'..='9' | '_' => {
                     self.consume_digits(Base::Decimal, None);
                 }
-                // Just 0.
+                // Just 0
                 _ => ()
             }
         } else {
@@ -491,12 +488,12 @@ impl Lexer {
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
-
+//
 //     #[test]
 //     fn test_lexer() {
-//         let source = "let x = 10\nlet y = 20\nlet z = x + y\n";
+//         let source = "let\rx = 10\r\nlet y = 20\r\nlet z = x + y\r\n";
 //         let mut lexer = Lexer::with(source.to_string());
-
+//
 //         while !lexer.is_at_end() {
 //             let token = lexer.next_token();
 //             println!("{:?} ({}..{})\n\t{:?}\n\t{:?}", token.kind(), token.span().start(), token.span().end(), token.leading_trivia, token.trailing_trivia);
