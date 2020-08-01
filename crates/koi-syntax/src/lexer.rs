@@ -1,9 +1,12 @@
 #![allow(dead_code)]
 
-use crate::source::Cursor;
+use crate::cache::Cache;
+use crate::source::{Cursor, TextSpan};
+use crate::tree::token::{self, RawSyntaxToken, SyntaxToken, TokenKind};
 use std::default::Default;
+use std::rc::Rc;
 
-pub type _LexerOut = ();
+pub type _LexerOut = SyntaxToken;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerMode {
@@ -20,6 +23,7 @@ impl Default for LexerMode {
 pub struct Lexer {
     cursor: Cursor,
     mode_stack: Vec<LexerMode>,
+    pub(crate) token_cache: Cache<(TokenKind, String), Rc<RawSyntaxToken>>,
 }
 
 impl Lexer {
@@ -27,6 +31,7 @@ impl Lexer {
         Self {
             cursor: Cursor::with(source),
             mode_stack: vec![LexerMode::Normal],
+            token_cache: Cache::new(),
         }
     }
 
@@ -118,7 +123,23 @@ impl Lexer {
 
 impl Lexer {
     fn tokenize_normal(&mut self) -> _LexerOut {
-        todo!("Lexer::tokenize_normal")
+        use token::*;
+
+        let start = self.current_pos();
+        let _next_char = match self.next_char() {
+            Some(c) => c,
+            None => return SyntaxToken::with(
+                Rc::new(RawSyntaxToken::with(TokenKind::Eof, "\0".to_string())),
+                TextSpan::new(start, 0)
+            )
+        };
+
+        let key = (TokenKind::Keyword(Keyword::Let), "let".to_string());
+        let raw = self.token_cache.lookup_with(key.clone(), || {
+            Rc::new(RawSyntaxToken::with(key.0, key.1))
+        }).clone();
+
+        SyntaxToken::with(raw, TextSpan::new(start, self.current_pos()))
     }
 
     fn tokenize_grouping(&mut self) -> _LexerOut {
@@ -129,10 +150,20 @@ impl Lexer {
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
-//
+
 //     #[test]
 //     fn test_lexer() {
 //         let source = "let x = 10";
 //         let mut lexer = Lexer::with(source.to_string());
+//         loop {
+//             let token = lexer.next_token();
+//             match token.kind() {
+//                 TokenKind::Eof => break,
+//                 kind => {
+//                     println!("- {:?}@{}", kind, token.span());
+//                     println!(": {}", lexer.token_cache.len());
+//                 },
+//             }
+//         }
 //     }
 // }

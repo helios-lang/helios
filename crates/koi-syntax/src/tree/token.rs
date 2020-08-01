@@ -24,16 +24,23 @@ impl SyntaxToken {
         Self { raw, span, leading_trivia, trailing_trivia }
     }
 
+    pub fn span(&self) -> TextSpan {
+        self.span
+    }
+
     pub fn full_span(&self) -> TextSpan {
         TextSpan::from_bounds(
             self.leading_trivia.first().map_or(0, |trivia| trivia.len()),
             self.trailing_trivia.last().map_or(0, |trivia| trivia.len())
         )
     }
+
+    pub fn kind(&self) -> TokenKind {
+        self.raw.kind
+    }
 }
 
-
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct RawSyntaxToken {
     kind: TokenKind,
     text: String,

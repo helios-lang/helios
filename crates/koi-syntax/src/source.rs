@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::vec::IntoIter;
+use std::fmt::{self, Display};
 
 pub const EOF_CHAR: char = '\0';
 
@@ -49,6 +50,12 @@ impl TextSpan {
     /// The end position of the given spanning item.
     pub fn end(&self) -> usize {
         self.start + self.length
+    }
+}
+
+impl Display for TextSpan {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{{},{}}}", self.start, self.end())
     }
 }
 
