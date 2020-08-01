@@ -5,19 +5,19 @@ use crate::source::TextSpan;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SyntaxToken<'a> {
-    raw: &'a Rc<RawSyntaxToken>,
-    pub(crate) span: TextSpan,
-    pub(crate) leading_trivia: Vec<SyntaxTrivia>,
-    pub(crate) trailing_trivia: Vec<SyntaxTrivia>,
+pub struct SyntaxToken {
+    raw: Rc<RawSyntaxToken>,
+    span: TextSpan,
+    leading_trivia: Vec<SyntaxTrivia>,
+    trailing_trivia: Vec<SyntaxTrivia>,
 }
 
-impl<'a> SyntaxToken<'a> {
-    pub fn with(raw: &'a Rc<RawSyntaxToken>, span: TextSpan) -> Self {
+impl SyntaxToken {
+    pub fn with(raw: Rc<RawSyntaxToken>, span: TextSpan) -> Self {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
-    pub fn with_trivia(raw: &'a Rc<RawSyntaxToken>,
+    pub fn with_trivia(raw: Rc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
                        trailing_trivia: Vec<SyntaxTrivia>) -> Self
@@ -39,6 +39,10 @@ impl<'a> SyntaxToken<'a> {
     pub fn kind(&self) -> TokenKind {
         self.raw.kind
     }
+
+    pub fn text(&self) -> String {
+        self.raw.text.clone()
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -53,7 +57,7 @@ impl RawSyntaxToken {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum TokenKind {
     /// A tag that identifies a variable, type, module, etc.
     Identifier,

@@ -6,9 +6,9 @@ pub mod source;
 pub mod tree;
 
 use lexer::Lexer;
-use parser::{Parser, _ParserOut};
+use parser::{Parser, ParserOut};
 
-pub fn parse(source: String) -> _ParserOut {
+pub fn parse(source: String) -> ParserOut {
     let lexer = Lexer::with(source);
     Parser::with(lexer).parse()
 }

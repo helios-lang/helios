@@ -2,7 +2,7 @@
 
 use crate::lexer::Lexer;
 
-pub type _ParserOut = ();
+pub type ParserOut = ();
 
 pub struct Parser {
     lexer: Lexer,
@@ -13,7 +13,7 @@ impl Parser {
         Self { lexer, }
     }
 
-    pub fn parse(&mut self) -> _ParserOut {
+    pub fn parse(&mut self) -> ParserOut {
         todo!("Parser::parse")
     }
 }

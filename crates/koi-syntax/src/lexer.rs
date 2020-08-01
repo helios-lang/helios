@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::cache::Cache;
 use crate::errors::LexerError;
 use crate::source::{Cursor, TextSpan};
@@ -31,6 +29,7 @@ fn is_identifier_continue(c: char) -> bool {
         || c.is_xid_continue()
 }
 
+#[allow(dead_code)]
 /// Checks if the given character is a whitespace character. This includes the
 /// space character, the carriage return character, and the tab character. Only
 /// the newline character is used to signify a new line.
@@ -38,6 +37,7 @@ fn is_whitespace(c: char) -> bool {
     c == ' ' || c == '\r' || c == '\t'
 }
 
+#[allow(dead_code)]
 /// Checks if the given character is a grouping delimiter.
 fn is_grouping_delimiter(c: char) -> bool {
     match c {
@@ -56,7 +56,7 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
-pub type _LexerOut<'a> = SyntaxToken<'a>;
+pub type LexerOut = SyntaxToken;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerMode {
@@ -89,17 +89,19 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> _LexerOut {
+    pub fn next_token(&mut self) -> LexerOut {
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
             LexerMode::Grouping => self.tokenize_grouping(),
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn push_mode(&mut self, mode: LexerMode) {
         self.mode_stack.push(mode);
     }
 
+    #[allow(dead_code)]
     pub(crate) fn pop_mode(&mut self) -> Option<LexerMode> {
         self.mode_stack.pop()
     }
@@ -228,7 +230,7 @@ impl Lexer {
 }
 
 impl Lexer {
-    fn tokenize_normal(&mut self) -> _LexerOut {
+    fn tokenize_normal(&mut self) -> LexerOut {
         let leading_trivia = self.lex_trivia(true);
         let start = self.current_pos();
 
@@ -257,7 +259,7 @@ impl Lexer {
                 );
 
                 return SyntaxToken::with_trivia(
-                    eof_raw,
+                    Rc::clone(eof_raw),
                     TextSpan::new(start - trailing_trivia_len, 0),
                     Vec::new(),
                     trailing_trivia,
@@ -281,14 +283,14 @@ impl Lexer {
         );
 
         SyntaxToken::with_trivia(
-            raw,
+            Rc::clone(raw),
             TextSpan::from_bounds(start, end),
             leading_trivia,
             trailing_trivia
         )
     }
 
-    fn tokenize_grouping(&mut self) -> _LexerOut {
+    fn tokenize_grouping(&mut self) -> LexerOut {
         todo!("Lexer::tokenize_grouping")
     }
 }
@@ -484,19 +486,3 @@ impl Lexer {
         }
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     #[test]
-//     fn test_lexer() {
-//         let source = "let\rx = 10\r\nlet y = 20\r\nlet z = x + y\r\n";
-//         let mut lexer = Lexer::with(source.to_string());
-//
-//         while !lexer.is_at_end() {
-//             let token = lexer.next_token();
-//             println!("{:?} ({}..{})\n\t{:?}\n\t{:?}", token.kind(), token.span().start(), token.span().end(), token.leading_trivia, token.trailing_trivia);
-//         }
-//     }
-// }

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::vec::IntoIter;
 use std::fmt::{self, Display};
 
