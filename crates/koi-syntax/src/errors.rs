@@ -1,6 +1,6 @@
-type Base = ();
+use crate::tree::token::Base;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum LexerError {
     UnsupportedFloatLiteralBase(Base),
     EmptyCharLiteral,

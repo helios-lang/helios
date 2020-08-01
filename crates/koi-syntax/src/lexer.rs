@@ -1,12 +1,62 @@
 #![allow(dead_code)]
 
 use crate::cache::Cache;
+use crate::errors::LexerError;
 use crate::source::{Cursor, TextSpan};
-use crate::tree::token::{self, RawSyntaxToken, SyntaxToken, TokenKind};
+use crate::tree::token::*;
 use std::default::Default;
 use std::rc::Rc;
+use unicode_xid::UnicodeXID;
 
-pub type _LexerOut = SyntaxToken;
+/// Checks if the given character is a valid start of an identifier. A valid
+/// start of an identifier is any Unicode code point that satisfies the
+/// `XID_Start` property.
+fn is_identifier_start(c: char) -> bool {
+    // Fast-path for ASCII identifiers
+    ('a' <= c && c <= 'z')
+        || ('A' <= c && c <= 'Z')
+        || c == '_'
+        || c.is_xid_start()
+}
+
+/// Checks if the given character is a valid continuation of an identifier.
+/// A valid continuation of an identifier is any Unicode code point that
+/// satisfies the `XID_Continue` property.
+fn is_identifier_continue(c: char) -> bool {
+    // Fast-path for ASCII identifiers
+    ('a' <= c && c <= 'z')
+        || ('A' <= c && c <= 'Z')
+        || ('0' <= c && c <= '9')
+        || c == '_'
+        || c.is_xid_continue()
+}
+
+/// Checks if the given character is a whitespace character. This includes the
+/// space character, the carriage return character, and the tab character. Only
+/// the newline character is used to signify a new line.
+fn is_whitespace(c: char) -> bool {
+    c == ' ' || c == '\r' || c == '\t'
+}
+
+/// Checks if the given character is a grouping delimiter.
+fn is_grouping_delimiter(c: char) -> bool {
+    match c {
+        '{' | '}' | '[' | ']' | '(' | ')' => true,
+        _ => false,
+    }
+}
+
+/// Checks if the given character is a recognised symbol.
+fn is_symbol(c: char) -> bool {
+    match c {
+        '&' | '*' | '@' | '!' | '^' | ':' | ',' | '$' | '.' | '–' | '—' | '=' |
+        '-' | '%' | '+' | '#' | '?' | ';' | '£' | '~' | '|' | '/' | '\\'| '<' |
+        '>' | '{' | '}' | '[' | ']' | '(' | ')' => true,
+        _ => false,
+    }
+}
+
+pub type _LexerOut<'a> = SyntaxToken<'a>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerMode {
@@ -22,6 +72,8 @@ impl Default for LexerMode {
 
 pub struct Lexer {
     cursor: Cursor,
+    did_emit_eof_token: bool,
+    consumed_chars: Vec<char>,
     mode_stack: Vec<LexerMode>,
     pub(crate) token_cache: Cache<(TokenKind, String), Rc<RawSyntaxToken>>,
 }
@@ -30,6 +82,8 @@ impl Lexer {
     pub fn with(source: String) -> Self {
         Self {
             cursor: Cursor::with(source),
+            did_emit_eof_token: false,
+            consumed_chars: Vec::new(),
             mode_stack: vec![LexerMode::Normal],
             token_cache: Cache::new(),
         }
@@ -58,7 +112,10 @@ impl Lexer {
 impl Lexer {
     /// Retrieves the next character in the iterator.
     fn next_char(&mut self) -> Option<char> {
-        self.cursor.advance()
+        self.cursor.advance().map(|c| {
+            self.consumed_chars.push(c);
+            c
+        })
     }
 
     /// Peeks the next character without consuming it.
@@ -71,9 +128,9 @@ impl Lexer {
         self.cursor.nth(n)
     }
 
-    /// Checks if the `Cursor` has reached the end of the input.
+    /// Checks if the `Lexer` has reached the end of the input.
     pub(crate) fn is_at_end(&self) -> bool {
-        self.cursor.source_len() == 0 //&& self.did_emit_end_token
+        self.cursor.source_len() == 0 && self.did_emit_eof_token
     }
 
     pub(crate) fn current_pos(&self) -> usize {
@@ -119,31 +176,315 @@ impl Lexer {
         }
         vec
     }
+
+    /// Consumes all the valid digits of the given `base` up until a non-digit
+    /// character is reached, building a `Vec<char>` for all the characters
+    /// consumed. Underscores (`_`) are also consumed, but are ignored when
+    /// encountered.
+    fn consume_digits(&mut self, base: Base, first_digit: Option<char>) -> Vec<char> {
+        let mut vec = Vec::new();
+        if let Some(d) = first_digit { vec.push(d); }
+
+        /// Matches the digits with the pattern(s) provided, including the
+        /// underscore separator (which is ignored). Any other character will
+        /// break the match expression.
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// // This will match all the digits from `0` through `9` (inclusive)
+        /// // and the decimal point `.` (i.e., this will match all the digits
+        /// // of a decimal number).
+        /// match_digits!('0' => '9', '.');
+        /// ```
+        macro_rules! match_digits {
+            ( $($start:expr $(=> $end:expr)*),+ ) => {
+                loop {
+                    match self.peek() {
+                        '_' => {
+                            self.next_char();
+                        },
+                        $( | $start $(..=$end)* )+ => {
+                            vec.push(
+                                self.next_char()
+                                    .expect("Failed to get next char")
+                            );
+                        },
+                        _ => break
+                    }
+                }
+            }
+        };
+
+        match base {
+            Base::Binary => match_digits!('0' => '1'),
+            Base::Octal => match_digits!('0' => '7'),
+            Base::Hexadecimal => match_digits!('0' => '9', 'a' => 'f', 'A' => 'F'),
+            Base::Decimal => match_digits!('0' => '9'),
+        }
+
+        vec
+    }
 }
 
 impl Lexer {
     fn tokenize_normal(&mut self) -> _LexerOut {
-        use token::*;
-
+        let leading_trivia = self.lex_trivia(true);
         let start = self.current_pos();
-        let _next_char = match self.next_char() {
+
+        // Reset consumed chars
+        self.consumed_chars.drain(..);
+        let next_char = match self.next_char() {
             Some(c) => c,
-            None => return SyntaxToken::with(
-                Rc::new(RawSyntaxToken::with(TokenKind::Eof, "\0".to_string())),
-                TextSpan::new(start, 0)
-            )
+            None => {
+                self.did_emit_eof_token = true;
+
+                // The trivia we just consumed is now the trailing trivia
+                let trailing_trivia = leading_trivia;
+                let trailing_trivia_len =
+                    trailing_trivia
+                        .iter()
+                        .map(|trivia| trivia.len())
+                        .sum::<usize>();
+
+                let kind = TokenKind::Eof;
+                let text = "\0".to_string();
+
+                let eof_raw = self.token_cache.lookup(
+                    (kind, text.clone()),
+                    Rc::new(RawSyntaxToken::with(kind, text))
+                );
+
+                return SyntaxToken::with_trivia(
+                    eof_raw,
+                    TextSpan::new(start - trailing_trivia_len, 0),
+                    Vec::new(),
+                    trailing_trivia,
+                )
+            }
         };
 
-        let key = (TokenKind::Keyword(Keyword::Let), "let".to_string());
-        let raw = self.token_cache.lookup_with(key.clone(), || {
-            Rc::new(RawSyntaxToken::with(key.0, key.1))
-        }).clone();
+        let kind = match next_char {
+            c if is_symbol(c) => self.lex_symbol(c),
+            c if is_identifier_start(c) => self.lex_identifier(c),
+            c @ '0'..='9' => self.lex_number(c),
+            c => TokenKind::Unknown(c),
+        };
 
-        SyntaxToken::with(raw, TextSpan::new(start, self.current_pos()))
+        let end = self.current_pos();
+        let text = self.consumed_chars.drain(..).collect::<String>();
+        let trailing_trivia = self.lex_trivia(false);
+        let raw = self.token_cache.lookup(
+            (kind, text.clone()),
+            Rc::new(RawSyntaxToken::with(kind, text))
+        );
+
+        SyntaxToken::with_trivia(
+            raw,
+            TextSpan::from_bounds(start, end),
+            leading_trivia,
+            trailing_trivia
+        )
     }
 
     fn tokenize_grouping(&mut self) -> _LexerOut {
         todo!("Lexer::tokenize_grouping")
+    }
+}
+
+impl Lexer {
+    /// Builds a collection of `Trivia`.
+    ///
+    /// Trivia are pieces of syntax that are not essential to the semantics of
+    /// the program, such as whitespace and line comments. This information is
+    /// tacked on to most tokens, establishing any trivia that appears before
+    /// or after it.
+    fn lex_trivia(&mut self, is_leading: bool) -> Vec<SyntaxTrivia> {
+        let mut trivia = Vec::new();
+        let start = self.current_pos();
+
+        loop {
+            match (self.peek(), self.peek_at(1)) {
+                ('\r', '\n') if is_leading => {
+                    println!("HERE!");
+                    // Consume peeked tokens
+                    self.next_char();
+                    self.next_char();
+
+                    // We already have 1 CRLF sequence
+                    let mut count = 1;
+                    while ('\r', '\n') == (self.peek(), self.peek_at(1)) {
+                        count += 1;
+                    }
+
+                    if count > 0 { trivia.push(SyntaxTrivia::CarriageReturnLineFeed(count)) }
+                },
+                ('\n', _) if is_leading => {
+                    let count = self.consume_while(|c| c == '\n');
+                    if count > 0 { trivia.push(SyntaxTrivia::LineFeed(count))}
+                },
+                (' ', _) => {
+                    let count = self.consume_while(|c| c == ' ');
+                    if count > 0 { trivia.push(SyntaxTrivia::Space(count)) }
+                },
+                ('\t', _) => {
+                    let count = self.consume_while(|c| c == '\t');
+                    if count > 0 { trivia.push(SyntaxTrivia::Tab(count)) }
+                },
+                ('\r', _) => {
+                    let count = self.consume_while(|c| c == '\r');
+                    if count > 0 { trivia.push(SyntaxTrivia::CarriageReturn(count)) }
+                },
+                ('/', '/') => {
+                    // Consume peeked tokens
+                    self.next_char();
+                    self.next_char();
+
+                    let is_doc_comment = self.consume('/') || self.consume('!');
+                    self.consume_while(|c| c != '\n');
+
+                    trivia.push(SyntaxTrivia::LineComment {
+                        is_doc_comment,
+                        len: TextSpan::from_bounds(start, self.current_pos()).length()
+                    })
+                },
+                _ => break,
+            }
+        }
+
+        trivia
+    }
+
+    /// Matches any character that is a valid symbol.
+    ///
+    /// _TODO:_ Perhaps we could handle cases with confused symbols, such as
+    /// U+037E, the Greek question mark, which looks like a semicolon (compare
+    /// ';' with ';').
+    fn lex_symbol(&mut self, symbol: char) -> TokenKind {
+        match symbol {
+            '?' => {
+                if (self.peek(), self.peek_at(1)) == ('?', '?') {
+                    // Consume the next two question marks
+                    self.next_char();
+                    self.next_char();
+                    TokenKind::Keyword(Keyword::Unimplemented)
+                } else {
+                    TokenKind::Symbol(Symbol::Question)
+                }
+            },
+            _ => {
+                if let Some(symbol) = Symbol::compose(symbol, self.peek()) {
+                    self.next_char();
+                    TokenKind::Symbol(symbol)
+                } else {
+                    TokenKind::Symbol(Symbol::from_char(symbol))
+                }
+            }
+        }
+    }
+
+    /// Matches every character that can be part of an identifier. This includes
+    /// upper and lower-case letters, the underscore, and the hyphen.
+    fn lex_identifier(&mut self, first_char: char) -> TokenKind {
+        let rest = self.consume_build(is_identifier_continue);
+        let vec = [&vec![first_char], &rest[..]].concat();
+        let string: String = vec.into_iter().collect();
+        self.lex_keyword_or_identifier(string)
+    }
+
+    /// Attempts to match the provided `string` to a keyword, returning a
+    /// `TokenKind::Keyword` if a match is found, otherwise a
+    /// `TokenKind::Identifier`.
+    fn lex_keyword_or_identifier(&mut self, string: String) -> TokenKind {
+        match &*string {
+            "and"       => TokenKind::Keyword(Keyword::And),
+            "case"      => TokenKind::Keyword(Keyword::Case),
+            "def"       => TokenKind::Keyword(Keyword::Def),
+            "else"      => TokenKind::Keyword(Keyword::Else),
+            "enum"      => TokenKind::Keyword(Keyword::Enum),
+            "if"        => TokenKind::Keyword(Keyword::If),
+            "internal"  => TokenKind::Keyword(Keyword::Internal),
+            "let"       => TokenKind::Keyword(Keyword::Let),
+            "match"     => TokenKind::Keyword(Keyword::Match),
+            "module"    => TokenKind::Keyword(Keyword::Module),
+            "mut"       => TokenKind::Keyword(Keyword::Mut),
+            "not"       => TokenKind::Keyword(Keyword::Not),
+            "or"        => TokenKind::Keyword(Keyword::Or),
+            "public"    => TokenKind::Keyword(Keyword::Public),
+            "ref"       => TokenKind::Keyword(Keyword::Ref),
+            "return"    => TokenKind::Keyword(Keyword::Return),
+            "struct"    => TokenKind::Keyword(Keyword::Struct),
+            "trait"     => TokenKind::Keyword(Keyword::Trait),
+            "type"      => TokenKind::Keyword(Keyword::Type),
+            "using"     => TokenKind::Keyword(Keyword::Using),
+            "var"       => TokenKind::Keyword(Keyword::Var),
+            "with"      => TokenKind::Keyword(Keyword::With),
+            _           => TokenKind::Identifier
+        }
+    }
+
+    /// Matches any valid sequence of digits that can form an integer or float
+    /// literal. Only integer literals support the binary, octal, and
+    /// hexadecimal bases, in addition to the default decimal base.
+    fn lex_number(&mut self, first_digit: char) -> TokenKind {
+        let mut base = Base::Decimal;
+
+        if first_digit == '0' {
+            match self.peek() {
+                // Binary literal.
+                'b' => {
+                    base = Base::Binary;
+                    self.next_char();
+                    self.consume_digits(Base::Binary, None);
+                },
+                // Octal literal.
+                'o' => {
+                    base = Base::Octal;
+                    self.next_char();
+                    self.consume_digits(Base::Octal, None);
+                },
+                // Hexadecimal literal.
+                'x' => {
+                    base = Base::Hexadecimal;
+                    self.next_char();
+                    self.consume_digits(Base::Hexadecimal, None);
+                },
+                // Decimal literal. We ignore the decimal point to avoid it
+                // from being pushed into the `integer_part` vector (it'll
+                // be the first element of the `fractional_part` vector
+                // later on instead).
+                '0'..='9' | '_' => {
+                    self.consume_digits(Base::Decimal, None);
+                }
+                // Just 0.
+                _ => ()
+            }
+        } else {
+            self.consume_digits(Base::Decimal, Some(first_digit));
+        };
+
+        let mut has_fractional_part = false;
+
+        if self.peek() == '.' && self.peek_at(1) != '.' {
+            self.next_char();
+            has_fractional_part = true;
+            match self.peek() {
+                '0'..='9' | '_' => {
+                    self.consume_digits(Base::Decimal, None);
+                },
+                _ => ()
+            }
+        }
+
+        if !has_fractional_part {
+            TokenKind::Literal(Literal::Integer(base))
+        } else {
+            if base == Base::Decimal {
+                TokenKind::Literal(Literal::Float)
+            } else {
+                TokenKind::Error(LexerError::UnsupportedFloatLiteralBase(base))
+            }
+        }
     }
 }
 
@@ -153,17 +494,12 @@ impl Lexer {
 
 //     #[test]
 //     fn test_lexer() {
-//         let source = "let x = 10";
+//         let source = "let x = 10\nlet y = 20\nlet z = x + y\n";
 //         let mut lexer = Lexer::with(source.to_string());
-//         loop {
+
+//         while !lexer.is_at_end() {
 //             let token = lexer.next_token();
-//             match token.kind() {
-//                 TokenKind::Eof => break,
-//                 kind => {
-//                     println!("- {:?}@{}", kind, token.span());
-//                     println!(": {}", lexer.token_cache.len());
-//                 },
-//             }
+//             println!("{:?} ({}..{})\n\t{:?}\n\t{:?}", token.kind(), token.span().start(), token.span().end(), token.leading_trivia, token.trailing_trivia);
 //         }
 //     }
 // }

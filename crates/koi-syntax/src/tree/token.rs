@@ -1,22 +1,23 @@
 #![allow(dead_code)]
 
+use crate::errors::LexerError;
 use crate::source::TextSpan;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SyntaxToken {
-    raw: Rc<RawSyntaxToken>,
-    span: TextSpan,
-    leading_trivia: Vec<SyntaxTrivia>,
-    trailing_trivia: Vec<SyntaxTrivia>,
+pub struct SyntaxToken<'a> {
+    raw: &'a Rc<RawSyntaxToken>,
+    pub(crate) span: TextSpan,
+    pub(crate) leading_trivia: Vec<SyntaxTrivia>,
+    pub(crate) trailing_trivia: Vec<SyntaxTrivia>,
 }
 
-impl SyntaxToken {
-    pub fn with(raw: Rc<RawSyntaxToken>, span: TextSpan) -> Self {
+impl<'a> SyntaxToken<'a> {
+    pub fn with(raw: &'a Rc<RawSyntaxToken>, span: TextSpan) -> Self {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
-    pub fn with_trivia(raw: Rc<RawSyntaxToken>,
+    pub fn with_trivia(raw: &'a Rc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
                        trailing_trivia: Vec<SyntaxTrivia>) -> Self
@@ -67,6 +68,13 @@ pub enum TokenKind {
     /// the code.
     Symbol(Symbol),
 
+    /// A token signifying an error, for example when a string literal is not
+    /// terminated properly.
+    Error(LexerError),
+
+    /// An unknown token.
+    Unknown(char),
+
     /// An end of file token.
     Eof,
 }
@@ -78,16 +86,18 @@ pub enum SyntaxTrivia {
     LineFeed(usize),
     CarriageReturn(usize),
     CarriageReturnLineFeed(usize),
+    LineComment { is_doc_comment: bool, len: usize },
 }
 
 impl SyntaxTrivia {
     pub fn len(&self) -> usize {
         match self {
             Self::Tab(n)
-            | Self::Space(n)
-            | Self::LineFeed(n)
-            | Self::CarriageReturn(n)
-            | Self::CarriageReturnLineFeed(n) => *n
+                | Self::Space(n)
+                | Self::LineFeed(n)
+                | Self::CarriageReturn(n)
+                | Self::CarriageReturnLineFeed(n) => *n,
+            Self::LineComment { len, .. } => *len
         }
     }
 }
