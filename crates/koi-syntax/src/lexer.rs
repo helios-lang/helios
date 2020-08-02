@@ -461,10 +461,9 @@ impl Lexer {
             }
         } else {
             self.consume_digits(Base::Decimal, Some(first_digit));
-        };
+        }
 
         let mut has_fractional_part = false;
-
         if self.peek() == '.' && self.peek_at(1) != '.' {
             self.next_char();
             has_fractional_part = true;

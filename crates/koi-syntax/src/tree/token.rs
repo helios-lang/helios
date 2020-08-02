@@ -13,10 +13,12 @@ pub struct SyntaxToken {
 }
 
 impl SyntaxToken {
+    /// Constructs a new `SyntaxToken` with no leading or trailing trivia.
     pub fn with(raw: Rc<RawSyntaxToken>, span: TextSpan) -> Self {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
+    /// Constructs a new `SyntaxToken` with leading and trailing trivia.
     pub fn with_trivia(raw: Rc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
@@ -47,10 +49,12 @@ impl SyntaxToken {
         )
     }
 
+    /// The kind of the token.
     pub fn kind(&self) -> TokenKind {
         self.raw.kind
     }
 
+    /// The source-representation of the token.
     pub fn text(&self) -> String {
         self.raw.text.clone()
     }
@@ -63,6 +67,8 @@ pub struct RawSyntaxToken {
 }
 
 impl RawSyntaxToken {
+    /// Constructs a new `RawSyntaxToken` with a kind and text (its
+    /// source-representation).
     pub fn with(kind: TokenKind, text: String) -> Self {
         Self { kind, text }
     }
