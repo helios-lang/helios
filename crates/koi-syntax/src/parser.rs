@@ -2,6 +2,8 @@
 
 use crate::tree::token::*;
 use crate::lexer::Lexer;
+use crate::source::TextSpan;
+use std::rc::Rc;
 
 pub type AstNode = ();
 pub type ParserOut = Vec<AstNode>;
@@ -71,11 +73,13 @@ impl Parser {
             if token.kind() == kind {
                 return self.next_token();
             } else {
-                // return SyntaxToken::with(
-                //     TokenKind::Missing(Box::new(kind)),
-                //     Span::zero_width(token.span.start)
-                // );
-                todo!("Parser::consume [missing token]")
+                return SyntaxToken::with(
+                    Rc::new(RawSyntaxToken::with(
+                        TokenKind::Missing(Box::new(kind)),
+                        token.text()
+                    )),
+                    TextSpan::zero_width(token.span().start())
+                );
             }
         }
 
@@ -96,6 +100,19 @@ impl Parser {
 
 impl Parser {
     fn parse_program(&mut self) -> AstNode {
-        todo!("Parser::parse_program")
+        println!("{:#?}", self.consume(TokenKind::Keyword(Keyword::Let)));
+        println!("{:#?}", self.consume(TokenKind::Eof));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parser() {
+        let source = "let";
+        let mut parser = Parser::with(Lexer::with(source.to_string()));
+        parser.parse();
     }
 }

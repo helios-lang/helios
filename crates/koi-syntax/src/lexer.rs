@@ -245,7 +245,7 @@ impl Lexer {
                 let text = "\0".to_string();
 
                 let eof_raw = self.token_cache.lookup(
-                    (kind, text.clone()),
+                    (kind.clone(), text.clone()),
                     Rc::new(RawSyntaxToken::with(kind, text))
                 );
 
@@ -269,7 +269,7 @@ impl Lexer {
         let text = self.consumed_chars.drain(..).collect::<String>();
         let trailing_trivia = self.lex_trivia(false);
         let raw = self.token_cache.lookup(
-            (kind, text.clone()),
+            (kind.clone(), text.clone()),
             Rc::new(RawSyntaxToken::with(kind, text))
         );
 

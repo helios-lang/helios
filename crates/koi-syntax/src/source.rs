@@ -33,6 +33,10 @@ impl TextSpan {
         Self { start, length }
     }
 
+    pub fn zero_width(start: usize) -> Self {
+        Self::new(start, start)
+    }
+
     /// The start position of the given spanning item.
     ///
     /// This offset is a zero-based UTF-8 character index into the source text.
