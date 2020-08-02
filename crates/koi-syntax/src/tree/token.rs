@@ -25,39 +25,26 @@ impl SyntaxToken {
         Self { raw, span, leading_trivia, trailing_trivia }
     }
 
+    /// The span of the token.
+    ///
+    /// This span does not include any leading or trailing trivia.
     pub fn span(&self) -> TextSpan {
         self.span
     }
 
+    /// The full span of the token.
+    ///
+    /// A token's full span is it's normal span, plus the span of any leading
+    /// and trailing trivia it may have.
     pub fn full_span(&self) -> TextSpan {
-        // println!("\t-> {:?} ~> {}", self.leading_trivia, self.leading_trivia.len());
-        // println!("\t-> {:?} ~> {}", self.trailing_trivia, self.trailing_trivia.len());
-
-        // let start = self.leading_trivia.first().map_or(0, |trivia| {
-        //     // println!("HERE1!");
-        //     self.span().start() - trivia.len()
-        // });
-
-        // let end = self.trailing_trivia.last().map_or(0, |trivia| {
-        //     // println!("HERE2!");
-        //     self.span().end() - trivia.len()
-        // });
-
-        // println!("\t~> {}", start);
-        // println!("\t~> {}", end);
-
-        // TextSpan::from_bounds(
-        //     self.leading_trivia.first().map_or(0, |_trivia| {
-        //         // println!("~> {}", trivia.len());
-        //         self.span().start() //- trivia.len()
-        //     }),
-        //     self.trailing_trivia.last().map_or(0, |_trivia| {
-        //         // println!("-> {}", trivia.len());
-        //         self.span().end() //+ trivia.len()
-        //     })
-        // )
-
-        self.span()
+        TextSpan::from_bounds(
+            self.leading_trivia.first().map_or(self.span().start(), |trivia| {
+                self.span().start() - trivia.len()
+            }),
+            self.trailing_trivia.last().map_or(self.span().end(), |trivia| {
+                self.span().end() + trivia.len()
+            }),
+        )
     }
 
     pub fn kind(&self) -> TokenKind {
