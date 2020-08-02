@@ -6,7 +6,7 @@ use crate::tree::node::*;
 use crate::tree::token::*;
 use std::sync::Arc;
 
-pub type ParserOut = Ast;
+pub type ParserOut = SyntaxTree;
 
 pub struct Parser {
     lexer: Lexer,
@@ -25,7 +25,7 @@ impl Parser {
             nodes.push(self.parse_program());
         }
 
-        Ast(nodes)
+        SyntaxTree(nodes)
     }
 }
 
@@ -69,16 +69,14 @@ impl Parser {
     /// Consumes the next token if it is of the expected `TokenKind`, otherwise
     /// returns a `Missing` token.
     fn consume(&mut self, kind: TokenKind) -> SyntaxToken {
+        let pos = self.lexer.current_pos();
         if let Some(token) = self.peek() {
             if token.kind() == kind {
                 return self.next_token();
             } else {
-                return SyntaxToken::with(
-                    Arc::new(RawSyntaxToken::with(
-                        TokenKind::Missing(Box::new(kind)),
-                        token.text()
-                    )),
-                    TextSpan::zero_width(token.span().start())
+                return SyntaxToken::missing(
+                    Arc::new(RawSyntaxToken::with(kind, String::new())),
+                    TextSpan::zero_width(pos)
                 );
             }
         }
@@ -108,12 +106,6 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Box<dyn ExpressionNode> {
-        if self.consume_optional(TokenKind::Eof) {
-            return Box::new(MissingExpressionNode {
-                position: self.lexer.current_pos(),
-            });
-        }
-
         if self.check(TokenKind::Keyword(Keyword::Let)) {
             return self.parse_let_expression();
         }
@@ -160,53 +152,6 @@ impl Parser {
         }
     }
 
-    // fn parse_expression_block(&mut self) -> Box<dyn ExpressionNode> {
-    //     todo!("Parser::parse_expression_block");
-    //
-    //     // self.lexer.push_mode(LexerMode::IndentedBlock);
-    //     // let expr_block = self.parse_expression_block_list();
-    //     // self.lexer.pop_mode();
-    //
-    //     // expr_block
-    // }
-
-    // fn parse_expression_block_list(&mut self) -> Box<dyn ExpressionNode> {
-    //     let begin_token = self.next_token();
-    //     Box::new(BlockExpressionNode {
-    //         open_brace: begin_token.clone(),
-    //         expression_list: {
-    //             let mut expressions = Vec::new();
-    //             self.lexer.pop_mode();
-    //             expressions.push(self.parse_expression());
-    //
-    //             while self.consume_optional(TokenKind::Newline) {
-    //                 expressions.push(self.parse_expression());
-    //             }
-    //
-    //             expressions
-    //         },
-    //         close_brace: {
-    //             match self.peek() {
-    //                 Some(Token { kind: TokenKind::End, .. }) => {
-    //                     self.next_token()
-    //                 },
-    //                 Some(token) => {
-    //                     Token::with(
-    //                         TokenKind::End,
-    //                         Span::zero_width(token.span.start)
-    //                     )
-    //                 },
-    //                 None => {
-    //                     Token::with(
-    //                         TokenKind::End,
-    //                         Span::zero_width(self.lexer.current_pos())
-    //                     )
-    //                 }
-    //             }
-    //         },
-    //     })
-    // }
-
     fn parse_binary_expression(&mut self, min_precedence: u8) -> Box<dyn ExpressionNode> {
         let mut lhs = self.parse_unary_expression();
 
@@ -251,7 +196,9 @@ impl Parser {
                         });
                     }
 
-                    return Box::new(UnexpectedTokenNode { token: self.lexer.next_token() });
+                    return Box::new(UnexpectedTokenNode {
+                        token: self.lexer.next_token()
+                    });
                 },
                 _ => ()
             },
@@ -273,21 +220,6 @@ impl Parser {
             TokenKind::Literal(_) => {
                 Box::new(LiteralExpressionNode { literal: token })
             },
-            // TokenKind::GroupingStart(delimiter) => {
-            //     self.lexer.push_mode(LexerMode::Grouping);
-            //
-            //     let grouped_expression = GroupedExpressionNode {
-            //         start_delimiter: token.clone(),
-            //         expression: self.parse_expression(),
-            //         end_delimiter: self.consume(TokenKind::GroupingEnd(delimiter.clone())),
-            //     };
-            //
-            //     self.lexer.pop_mode();
-            //     Box::new(grouped_expression)
-            // },
-            // TokenKind::Newline | TokenKind::Eof => {
-            //     Box::new(MissingExpressionNode { position: self.lexer.current_pos() })
-            // },
             TokenKind::Error(_) => {
                 Box::new(ErrorExpressionNode { token })
             },
@@ -324,14 +256,68 @@ fn infix_binding_power(symbol: Symbol) -> Option<(u8, u8)> {
     Some(power)
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     #[test]
-//     fn test_parser() {
-//         let source = "let";
-//         let mut parser = Parser::with(Lexer::with(source.to_string()));
-//         println!("{:#?}", parser.parse());
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parser() {
+        // 16 * 1024 * 1024 = 16MiB
+        std::env::set_var("RUST_MIN_STACK", "16777216");
+
+        let source = "// Adding two variables\nlet a = 10\n";
+        let mut parser = Parser::with(Lexer::with(source.to_string()));
+        let _tree = parser.parse();
+
+        // === FIXME: This panics with stack overflow! ===
+        // assert_eq!(tree.children(), &vec! {
+        //     Node::ExpressionNode(Box::new(LocalBindingExpressionNode {
+        //         let_keyword: SyntaxToken::with_trivia(
+        //             Arc::new(RawSyntaxToken::with(
+        //                 TokenKind::Keyword(Keyword::Let),
+        //                 "let".to_string()
+        //             )),
+        //             TextSpan::new(24, 3),
+        //             vec![
+        //                 SyntaxTrivia::LineComment {
+        //                     is_doc_comment: false,
+        //                     len: 23,
+        //                 }
+        //             ],
+        //             vec![SyntaxTrivia::Space(1)],
+        //         ),
+        //         identifier: SyntaxToken::with_trivia(
+        //             Arc::new(RawSyntaxToken::with(
+        //                 TokenKind::Identifier,
+        //                 "a".to_string()
+        //             )),
+        //             TextSpan::new(28, 1),
+        //             vec![],
+        //             vec![SyntaxTrivia::Space(1)],
+        //         ),
+        //         equal_symbol: SyntaxToken::with_trivia(
+        //             Arc::new(RawSyntaxToken::with(
+        //                 TokenKind::Identifier,
+        //                 "=".to_string()
+        //             )),
+        //             TextSpan::new(30, 1),
+        //             vec![],
+        //             vec![SyntaxTrivia::Space(1)],
+        //         ),
+        //         expression: Box::new(LiteralExpressionNode {
+        //             literal: SyntaxToken::with_trivia(
+        //                 Arc::new(RawSyntaxToken::with(
+        //                     TokenKind::Literal(Literal::Integer(Base::Decimal)),
+        //                     "10".to_string()
+        //                 )),
+        //                 TextSpan::new(32, 2),
+        //                 vec![],
+        //                 vec![SyntaxTrivia::LineFeed(1)],
+        //             )
+        //         }),
+        //     }))
+        // });
+
+        assert!(true)
+    }
+}

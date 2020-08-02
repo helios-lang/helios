@@ -38,7 +38,7 @@ impl TextSpan {
     }
 
     pub fn zero_width(start: usize) -> Self {
-        Self::new(start, start)
+        Self::new(start, 0)
     }
 
     /// The start position of the given spanning item.

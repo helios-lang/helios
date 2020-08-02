@@ -7,7 +7,13 @@ pub use decl::*;
 pub use expr::*;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct Ast(pub(crate) Vec<Node>);
+pub struct SyntaxTree(pub(crate) Vec<Node>);
+
+impl SyntaxTree {
+    pub fn children(&self) -> &Vec<Node> {
+        &self.0
+    }
+}
 
 #[derive(Debug, Eq)]
 pub enum Node {
