@@ -75,7 +75,7 @@ pub struct Lexer {
     did_emit_eof_token: bool,
     consumed_chars: Vec<char>,
     mode_stack: Vec<LexerMode>,
-    pub(crate) token_cache: Cache<(TokenKind, String), Rc<RawSyntaxToken>>,
+    token_cache: Cache<(TokenKind, String), Rc<RawSyntaxToken>>,
 }
 
 impl Lexer {
@@ -241,15 +241,6 @@ impl Lexer {
             None => {
                 self.did_emit_eof_token = true;
 
-                // The trivia we just consumed is now the trailing trivia
-                let trailing_trivia = leading_trivia;
-                let trailing_trivia_len =
-                    trailing_trivia
-                        .iter()
-                        .map(|trivia| trivia.len())
-                        .sum::<usize>();
-                assert!(start >= trailing_trivia_len);
-
                 let kind = TokenKind::Eof;
                 let text = "\0".to_string();
 
@@ -260,10 +251,10 @@ impl Lexer {
 
                 return SyntaxToken::with_trivia(
                     Rc::clone(eof_raw),
-                    TextSpan::new(start - trailing_trivia_len, 0),
-                    Vec::new(),
-                    trailing_trivia,
-                )
+                    TextSpan::new(self.current_pos(), 0),
+                    leading_trivia,
+                    Vec::new()
+                );
             }
         };
 
@@ -310,7 +301,7 @@ impl Lexer {
             match (self.peek(), self.peek_at(1)) {
                 ('\n', _) if is_leading => {
                     let count = self.consume_while(|c| c == '\n');
-                    if count > 0 { trivia.push(SyntaxTrivia::LineFeed(count))}
+                    trivia.push(SyntaxTrivia::LineFeed(count))
                 },
                 ('\r', '\n') if is_leading => {
                     // Consume peeked tokens
@@ -320,22 +311,25 @@ impl Lexer {
                     // We already have 1 CRLF sequence
                     let mut count = 1;
                     while ('\r', '\n') == (self.peek(), self.peek_at(1)) {
+                        // Consume peeked tokens
+                        self.next_char();
+                        self.next_char();
                         count += 1;
                     }
 
-                    if count > 0 { trivia.push(SyntaxTrivia::CarriageReturnLineFeed(count)) }
+                    trivia.push(SyntaxTrivia::CarriageReturnLineFeed(count))
                 },
                 ('\r', c) if c != '\n' => {
                     let count = self.consume_while(|c| c == '\r');
-                    if count > 0 { trivia.push(SyntaxTrivia::CarriageReturn(count)) }
+                    trivia.push(SyntaxTrivia::CarriageReturn(count))
                 },
                 (' ', _) => {
                     let count = self.consume_while(|c| c == ' ');
-                    if count > 0 { trivia.push(SyntaxTrivia::Space(count)) }
+                    trivia.push(SyntaxTrivia::Space(count))
                 },
                 ('\t', _) => {
                     let count = self.consume_while(|c| c == '\t');
-                    if count > 0 { trivia.push(SyntaxTrivia::Tab(count)) }
+                    trivia.push(SyntaxTrivia::Tab(count))
                 },
                 ('/', '/') => {
                     // Consume peeked tokens
@@ -343,7 +337,14 @@ impl Lexer {
                     self.next_char();
 
                     let is_doc_comment = self.consume('/') || self.consume('!');
-                    self.consume_while(|c| c != '\n');
+
+                    // Consume until we're before a LF, CRLF or EOF character
+                    loop {
+                        match (self.peek(), self.peek_at(1)) {
+                            ('\n', _) | ('\0', _) | ('\r', '\n') => break,
+                            _ => { self.next_char(); }
+                        }
+                    }
 
                     trivia.push(SyntaxTrivia::LineComment {
                         is_doc_comment,
@@ -484,5 +485,73 @@ impl Lexer {
                 TokenKind::Error(LexerError::UnsupportedFloatLiteralBase(base))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lexer() {
+        let source = "// Adding two variables\nlet a = 10\n";
+        let mut lexer = Lexer::with(source.to_string());
+        let mut tokens = Vec::new();
+
+        while !lexer.is_at_end() {
+            let token = lexer.next_token();
+            tokens.push(token);
+        }
+
+        assert_eq!(tokens, vec! {
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Keyword(Keyword::Let),
+                    "let".to_string()
+                )),
+                TextSpan::new(24, 3),
+                vec![
+                    SyntaxTrivia::LineComment { is_doc_comment: false, len: 23 },
+                    SyntaxTrivia::LineFeed(1),
+                ],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Identifier,
+                    "a".to_string()
+                )),
+                TextSpan::new(28, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Symbol(Symbol::Eq),
+                    "=".to_string()
+                )),
+                TextSpan::new(30, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
+                    "10".to_string()
+                )),
+                TextSpan::new(32, 2),
+                vec![],
+                vec![],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Eof,
+                    "\0".to_string()
+                )),
+                TextSpan::new(35, 0),
+                vec![SyntaxTrivia::LineFeed(1)],
+                vec![],
+            ),
+        });
     }
 }

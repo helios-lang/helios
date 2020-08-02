@@ -8,8 +8,8 @@ use std::rc::Rc;
 pub struct SyntaxToken {
     raw: Rc<RawSyntaxToken>,
     span: TextSpan,
-    leading_trivia: Vec<SyntaxTrivia>,
-    trailing_trivia: Vec<SyntaxTrivia>,
+    pub(crate) leading_trivia: Vec<SyntaxTrivia>,
+    pub(crate) trailing_trivia: Vec<SyntaxTrivia>,
 }
 
 impl SyntaxToken {
@@ -30,10 +30,34 @@ impl SyntaxToken {
     }
 
     pub fn full_span(&self) -> TextSpan {
-        TextSpan::from_bounds(
-            self.leading_trivia.first().map_or(0, |trivia| trivia.len()),
-            self.trailing_trivia.last().map_or(0, |trivia| trivia.len())
-        )
+        // println!("\t-> {:?} ~> {}", self.leading_trivia, self.leading_trivia.len());
+        // println!("\t-> {:?} ~> {}", self.trailing_trivia, self.trailing_trivia.len());
+
+        // let start = self.leading_trivia.first().map_or(0, |trivia| {
+        //     // println!("HERE1!");
+        //     self.span().start() - trivia.len()
+        // });
+
+        // let end = self.trailing_trivia.last().map_or(0, |trivia| {
+        //     // println!("HERE2!");
+        //     self.span().end() - trivia.len()
+        // });
+
+        // println!("\t~> {}", start);
+        // println!("\t~> {}", end);
+
+        // TextSpan::from_bounds(
+        //     self.leading_trivia.first().map_or(0, |_trivia| {
+        //         // println!("~> {}", trivia.len());
+        //         self.span().start() //- trivia.len()
+        //     }),
+        //     self.trailing_trivia.last().map_or(0, |_trivia| {
+        //         // println!("-> {}", trivia.len());
+        //         self.span().end() //+ trivia.len()
+        //     })
+        // )
+
+        self.span()
     }
 
     pub fn kind(&self) -> TokenKind {
