@@ -3,7 +3,7 @@ use crate::errors::LexerError;
 use crate::source::{Cursor, TextSpan};
 use crate::tree::token::*;
 use std::default::Default;
-use std::rc::Rc;
+use std::sync::Arc;
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -75,7 +75,7 @@ pub struct Lexer {
     did_emit_eof_token: bool,
     consumed_chars: Vec<char>,
     mode_stack: Vec<LexerMode>,
-    token_cache: Cache<(TokenKind, String), Rc<RawSyntaxToken>>,
+    token_cache: Cache<(TokenKind, String), Arc<RawSyntaxToken>>,
 }
 
 impl Lexer {
@@ -246,11 +246,11 @@ impl Lexer {
 
                 let eof_raw = self.token_cache.lookup(
                     (kind.clone(), text.clone()),
-                    Rc::new(RawSyntaxToken::with(kind, text))
+                    Arc::new(RawSyntaxToken::with(kind, text))
                 );
 
                 return SyntaxToken::with_trivia(
-                    Rc::clone(eof_raw),
+                    Arc::clone(eof_raw),
                     TextSpan::new(self.current_pos(), 0),
                     leading_trivia,
                     Vec::new()
@@ -270,11 +270,11 @@ impl Lexer {
         let trailing_trivia = self.lex_trivia(false);
         let raw = self.token_cache.lookup(
             (kind.clone(), text.clone()),
-            Rc::new(RawSyntaxToken::with(kind, text))
+            Arc::new(RawSyntaxToken::with(kind, text))
         );
 
         SyntaxToken::with_trivia(
-            Rc::clone(raw),
+            Arc::clone(raw),
             TextSpan::from_bounds(start, end),
             leading_trivia,
             trailing_trivia
@@ -504,7 +504,7 @@ mod tests {
 
         assert_eq!(tokens, vec! {
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
+                Arc::new(RawSyntaxToken::with(
                     TokenKind::Keyword(Keyword::Let),
                     "let".to_string()
                 )),
@@ -516,7 +516,7 @@ mod tests {
                 vec![SyntaxTrivia::Space(1)],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
+                Arc::new(RawSyntaxToken::with(
                     TokenKind::Identifier,
                     "a".to_string()
                 )),
@@ -525,7 +525,7 @@ mod tests {
                 vec![SyntaxTrivia::Space(1)],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
+                Arc::new(RawSyntaxToken::with(
                     TokenKind::Symbol(Symbol::Eq),
                     "=".to_string()
                 )),
@@ -534,7 +534,7 @@ mod tests {
                 vec![SyntaxTrivia::Space(1)],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
+                Arc::new(RawSyntaxToken::with(
                     TokenKind::Literal(Literal::Integer(Base::Decimal)),
                     "10".to_string()
                 )),
@@ -543,7 +543,7 @@ mod tests {
                 vec![],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
+                Arc::new(RawSyntaxToken::with(
                     TokenKind::Eof,
                     "\0".to_string()
                 )),

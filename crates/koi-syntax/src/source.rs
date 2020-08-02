@@ -33,6 +33,10 @@ impl TextSpan {
         Self { start, length }
     }
 
+    pub fn from_spans(start: Self, end: Self) -> Self {
+        Self::from_bounds(start.start(), end.end())
+    }
+
     pub fn zero_width(start: usize) -> Self {
         Self::new(start, start)
     }

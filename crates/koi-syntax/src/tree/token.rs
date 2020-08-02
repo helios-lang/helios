@@ -1,30 +1,41 @@
-#![allow(dead_code)]
-
 use crate::errors::LexerError;
 use crate::source::TextSpan;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SyntaxToken {
-    raw: Rc<RawSyntaxToken>,
+    raw: Arc<RawSyntaxToken>,
     span: TextSpan,
+    is_missing: bool,
     pub(crate) leading_trivia: Vec<SyntaxTrivia>,
     pub(crate) trailing_trivia: Vec<SyntaxTrivia>,
 }
 
 impl SyntaxToken {
     /// Constructs a new `SyntaxToken` with no leading or trailing trivia.
-    pub fn with(raw: Rc<RawSyntaxToken>, span: TextSpan) -> Self {
+    pub fn with(raw: Arc<RawSyntaxToken>, span: TextSpan) -> Self {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
     /// Constructs a new `SyntaxToken` with leading and trailing trivia.
-    pub fn with_trivia(raw: Rc<RawSyntaxToken>,
+    pub fn with_trivia(raw: Arc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
                        trailing_trivia: Vec<SyntaxTrivia>) -> Self
     {
-        Self { raw, span, leading_trivia, trailing_trivia }
+        Self { raw, span, leading_trivia, is_missing: false, trailing_trivia }
+    }
+
+    pub fn missing(raw: Arc<RawSyntaxToken>, span: TextSpan) -> Self {
+        Self::missing_with_trivia(raw, span, Vec::new(), Vec::new())
+    }
+
+    pub fn missing_with_trivia(raw: Arc<RawSyntaxToken>,
+                               span: TextSpan,
+                               leading_trivia: Vec<SyntaxTrivia>,
+                               trailing_trivia: Vec<SyntaxTrivia>) -> Self
+    {
+        Self { raw, span, leading_trivia, is_missing: true, trailing_trivia }
     }
 
     /// The span of the token.
@@ -51,7 +62,7 @@ impl SyntaxToken {
 
     /// The kind of the token.
     pub fn kind(&self) -> TokenKind {
-        self.raw.kind
+        self.raw.kind.clone()
     }
 
     /// The source-representation of the token.
@@ -74,7 +85,7 @@ impl RawSyntaxToken {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TokenKind {
     /// A tag that identifies a variable, type, module, etc.
     Identifier,
@@ -92,6 +103,9 @@ pub enum TokenKind {
     /// A token signifying an error, for example when a string literal is not
     /// terminated properly.
     Error(LexerError),
+
+    /// A missing token.
+    Missing(Box<Self>),
 
     /// An unknown token.
     Unknown(char),
