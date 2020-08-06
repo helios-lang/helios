@@ -19,11 +19,11 @@ impl SyntaxTree {
 pub enum Node {
     DeclarationNode(Box<dyn DeclarationNode>),
     ExpressionNode(Box<dyn ExpressionNode>),
-    Eof,
 }
 
 impl Node {
     pub fn span(&self) -> TextSpan {
+        #[allow(unreachable_patterns)]
         match self {
             Self::DeclarationNode(node) => node.span(),
             Self::ExpressionNode(node) => node.span(),
@@ -32,6 +32,7 @@ impl Node {
     }
 
     pub fn full_span(&self) -> TextSpan {
+        #[allow(unreachable_patterns)]
         match self {
             Self::DeclarationNode(node) => node.full_span(),
             Self::ExpressionNode(node) => node.full_span(),
@@ -46,7 +47,6 @@ impl PartialEq for Node {
         match (self, other) {
             (Node::DeclarationNode(lhs), Node::DeclarationNode(rhs)) => lhs == rhs,
             (Node::ExpressionNode(lhs), Node::ExpressionNode(rhs)) => lhs == rhs,
-            (Node::Eof, Node::Eof) => true,
             _ => false,
         }
     }

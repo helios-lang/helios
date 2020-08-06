@@ -93,10 +93,6 @@ impl Parser {
 
 impl Parser {
     fn parse_program(&mut self) -> Node {
-        if self.consume_optional(TokenKind::Eof) {
-            return Node::Eof;
-        }
-
         Node::ExpressionNode(self.parse_expression())
     }
 
@@ -158,7 +154,7 @@ impl Parser {
         let token = self.next_token();
         match &token.kind() {
             TokenKind::Identifier => {
-                Box::new(UnimplementedExpressionNode { token })
+                Box::new(IdentifierExpressionNode { identifier: token })
             },
             TokenKind::Literal(_) => {
                 Box::new(LiteralExpressionNode { literal: token })
@@ -199,128 +195,125 @@ fn infix_binding_power(symbol: Symbol) -> Option<(u8, u8)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::source::TextSpan;
+    use std::sync::Arc;
+
+    macro_rules! create_parser_test {
+        ($string:expr, $expected:expr) => {
+            let source = $string;
+            let mut parser = Parser::with(Lexer::with(source.to_string()));
+            let tree_output = format!("{:?}", parser.parse());
+
+            assert_eq!(tree_output, format!("{:?}", $expected));
+        };
+    }
 
     #[test]
     fn test_parser_unary_expression() {
-        let source = "-1\n";
-        let mut parser = Parser::with(Lexer::with(source.to_string()));
-        let tree_output = format!("{:#?}", parser.parse());
+        create_parser_test!("-1", SyntaxTree(vec! {
+            Node::ExpressionNode(Box::new(UnaryExpressionNode {
+                operator: SyntaxToken::with(
+                    Arc::new(RawSyntaxToken::with(
+                        TokenKind::Symbol(Symbol::Minus),
+                        "-".to_string(),
+                    )),
+                    TextSpan::new(0, 1),
+                ),
+                operand: Box::new(LiteralExpressionNode {
+                    literal: SyntaxToken::with(
+                        Arc::new(RawSyntaxToken::with(
+                            TokenKind::Literal(Literal::Integer(Base::Decimal)),
+                            "1".to_string(),
+                        )),
+                        TextSpan::new(1, 1),
+                    ),
+                }),
+            })),
+        }));
 
-        assert_eq!(tree_output, String::from(
-r#"SyntaxTree(
-    [
-        ExpressionNode(
-            UnaryExpressionNode {
-                operator: SyntaxToken {
-                    raw: RawSyntaxToken {
-                        kind: Symbol(
-                            Minus,
-                        ),
-                        text: "-",
-                    },
-                    span: TextSpan {
-                        start: 0,
-                        length: 1,
-                    },
-                    leading_trivia: [],
-                    trailing_trivia: [],
-                },
-                operand: LiteralExpressionNode {
-                    literal: SyntaxToken {
-                        raw: RawSyntaxToken {
-                            kind: Literal(
-                                Integer(
-                                    Decimal,
-                                ),
-                            ),
-                            text: "1",
-                        },
-                        span: TextSpan {
-                            start: 1,
-                            length: 1,
-                        },
-                        leading_trivia: [],
-                        trailing_trivia: [],
-                    },
-                },
-            },
-        ),
-    ],
-)"#));
+        create_parser_test!("- 404_040", SyntaxTree(vec! {
+            Node::ExpressionNode(Box::new(UnaryExpressionNode {
+                operator: SyntaxToken::with_trivia(
+                    Arc::new(RawSyntaxToken::with(
+                        TokenKind::Symbol(Symbol::Minus),
+                        "-".to_string(),
+                    )),
+                    TextSpan::new(0, 1),
+                    Vec::new(),
+                    vec![SyntaxTrivia::Space(1)],
+                ),
+                operand: Box::new(LiteralExpressionNode {
+                    literal: SyntaxToken::with(
+                        Arc::new(RawSyntaxToken::with(
+                            TokenKind::Literal(Literal::Integer(Base::Decimal)),
+                            "404_040".to_string(),
+                        )),
+                        TextSpan::new(2, 7),
+                    ),
+                }),
+            })),
+        }));
+
+        create_parser_test!("!True", SyntaxTree(vec! {
+            Node::ExpressionNode(Box::new(UnaryExpressionNode {
+                operator: SyntaxToken::with(
+                    Arc::new(RawSyntaxToken::with(
+                        TokenKind::Symbol(Symbol::Bang),
+                        "!".to_string(),
+                    )),
+                    TextSpan::new(0, 1),
+                ),
+                operand: Box::new(IdentifierExpressionNode {
+                    identifier: SyntaxToken::with(
+                        Arc::new(RawSyntaxToken::with(
+                            TokenKind::Identifier,
+                            "True".to_string(),
+                        )),
+                        TextSpan::new(1, 4),
+                    ),
+                }),
+            })),
+        }));
     }
 
     #[test]
     fn test_parser_binary_expression() {
-        let source = "1 + 1\n";
+        let source = "1 + 1";
         let mut parser = Parser::with(Lexer::with(source.to_string()));
-        let tree_output = format!("{:#?}", parser.parse());
+        let tree_output = format!("{:?}", parser.parse());
 
-        assert_eq!(tree_output, String::from(
-r#"SyntaxTree(
-    [
-        ExpressionNode(
-            BinaryExpressionNode {
-                operator: SyntaxToken {
-                    raw: RawSyntaxToken {
-                        kind: Symbol(
-                            Plus,
-                        ),
-                        text: "+",
-                    },
-                    span: TextSpan {
-                        start: 2,
-                        length: 1,
-                    },
-                    leading_trivia: [],
-                    trailing_trivia: [
-                        Space(
-                            1,
-                        ),
-                    ],
-                },
-                lhs: LiteralExpressionNode {
-                    literal: SyntaxToken {
-                        raw: RawSyntaxToken {
-                            kind: Literal(
-                                Integer(
-                                    Decimal,
-                                ),
-                            ),
-                            text: "1",
-                        },
-                        span: TextSpan {
-                            start: 0,
-                            length: 1,
-                        },
-                        leading_trivia: [],
-                        trailing_trivia: [
-                            Space(
-                                1,
-                            ),
-                        ],
-                    },
-                },
-                rhs: LiteralExpressionNode {
-                    literal: SyntaxToken {
-                        raw: RawSyntaxToken {
-                            kind: Literal(
-                                Integer(
-                                    Decimal,
-                                ),
-                            ),
-                            text: "1",
-                        },
-                        span: TextSpan {
-                            start: 4,
-                            length: 1,
-                        },
-                        leading_trivia: [],
-                        trailing_trivia: [],
-                    },
-                },
-            },
-        ),
-    ],
-)"#));
+        assert_eq!(tree_output, format!("{:?}", SyntaxTree(vec! {
+            Node::ExpressionNode(Box::new(BinaryExpressionNode {
+                operator: SyntaxToken::with_trivia(
+                    Arc::new(RawSyntaxToken::with(
+                        TokenKind::Symbol(Symbol::Plus),
+                        "+".to_string(),
+                    )),
+                    TextSpan::new(2, 1),
+                    Vec::new(),
+                    vec![SyntaxTrivia::Space(1)],
+                ),
+                lhs: Box::new(LiteralExpressionNode {
+                    literal: SyntaxToken::with_trivia(
+                        Arc::new(RawSyntaxToken::with(
+                            TokenKind::Literal(Literal::Integer(Base::Decimal)),
+                            "1".to_string(),
+                        )),
+                        TextSpan::new(0, 1),
+                        Vec::new(),
+                        vec![SyntaxTrivia::Space(1)],
+                    ),
+                }),
+                rhs: Box::new(LiteralExpressionNode {
+                    literal: SyntaxToken::with(
+                        Arc::new(RawSyntaxToken::with(
+                            TokenKind::Literal(Literal::Integer(Base::Decimal)),
+                            "1".to_string(),
+                        )),
+                        TextSpan::new(4, 1),
+                    ),
+                }),
+            })),
+        })));
     }
 }
