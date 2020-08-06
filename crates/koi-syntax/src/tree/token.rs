@@ -6,6 +6,7 @@ use std::sync::Arc;
 pub struct SyntaxToken {
     raw: Arc<RawSyntaxToken>,
     span: TextSpan,
+    is_missing: bool,
     pub(crate) leading_trivia: Vec<SyntaxTrivia>,
     pub(crate) trailing_trivia: Vec<SyntaxTrivia>,
 }
@@ -16,29 +17,33 @@ impl SyntaxToken {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
-    /// Constructs a new missing `SyntaxToken` with the given `TokenKind` and
-    /// its position.
-    pub fn missing(kind: TokenKind, pos: usize) -> Self {
-        Self::with_trivia(
-            Arc::new(
-                RawSyntaxToken::with(
-                    TokenKind::Missing(Box::new(kind)),
-                    String::new()
-                )
-            ),
-            TextSpan::zero_width(pos),
-            Vec::new(),
-            Vec::new()
-        )
-    }
-
     /// Constructs a new `SyntaxToken` with leading and trailing trivia.
     pub fn with_trivia(raw: Arc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
                        trailing_trivia: Vec<SyntaxTrivia>) -> Self
     {
-        Self { raw, span, leading_trivia, trailing_trivia }
+        Self { raw, span, is_missing: false, leading_trivia, trailing_trivia }
+    }
+
+    /// Constructs a new missing `SyntaxToken` with the given `TokenKind` and
+    /// its position.
+    pub fn missing(kind: TokenKind, pos: usize) -> Self {
+        Self::missing_with_trivia(kind, pos, Vec::new(), Vec::new())
+    }
+
+    pub fn missing_with_trivia(kind: TokenKind,
+                               pos: usize,
+                               leading_trivia: Vec<SyntaxTrivia>,
+                               trailing_trivia: Vec<SyntaxTrivia>) -> Self
+    {
+        Self {
+            raw: Arc::new(RawSyntaxToken::with(kind, String::new())),
+            span: TextSpan::zero_width(pos),
+            is_missing: true,
+            leading_trivia,
+            trailing_trivia,
+        }
     }
 
     /// The span of the token.
@@ -88,7 +93,7 @@ impl RawSyntaxToken {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum TokenKind {
     /// A tag that identifies a variable, type, module, etc.
     Identifier,
@@ -103,12 +108,18 @@ pub enum TokenKind {
     /// the code.
     Symbol(Symbol),
 
+    /// Signifies the beginning of a grouping delimiter.
+    GroupingStart(GroupingDelimiter),
+
+    /// Signifies the end of a grouping delimiter.
+    GroupingEnd(GroupingDelimiter),
+
     /// A token signifying an error, for example when a string literal is not
     /// terminated properly.
     Error(LexerError),
 
     /// A missing token.
-    Missing(Box<Self>),
+    // Missing(Box<Self>),
 
     /// An unknown token.
     Unknown(char),
@@ -274,6 +285,24 @@ pub enum Symbol {
     LParen,
     /// The `)` token.
     RParen,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum GroupingDelimiter {
+    Brace,
+    Bracket,
+    Paren,
+}
+
+impl GroupingDelimiter {
+    pub fn from_char(c: char) -> Self {
+        match c {
+            '{' | '}' => Self::Brace,
+            '[' | ']' => Self::Bracket,
+            '(' | ')' => Self::Paren,
+            _ => panic!("Invalid grouping delimiter: {:?}", c),
+        }
+    }
 }
 
 impl Symbol {

@@ -37,7 +37,6 @@ fn is_whitespace(c: char) -> bool {
     c == ' ' || c == '\r' || c == '\t'
 }
 
-#[allow(dead_code)]
 /// Checks if the given character is a grouping delimiter.
 fn is_grouping_delimiter(c: char) -> bool {
     match c {
@@ -75,6 +74,7 @@ pub struct Lexer {
     did_emit_eof_token: bool,
     consumed_chars: Vec<char>,
     mode_stack: Vec<LexerMode>,
+    group_stack: Vec<(GroupingDelimiter, usize)>,
     token_cache: Cache<(TokenKind, String), Arc<RawSyntaxToken>>,
 }
 
@@ -85,6 +85,7 @@ impl Lexer {
             did_emit_eof_token: false,
             consumed_chars: Vec::new(),
             mode_stack: vec![LexerMode::Normal],
+            group_stack: Vec::new(),
             token_cache: Cache::new(),
         }
     }
@@ -259,6 +260,7 @@ impl Lexer {
         };
 
         let kind = match next_char {
+            c if is_grouping_delimiter(c) => self.lex_grouping(c),
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
             c @ '0'..='9' => self.lex_number(c),
@@ -356,6 +358,32 @@ impl Lexer {
         }
 
         trivia
+    }
+
+    /// Returns the appropriate grouping delimiter for the given character.
+    fn lex_grouping(&mut self, c: char) -> TokenKind {
+        match c {
+            '{' | '[' | '(' => {
+                let delimiter = GroupingDelimiter::from_char(c);
+                self.group_stack.push((delimiter, self.current_pos()));
+                TokenKind::GroupingStart(delimiter)
+            },
+            '}' | ']' | ')' => {
+                let new_delimiter = GroupingDelimiter::from_char(c);
+                match self.group_stack.last() {
+                    Some((delimiter, _)) if delimiter == &new_delimiter => {
+                        let (delimiter, _) = self.group_stack.pop().unwrap();
+                        TokenKind::GroupingEnd(delimiter)
+                    },
+                    _ => {
+                        TokenKind::Error(
+                            LexerError::RedundantClosingDelimiter(new_delimiter)
+                        )
+                    }
+                }
+            },
+            _ => panic!("Invalid grouping delimiter: {:?}", c)
+        }
     }
 
     /// Matches any character that is a valid symbol.

@@ -1,4 +1,4 @@
-use crate::tree::token::Base;
+use crate::tree::token::{Base, GroupingDelimiter};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum LexerError {
@@ -10,4 +10,5 @@ pub enum LexerError {
     MultipleCodepointsInCharLiteral,
     MultiLineSpanningChar,
     UnterminatedStringLiteral,
+    RedundantClosingDelimiter(GroupingDelimiter),
 }

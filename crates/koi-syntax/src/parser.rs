@@ -153,11 +153,26 @@ impl Parser {
     fn parse_primary(&mut self) -> Box<dyn ExpressionNode> {
         let token = self.next_token();
         match &token.kind() {
+            TokenKind::Keyword(Keyword::Unimplemented) => {
+                Box::new(UnimplementedExpressionNode { token })
+            },
             TokenKind::Identifier => {
                 Box::new(IdentifierExpressionNode { identifier: token })
             },
             TokenKind::Literal(_) => {
                 Box::new(LiteralExpressionNode { literal: token })
+            },
+            TokenKind::GroupingStart(delimiter) => {
+                let grouped_expression = GroupedExpressionNode {
+                    start_delimiter: token.clone(),
+                    expression: self.parse_expression(),
+                    end_delimiter: self.consume(TokenKind::GroupingEnd(*delimiter)),
+                };
+
+                Box::new(grouped_expression)
+            },
+            TokenKind::Error(_) => {
+                Box::new(ErrorExpressionNode { token })
             },
             _ => Box::new(UnexpectedTokenNode { token }),
         }
@@ -202,7 +217,6 @@ mod tests {
         ($source:expr, $expected:expr) => {
             let mut parser = Parser::with(Lexer::with($source.to_string()));
             let tree_output = format!("{:?}", parser.parse());
-
             assert_eq!(tree_output, format!("{:?}", $expected));
         };
     }
