@@ -199,9 +199,8 @@ mod tests {
     use std::sync::Arc;
 
     macro_rules! create_parser_test {
-        ($string:expr, $expected:expr) => {
-            let source = $string;
-            let mut parser = Parser::with(Lexer::with(source.to_string()));
+        ($source:expr, $expected:expr) => {
+            let mut parser = Parser::with(Lexer::with($source.to_string()));
             let tree_output = format!("{:?}", parser.parse());
 
             assert_eq!(tree_output, format!("{:?}", $expected));
