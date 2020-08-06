@@ -33,10 +33,16 @@ impl TextSpan {
         Self { start, length }
     }
 
+    /// Creates a new `TextSpan` that covers the boundaries of the `TextSpan`s.
+    ///
+    /// The new `TextSpan` will start from the start offset of the first
+    /// `TextSpan` and end at the end offset of the second `TextSpan`.
     pub fn from_spans(start: Self, end: Self) -> Self {
         Self::from_bounds(start.start(), end.end())
     }
 
+    /// Creates a new zero-width `TextSpan` (for spanning items that have a
+    /// length of 0).
     pub fn zero_width(start: usize) -> Self {
         Self::new(start, 0)
     }

@@ -6,7 +6,6 @@ use std::sync::Arc;
 pub struct SyntaxToken {
     raw: Arc<RawSyntaxToken>,
     span: TextSpan,
-    is_missing: bool,
     pub(crate) leading_trivia: Vec<SyntaxTrivia>,
     pub(crate) trailing_trivia: Vec<SyntaxTrivia>,
 }
@@ -17,25 +16,29 @@ impl SyntaxToken {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
+    /// Constructs a new missing `SyntaxToken` with the given `TokenKind` and
+    /// its position.
+    pub fn missing(kind: TokenKind, pos: usize) -> Self {
+        Self::with_trivia(
+            Arc::new(
+                RawSyntaxToken::with(
+                    TokenKind::Missing(Box::new(kind)),
+                    String::new()
+                )
+            ),
+            TextSpan::zero_width(pos),
+            Vec::new(),
+            Vec::new()
+        )
+    }
+
     /// Constructs a new `SyntaxToken` with leading and trailing trivia.
     pub fn with_trivia(raw: Arc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
                        trailing_trivia: Vec<SyntaxTrivia>) -> Self
     {
-        Self { raw, span, leading_trivia, is_missing: false, trailing_trivia }
-    }
-
-    pub fn missing(raw: Arc<RawSyntaxToken>, span: TextSpan) -> Self {
-        Self::missing_with_trivia(raw, span, Vec::new(), Vec::new())
-    }
-
-    pub fn missing_with_trivia(raw: Arc<RawSyntaxToken>,
-                               span: TextSpan,
-                               leading_trivia: Vec<SyntaxTrivia>,
-                               trailing_trivia: Vec<SyntaxTrivia>) -> Self
-    {
-        Self { raw, span, leading_trivia, is_missing: true, trailing_trivia }
+        Self { raw, span, leading_trivia, trailing_trivia }
     }
 
     /// The span of the token.
