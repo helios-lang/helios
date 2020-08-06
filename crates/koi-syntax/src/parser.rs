@@ -201,63 +201,126 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parser() {
-        // 16 * 1024 * 1024 = 16MiB
-        std::env::set_var("RUST_MIN_STACK", "16777216");
-
-        let source = "// Adding two variables\nlet a = 10\n";
+    fn test_parser_unary_expression() {
+        let source = "-1\n";
         let mut parser = Parser::with(Lexer::with(source.to_string()));
-        let _tree = parser.parse();
+        let tree_output = format!("{:#?}", parser.parse());
 
-        // === FIXME: This panics with stack overflow! ===
-        // assert_eq!(tree.children(), &vec! {
-        //     Node::ExpressionNode(Box::new(LocalBindingExpressionNode {
-        //         let_keyword: SyntaxToken::with_trivia(
-        //             Arc::new(RawSyntaxToken::with(
-        //                 TokenKind::Keyword(Keyword::Let),
-        //                 "let".to_string()
-        //             )),
-        //             TextSpan::new(24, 3),
-        //             vec![
-        //                 SyntaxTrivia::LineComment {
-        //                     is_doc_comment: false,
-        //                     len: 23,
-        //                 }
-        //             ],
-        //             vec![SyntaxTrivia::Space(1)],
-        //         ),
-        //         identifier: SyntaxToken::with_trivia(
-        //             Arc::new(RawSyntaxToken::with(
-        //                 TokenKind::Identifier,
-        //                 "a".to_string()
-        //             )),
-        //             TextSpan::new(28, 1),
-        //             vec![],
-        //             vec![SyntaxTrivia::Space(1)],
-        //         ),
-        //         equal_symbol: SyntaxToken::with_trivia(
-        //             Arc::new(RawSyntaxToken::with(
-        //                 TokenKind::Identifier,
-        //                 "=".to_string()
-        //             )),
-        //             TextSpan::new(30, 1),
-        //             vec![],
-        //             vec![SyntaxTrivia::Space(1)],
-        //         ),
-        //         expression: Box::new(LiteralExpressionNode {
-        //             literal: SyntaxToken::with_trivia(
-        //                 Arc::new(RawSyntaxToken::with(
-        //                     TokenKind::Literal(Literal::Integer(Base::Decimal)),
-        //                     "10".to_string()
-        //                 )),
-        //                 TextSpan::new(32, 2),
-        //                 vec![],
-        //                 vec![SyntaxTrivia::LineFeed(1)],
-        //             )
-        //         }),
-        //     }))
-        // });
+        assert_eq!(tree_output, String::from(
+r#"SyntaxTree(
+    [
+        ExpressionNode(
+            UnaryExpressionNode {
+                operator: SyntaxToken {
+                    raw: RawSyntaxToken {
+                        kind: Symbol(
+                            Minus,
+                        ),
+                        text: "-",
+                    },
+                    span: TextSpan {
+                        start: 0,
+                        length: 1,
+                    },
+                    leading_trivia: [],
+                    trailing_trivia: [],
+                },
+                operand: LiteralExpressionNode {
+                    literal: SyntaxToken {
+                        raw: RawSyntaxToken {
+                            kind: Literal(
+                                Integer(
+                                    Decimal,
+                                ),
+                            ),
+                            text: "1",
+                        },
+                        span: TextSpan {
+                            start: 1,
+                            length: 1,
+                        },
+                        leading_trivia: [],
+                        trailing_trivia: [],
+                    },
+                },
+            },
+        ),
+    ],
+)"#));
+    }
 
-        assert!(true)
+    #[test]
+    fn test_parser_binary_expression() {
+        let source = "1 + 1\n";
+        let mut parser = Parser::with(Lexer::with(source.to_string()));
+        let tree_output = format!("{:#?}", parser.parse());
+
+        assert_eq!(tree_output, String::from(
+r#"SyntaxTree(
+    [
+        ExpressionNode(
+            BinaryExpressionNode {
+                operator: SyntaxToken {
+                    raw: RawSyntaxToken {
+                        kind: Symbol(
+                            Plus,
+                        ),
+                        text: "+",
+                    },
+                    span: TextSpan {
+                        start: 2,
+                        length: 1,
+                    },
+                    leading_trivia: [],
+                    trailing_trivia: [
+                        Space(
+                            1,
+                        ),
+                    ],
+                },
+                lhs: LiteralExpressionNode {
+                    literal: SyntaxToken {
+                        raw: RawSyntaxToken {
+                            kind: Literal(
+                                Integer(
+                                    Decimal,
+                                ),
+                            ),
+                            text: "1",
+                        },
+                        span: TextSpan {
+                            start: 0,
+                            length: 1,
+                        },
+                        leading_trivia: [],
+                        trailing_trivia: [
+                            Space(
+                                1,
+                            ),
+                        ],
+                    },
+                },
+                rhs: LiteralExpressionNode {
+                    literal: SyntaxToken {
+                        raw: RawSyntaxToken {
+                            kind: Literal(
+                                Integer(
+                                    Decimal,
+                                ),
+                            ),
+                            text: "1",
+                        },
+                        span: TextSpan {
+                            start: 4,
+                            length: 1,
+                        },
+                        leading_trivia: [],
+                        trailing_trivia: [],
+                    },
+                },
+            },
+        ),
+    ],
+)"#));
     }
 }
