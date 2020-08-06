@@ -1,10 +1,8 @@
 #![allow(dead_code)]
 
-use crate::lexer::{Lexer, /* LexerMode */};
-use crate::source::TextSpan;
+use crate::lexer::Lexer;
 use crate::tree::node::*;
 use crate::tree::token::*;
-use std::sync::Arc;
 
 pub type ParserOut = SyntaxTree;
 
@@ -74,10 +72,7 @@ impl Parser {
             if token.kind() == kind {
                 return self.next_token();
             } else {
-                return SyntaxToken::missing(
-                    Arc::new(RawSyntaxToken::with(kind, String::new())),
-                    TextSpan::zero_width(pos)
-                );
+                return SyntaxToken::missing(kind, pos);
             }
         }
 
@@ -106,74 +101,31 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Box<dyn ExpressionNode> {
-        if self.check(TokenKind::Keyword(Keyword::Let)) {
-            return self.parse_let_expression();
-        }
-
-        if self.check(TokenKind::Keyword(Keyword::If)) {
-            return self.parse_if_expression();
-        }
-
         self.parse_binary_expression(0)
     }
 
-    fn parse_let_expression(&mut self) -> Box<dyn ExpressionNode> {
-        Box::new(LocalBindingExpressionNode {
-            let_keyword: self.next_token(),
-            identifier: self.consume(TokenKind::Identifier),
-            equal_symbol: self.consume(TokenKind::Symbol(Symbol::Eq)),
-            expression: self.parse_expression(),
-        })
-    }
-
-    fn parse_if_expression(&mut self) -> Box<dyn ExpressionNode> {
-        Box::new(IfExpressionNode {
-            if_keyword: self.next_token(),
-            condition: self.parse_expression(),
-            open_brace: self.consume(TokenKind::Symbol(Symbol::LBrace)),
-            expression: self.parse_expression(),
-            close_brace: self.consume(TokenKind::Symbol(Symbol::RBrace)),
-            else_clause: {
-                if self.check(TokenKind::Keyword(Keyword::Else)) {
-                    Some(self.parse_else_clause())
-                } else {
-                    None
-                }
-            },
-        })
-    }
-
-    fn parse_else_clause(&mut self) -> ElseClauseExpressionNode {
-        ElseClauseExpressionNode {
-            else_keyword: self.next_token(),
-            open_brace: self.consume(TokenKind::Symbol(Symbol::LBrace)),
-            expression: self.parse_expression(),
-            close_brace: self.consume(TokenKind::Symbol(Symbol::RBrace)),
-        }
-    }
-
-    fn parse_binary_expression(&mut self, min_precedence: u8) -> Box<dyn ExpressionNode> {
+    fn parse_binary_expression(&mut self,
+                               min_precedence: u8) -> Box<dyn ExpressionNode>
+    {
         let mut lhs = self.parse_unary_expression();
 
         loop {
-            let operator = match self.peek() {
-                Some(token) => match token.kind() {
-                    TokenKind::Symbol(symbol) => symbol,
-                    _ => break,
-                },
+            let operator = match self.peek().map(|it| it.kind()) {
+                Some(TokenKind::Symbol(symbol)) => symbol,
                 _ => break,
             };
 
-            if let Some((left_precedence, right_precedence)) = infix_binding_power(operator) {
-                if left_precedence < min_precedence {
+            if let Some((left, right)) = infix_binding_power(operator) {
+                if left < min_precedence {
                     break;
                 }
 
                 lhs = Box::new(BinaryExpressionNode {
                     operator: self.next_token(),
                     lhs: lhs.clone(),
-                    rhs: self.parse_binary_expression(right_precedence),
+                    rhs: self.parse_binary_expression(right),
                 });
+
                 continue;
             }
 
@@ -184,25 +136,19 @@ impl Parser {
     }
 
     fn parse_unary_expression(&mut self) -> Box<dyn ExpressionNode> {
-        match self.peek() {
-            Some(token) => match token.kind() {
-                TokenKind::Symbol(symbol) => {
-                    let token = self.next_token();
+        if let Some(TokenKind::Symbol(symbol)) = self.peek().map(|it| it.kind()) {
+            let token = self.next_token();
 
-                    if let Some(right_precedence) = prefix_binding_power(symbol) {
-                        return Box::new(UnaryExpressionNode {
-                            operator: token,
-                            operand: self.parse_binary_expression(right_precedence),
-                        });
-                    }
+            if let Some(right_precedence) = prefix_binding_power(symbol) {
+                return Box::new(UnaryExpressionNode {
+                    operator: token,
+                    operand: self.parse_binary_expression(right_precedence),
+                });
+            }
 
-                    return Box::new(UnexpectedTokenNode {
-                        token: self.lexer.next_token()
-                    });
-                },
-                _ => ()
-            },
-            _ => ()
+            return Box::new(UnexpectedTokenNode {
+                token: self.lexer.next_token()
+            });
         }
 
         self.parse_primary()
@@ -212,18 +158,12 @@ impl Parser {
         let token = self.next_token();
         match &token.kind() {
             TokenKind::Identifier => {
-                Box::new(IdentifierExpressionNode { identifier: token })
-            },
-            TokenKind::Keyword(Keyword::Unimplemented) => {
                 Box::new(UnimplementedExpressionNode { token })
             },
             TokenKind::Literal(_) => {
                 Box::new(LiteralExpressionNode { literal: token })
             },
-            TokenKind::Error(_) => {
-                Box::new(ErrorExpressionNode { token })
-            },
-            _ => Box::new(UnexpectedTokenNode { token })
+            _ => Box::new(UnexpectedTokenNode { token }),
         }
     }
 }
