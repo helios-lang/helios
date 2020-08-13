@@ -99,15 +99,16 @@ impl Receiver {
                 self.publish_diagnostics(uri);
             },
             LspMessage::TextDocumentCompletionRequest { id, params } => {
-                use lsp_types::{CompletionItem, CompletionItemKind};
+                use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
                 use koi_syntax_old::token::Keyword;
                 let keywords: Vec<CompletionItem> =
                     Keyword::keyword_list()
                         .into_iter()
                         .map(|keyword| {
                             lsp_types::CompletionItem {
-                                label: keyword,
+                                label: keyword.clone(),
                                 kind: Some(CompletionItemKind::Keyword),
+                                insert_text: Some(keyword + " "),
                                 ..CompletionItem::default()
                             }
                         })
@@ -115,17 +116,36 @@ impl Receiver {
 
                 let primitive_types: Vec<CompletionItem> =
                     vec![
-                        "Array", "Bool", "Char",
+                        "Bool", "Char", "String",
                         "Float", "Float32", "Float64",
                         "Int", "Int8", "Int16", "Int32", "Int64",
                         "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
-                        "String",
+                        "Optional", "Result",
+                        "Array", "Dictionary",
                     ]
                         .into_iter()
                         .map(|r#type| {
                             CompletionItem {
                                 label: r#type.to_string(),
                                 kind: Some(lsp_types::CompletionItemKind::Struct),
+                                insert_text: match r#type {
+                                    "Array" | "Optional" => {
+                                        Some(format!("{}(of ${{0:???}})", r#type))
+                                    },
+                                    "Result" | "Dictionary" => {
+                                        Some(format!("{}(of ${{1:???}}, ${{2:???}})", r#type))
+                                    },
+                                    _ => None,
+                                },
+                                insert_text_format: match r#type {
+                                    "Array" | "Optional" => {
+                                        Some(InsertTextFormat::Snippet)
+                                    },
+                                    "Result" | "Dictionary" => {
+                                        Some(InsertTextFormat::Snippet)
+                                    },
+                                    _ => None,
+                                },
                                 ..CompletionItem::default()
                             }
                         })

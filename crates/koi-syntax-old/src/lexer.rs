@@ -417,6 +417,7 @@ impl Lexer {
         match &*string {
             "and"       => TokenKind::Keyword(Keyword::And),
             "case"      => TokenKind::Keyword(Keyword::Case),
+            "const"     => TokenKind::Keyword(Keyword::Const),
             "def"       => TokenKind::Keyword(Keyword::Def),
             "else"      => TokenKind::Keyword(Keyword::Else),
             "enum"      => TokenKind::Keyword(Keyword::Enum),
@@ -427,6 +428,7 @@ impl Lexer {
             "module"    => TokenKind::Keyword(Keyword::Module),
             "mut"       => TokenKind::Keyword(Keyword::Mut),
             "not"       => TokenKind::Keyword(Keyword::Not),
+            "of"        => TokenKind::Keyword(Keyword::Of),
             "or"        => TokenKind::Keyword(Keyword::Or),
             "public"    => TokenKind::Keyword(Keyword::Public),
             "ref"       => TokenKind::Keyword(Keyword::Ref),
