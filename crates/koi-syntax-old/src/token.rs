@@ -91,38 +91,47 @@ pub enum Keyword {
     As,
     Case,
     Const,
-    Def,
     Else,
     Enum,
-    External,
+    Extend,
+    External,           // not reserved
+    For,
+    Fun,
+    Get,                // not reserved
     If,
-    Internal,
+    In,
+    Internal,           // not reserved
     Let,
     Match,
     Module,
-    Mut,
     Not,
     Of,
+    Operator,           // not reserved
     Or,
-    Public,
+    Public,             // not reserved
     Ref,
     Return,
+    Set,                // not reserved
     Struct,
+    Take,               // not reserved
     Trait,
     Type,
     Unimplemented,
     Using,
     Var,
+    Where,
+    While,
     With,
 }
 
 impl Keyword {
     pub fn keyword_list() -> Vec<String> {
         vec![
-            "and", "as", "case", "const", "def", "else", "enum", "extend",
-            "external", "if", "internal", "let", "match", "module", "mut",
-            "not", "of", "or", "public", "ref", "return", "struct", "trait",
-            "type", "using", "var", "with",
+            "and", "as", "case", "const", "else", "enum", "extend", "external",
+            "for", "fun", "get", "if", "in", "internal", "let", "match",
+            "module", "not", "of", "operator", "or", "public", "ref", "return",
+            "set", "struct", "take", "trait", "type", "using", "var", "where",
+            "while", "with",
         ].into_iter().map(String::from).collect()
     }
 }
