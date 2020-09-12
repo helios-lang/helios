@@ -121,7 +121,6 @@ impl Receiver {
                         "Int", "Int8", "Int16", "Int32", "Int64",
                         "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
                         "Optional", "Result",
-                        "Array", "Dictionary",
                     ]
                         .into_iter()
                         .map(|r#type| {
@@ -129,19 +128,19 @@ impl Receiver {
                                 label: r#type.to_string(),
                                 kind: Some(lsp_types::CompletionItemKind::Struct),
                                 insert_text: match r#type {
-                                    "Array" | "Optional" => {
-                                        Some(format!("{}(of ${{0:???}})", r#type))
+                                    "Optional" => {
+                                        Some(format!("{}(of ${{1:???}})", r#type))
                                     },
-                                    "Result" | "Dictionary" => {
+                                    "Result" => {
                                         Some(format!("{}(of ${{1:???}}, ${{2:???}})", r#type))
                                     },
                                     _ => None,
                                 },
                                 insert_text_format: match r#type {
-                                    "Array" | "Optional" => {
+                                    "Optional" => {
                                         Some(InsertTextFormat::Snippet)
                                     },
-                                    "Result" | "Dictionary" => {
+                                    "Result" => {
                                         Some(InsertTextFormat::Snippet)
                                     },
                                     _ => None,
