@@ -1,10 +1,14 @@
 ```
+$WHITESPACE = ` ` | `\t` | `\n` | `\r` ;
+
 program =
-  | top-level? EOF ;
+  | top-level? EOF
+  ;
 
 top-level =
   | declaration
-  | expression ;
+  | expression
+  ;
 
 declaration =
   | extend-declaration
@@ -12,131 +16,167 @@ declaration =
   | module-declaration
   | trait-declaration
   | type-declaration
-  | using-declaration ;
+  | using-declaration
+  ;
 
 type-annotation =
-  | `:` type ;
+  | `:` type
+  ;
 
 visibility =
   | public
-  | internal ;
+  | internal
+  ;
 
 visibility-parameterized =
-  | visibility ( `(` ( `get` `;` `set` ) | `get` | `set` `)` )? ;
+  | visibility ( `(` ( `get` `;` `set` ) | `get` | `set` `)` )?
+  ;
 
 -- TODO: No `where` clause
 function-declaration =
-  | visibility? `fun` IDENTIFIER generic-parameter-list? `(` parameter-list `)` type-annotation ( `=>` expression | expression-block ) ;
+  | visibility? `fun` IDENTIFIER generic-parameter-list? `(` parameter-list `)` type-annotation ( `=>` expression | expression-block )
+  ;
 
-  -- TODO: No trait constraints
-  generic-parameter-list =
-    | `(` `of` IDENTIFIER ( `,` IDENTIFER )* `,`? `)` ;
+-- TODO: No trait constraints
+generic-parameter-list =
+  | `(` `of` IDENTIFIER ( `,` IDENTIFER )* `,`? `)`
+  ;
 
-  parameter-list =
-    | parameter ( `,` parameter-list )? `,`? ;
+parameter-list =
+  | parameter ( `,` parameter-list )? `,`?
+  ;
 
-    parameter =
-      | IDENTIFIER type-annotation? ;
+parameter =
+  | IDENTIFIER type-annotation?
+  ;
 
 module-declaration =
-  | visibility? `module` IDENTIFIER `{` top-level* `}` ;
+  | visibility? `module` IDENTIFIER `{` top-level* `}`
+  ;
 
 type-declaration =
-  | visibility? `type` IDENTIFIER `=` ( type | new-type-declaration ) ;
+  | visibility? `type` IDENTIFIER `=` ( type | new-type-declaration )
+  ;
 
 type =
   | IDENTIFER generic-parameter-list?
   | array-type
   | function-type
-  | tuple-type ;
+  | tuple-type
+  ;
 
 new-type-declaration =
   | enum-declaration
-  | struct-declaration ;
+  | struct-declaration
+  ;
 
 computed-property-declaration =
-  | visibility-parameterized? `var` IDENTIFIER type-annotation? `with` computed-property-get-clause computed-property-set-clause? ;
+  | visibility-parameterized? `var` IDENTIFIER type-annotation? `with` computed-property-get-clause computed-property-set-clause?
+  ;
 
 computed-property-get-clause =
-  | `get` ( `=>` expression | expression-block ) ;
+  | `get` ( `=>` expression | expression-block )
+  ;
 
 computed-property-set-clause =
-  | `set` ( `=>` expression | expression-block ) ;
+  | `set` ( `=>` expression | expression-block )
+  ;
 
 enum-declaration =
-  | `enum` enum-declaration-body ;
+  | `enum` enum-declaration-body
+  ;
 
 enum-declaration-body =
-  | `{` enum-declaration-body-element* `}` ;
+  | `{` enum-declaration-body-element* `}`
+  ;
 
 -- TODO: Should we allow type declaration in type bodies?
 enum-declaration-body-element =
   | computed-property-declaration
   | enum-case
-  | function-declaration ;
+  | function-declaration
+  ;
 
 enum-case =
-  | `case` IDENTIFIER ( `(` enum-case-type-list `)` )? ;
+  | `case` IDENTIFIER ( `(` enum-case-type-list `)` )?
+  ;
 
-  enum-case-type-list =
-    | type ( `,` enum-case-type-list )? `,`? ;
+enum-case-type-list =
+  | type ( `,` enum-case-type-list )? `,`?
+  ;
 
 struct-declaration =
-  | `struct` struct-declaration-body ;
+  | `struct` struct-declaration-body
+  ;
 
 struct-declaration-body =
-  | `{` struct-declaration-body-element* `}` ;
+  | `{` struct-declaration-body-element* `}`
+  ;
 
 -- TODO: Should we allow type declaration in type bodies?
 struct-declaration-body-element =
   | computed-property-declaration
   | function-declaration
-  | struct-field-declaration ;
+  | struct-field-declaration
+  ;
 
 struct-field-declaration =
   | visibility? `let` IDENTIFIER type-annotation
-  | visibility? `let` IDENTIFIER type-annotation? `=` expression ;
+  | visibility? `let` IDENTIFIER type-annotation? `=` expression
+  ;
 
 struct-case-type-list =
-  | type ( `,` struct-case-type-list )? `,`? ;
+  | type ( `,` struct-case-type-list )? `,`?
+  ;
 
 expression =
   | binding-expression
   | expression-block
   | if-expression
   | loop-expression
-  | match-expression ;
+  | match-expression
+  ;
 
 binding-expression =
-  | ( `let` | `var` ) BINDING-PATTERN type-annotation? `=` expression ;
+  | ( `let` | `var` ) BINDING-PATTERN type-annotation? `=` expression
+  ;
 
 expression-block =
-  | `{` expression-block-list `}` ;
+  | `{` expression-block-list `}`
+  ;
 
-  expression-block-list =
-    | expression ( `;` | `\n` ) ( expression-block-list )? expression ;
+expression-block-list =
+  | expression ( `;` | `\n` ) ( expression-block-list )? expression
+  ;
 
 -- TODO: if-let patterns
 if-expression =
-  | `if` expression expression-block else-clause? ;
+  | `if` expression expression-block else-clause?
+  ;
 
 else-clause =
   | `else` if-expression
-  | `else` expression-block ;
+  | `else` expression-block
+  ;
 
 loop-expression =
   | for-loop
-  | while-loop ;
+  | while-loop
+  ;
 
 for-loop =
-  | `for` BINDING-PATTERN `in` expression expression-block ;
+  | `for` BINDING-PATTERN `in` expression expression-block
+  ;
 
 while-loop =
-  | `while` expression expression-block ;
+  | `while` expression expression-block
+  ;
 
 match-expression =
-  | `match` expression `{` match-expression-case-clause+ `}` ;
+  | `match` expression `{` match-expression-case-clause+ `}`
+  ;
 
 match-expression-case-clause =
-  | `case` PATTERN `=>` expression ;
+  | `case` PATTERN `=>` expression
+  ;
 ```
