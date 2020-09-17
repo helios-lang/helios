@@ -436,7 +436,7 @@ impl Lexer {
             "of"        => TokenKind::Keyword(Keyword::Of),
             "operator"  => TokenKind::Keyword(Keyword::Operator),
             "or"        => TokenKind::Keyword(Keyword::Or),
-            "public"    => TokenKind::Keyword(Keyword::Public),
+            "pub"       => TokenKind::Keyword(Keyword::Pub),
             "ref"       => TokenKind::Keyword(Keyword::Ref),
             "return"    => TokenKind::Keyword(Keyword::Return),
             "set"       => TokenKind::Keyword(Keyword::Set),

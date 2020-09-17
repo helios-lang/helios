@@ -108,7 +108,7 @@ pub enum Keyword {
     Of,
     Operator,           // not reserved
     Or,
-    Public,             // not reserved
+    Pub,
     Ref,
     Return,
     Set,                // not reserved
@@ -129,7 +129,7 @@ impl Keyword {
         vec![
             "and", "as", "case", "const", "else", "enum", "extend", "external",
             "for", "fun", "get", "if", "in", "internal", "let", "match",
-            "module", "not", "of", "operator", "or", "public", "ref", "return",
+            "module", "not", "of", "operator", "or", "pub", "ref", "return",
             "set", "struct", "take", "trait", "type", "using", "var", "where",
             "while", "with",
         ].into_iter().map(String::from).collect()

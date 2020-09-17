@@ -51,7 +51,7 @@ fn test_keywords() {
     test_keyword!("of",         Keyword::Of);
     test_keyword!("operator",   Keyword::Operator);
     test_keyword!("or",         Keyword::Or);
-    test_keyword!("public",     Keyword::Public);
+    test_keyword!("pub",        Keyword::Pub);
     test_keyword!("ref",        Keyword::Ref);
     test_keyword!("return",     Keyword::Return);
     test_keyword!("set",        Keyword::Set);
