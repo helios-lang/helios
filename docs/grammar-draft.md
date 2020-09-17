@@ -1,182 +1,274 @@
 ```
-$WHITESPACE = ` ` | `\t` | `\n` | `\r` ;
+-- PRELUDE ---------------------------------------------------------------------
 
-program =
+LITERAL ::=
+  | literal-character
+  | literal-float     -- TODO
+  | literal-integer   -- TODO
+  | literal-string
+  ;
+
+escape-sequence ::=
+  | `\\` ( `\\` | `0` | `n` | `r` | `t` | `"` | ` ` | escape-sequence-composed )
+  ;
+
+escape-sequence-composed ::=
+  | escape-sequence-hex
+  | escape-sequence-unicode
+  ;
+
+escape-sequence-hex ::=
+  | `x` HEXADECIMAL-DIGIT{1,2}
+  ;
+
+escape-sequence-unicode ::=
+  | `u` `{` HEXADECIMAL-DIGIT{1,6} `}`
+  ;
+
+quoted-text ::=
+  | ( escaped-character | ^`"` )
+  ;
+
+literal-character ::=
+  | `'` ( escape-sequence | ^`'` ) `'`
+  ;
+
+literal-string ::=
+  | literal-string-static
+  | literal-string-interpolated
+  | literal-string-raw
+  ;
+
+literal-string-static ::=
+  | `"` quoted-text* `"`
+  ;
+
+literal-string-interpolated ::=
+  | `f"` ( interpolated-expression | quoted-text )* `"`
+  ;
+
+-- TODO: Don't match `{{ ... }}` (escaped braces)
+interpolated-expression ::=
+  | `{`{1,} expression `}`
+  ;
+
+literal-string-raw ::=
+  | `r"` ( ^`"` )* `"`
+  ;
+
+-- PROGRAM ---------------------------------------------------------------------
+
+program ::=
   | top-level? EOF
   ;
 
-top-level =
+top-level ::=
   | declaration
   | expression
   ;
 
-declaration =
-  | extend-declaration
-  | function-declaration
-  | module-declaration
-  | trait-declaration
-  | type-declaration
-  | using-declaration
+-- COMMON ----------------------------------------------------------------------
+
+generic-parameter-list ::=
+  | `(` `of` generic-parameter-list-element
+    ( `,` generic-parameter-list-element )* `,`? `)`
   ;
 
-type-annotation =
-  | `:` type
+generic-parameter-list-element ::=
+  | IDENTIFIER ( `:` generic-parameter-list-constraint-list )?
   ;
 
-visibility =
-  | public
-  | internal
+generic-parameter-list-constraint-list ::=
+  | type ( `+` type )*
   ;
 
-visibility-parameterized =
-  | visibility ( `(` ( `get` `;` `set` ) | `get` | `set` `)` )?
+parameter-list ::=
+  | parameter ( `,` parameter-list? )?
   ;
 
--- TODO: No `where` clause
-function-declaration =
-  | visibility? `fun` IDENTIFIER generic-parameter-list? `(` parameter-list `)` type-annotation ( `=>` expression | expression-block )
-  ;
-
--- TODO: No trait constraints
-generic-parameter-list =
-  | `(` `of` IDENTIFIER ( `,` IDENTIFER )* `,`? `)`
-  ;
-
-parameter-list =
-  | parameter ( `,` parameter-list )? `,`?
-  ;
-
-parameter =
+parameter ::=
   | IDENTIFIER type-annotation?
   ;
 
-module-declaration =
-  | visibility? `module` IDENTIFIER `{` top-level* `}`
+type-annotation ::=
+  | `:` type
   ;
 
-type-declaration =
-  | visibility? `type` IDENTIFIER `=` ( type | new-type-declaration )
-  ;
-
-type =
+type ::=
   | IDENTIFER generic-parameter-list?
   | array-type
   | function-type
   | tuple-type
   ;
 
-new-type-declaration =
-  | enum-declaration
-  | struct-declaration
+visibility ::=
+  | `pub`
+  | `internal` -- Perhaps find a shorter keyword for this?
   ;
 
-computed-property-declaration =
-  | visibility-parameterized? `var` IDENTIFIER type-annotation? `with` computed-property-get-clause computed-property-set-clause?
+visibility-parameterized ::=
+  | visibility ( `(` ( `get` `;` `set` ) | `get` | `set` `)` )?
   ;
 
-computed-property-get-clause =
+-- DECLARATIONS ----------------------------------------------------------------
+
+declaration ::=
+  | declaration-extend    -- TODO
+  | declaration-function
+  | declaration-module
+  | declaration-trait     -- TODO
+  | declaration-type
+  | declaration-using     -- TODO
+  ;
+
+-- TODO: No `where` clause
+declaration-function ::=
+  | visibility? `fun` IDENTIFIER generic-parameter-list? `(` parameter-list `)`
+    type-annotation declaration-function-where-clause?
+    ( `=` expression | expression-block )
+  ;
+
+-- REFACTOR: This allows: `fun foo(of A, B)(a: A): B where A, B ::= ???`; i.e.
+-- constraints are not enforced in where-clauses.
+declaration-function-where-clause ::=
+  | `where` generic-parameter-list-element
+    ( `,` generic-parameter-list-element )* `,`?
+  ;
+
+declaration-module ::=
+  | visibility? `module` IDENTIFIER `{` top-level* `}`
+  ;
+
+-- TODO: This doesn't take generic parameters into consideration
+declaration-type ::=
+  | visibility? `type` IDENTIFIER `=` ( type | declaration-type-new )
+  ;
+
+declaration-type-new ::=
+  | enum
+  | struct
+  ;
+
+-- COMPUTED-PROPERTIES ---------------------------------------------------------
+
+computed-property-declaration ::=
+  | visibility-parameterized? `var` IDENTIFIER type-annotation? `with`
+    computed-property-get-clause computed-property-set-clause?
+  ;
+
+computed-property-get-clause ::=
   | `get` ( `=>` expression | expression-block )
   ;
 
-computed-property-set-clause =
+computed-property-set-clause ::=
   | `set` ( `=>` expression | expression-block )
   ;
 
-enum-declaration =
-  | `enum` enum-declaration-body
+-- ENUMS -----------------------------------------------------------------------
+
+enum ::=
+  | `enum` enum-body
   ;
 
-enum-declaration-body =
-  | `{` enum-declaration-body-element* `}`
+enum-body ::=
+  | `{` enum-body-element* `}`
   ;
 
--- TODO: Should we allow type declaration in type bodies?
-enum-declaration-body-element =
-  | computed-property-declaration
-  | enum-case
-  | function-declaration
+-- TODO: Should we allow type declarations in enum bodies?
+enum-body-element ::=
+  | computed-property
+  | declaration-function
+  | enum-body-element-case
   ;
 
-enum-case =
-  | `case` IDENTIFIER ( `(` enum-case-type-list `)` )?
+enum-body-element-case ::=
+  | `case` IDENTIFIER ( `(` enum-body-element-case-parameters? `)` )?
   ;
 
-enum-case-type-list =
-  | type ( `,` enum-case-type-list )? `,`?
+enum-body-element-case-parameters ::=
+  | type ( `,` enum-body-element-case-parameters? )?
   ;
 
-struct-declaration =
-  | `struct` struct-declaration-body
+-- STRUCTS ---------------------------------------------------------------------
+
+struct ::=
+  | `struct` struct-body
   ;
 
-struct-declaration-body =
-  | `{` struct-declaration-body-element* `}`
+struct-body ::=
+  | `{` struct-body-element* `}`
   ;
 
--- TODO: Should we allow type declaration in type bodies?
-struct-declaration-body-element =
-  | computed-property-declaration
-  | function-declaration
-  | struct-field-declaration
+-- TODO: Should we allow type declarations in struct bodies?
+struct-body-element ::=
+  | computed-property
+  | declaration-function
+  | struct-body-element-field
   ;
 
-struct-field-declaration =
-  | visibility? `let` IDENTIFIER type-annotation
-  | visibility? `let` IDENTIFIER type-annotation? `=` expression
+struct-body-element-field ::=
+  | visibility? `let` IDENTIFIER
+    ( type-annotation | type-annotation? `=` expression )
   ;
 
-struct-case-type-list =
-  | type ( `,` struct-case-type-list )? `,`?
-  ;
+-- EXPRESSIONS -----------------------------------------------------------------
 
-expression =
-  | binding-expression
+expression ::=
+  | expression-binding
   | expression-block
-  | if-expression
-  | loop-expression
-  | match-expression
+  | expression-if
+  | expression-loop
+  | expression-match
+  | LITERAL
   ;
 
-binding-expression =
-  | ( `let` | `var` ) BINDING-PATTERN type-annotation? `=` expression
+expression-binding ::=
+  | ( `let` | `var` ) BINDING-PATTERN
+    ( type-annotation | type-annotation? `=` expression )
   ;
 
-expression-block =
-  | `{` expression-block-list `}`
+expression-block ::=
+  | `{` expression-block-body `}`
   ;
 
-expression-block-list =
-  | expression ( `;` | `\n` ) ( expression-block-list )? expression
+-- TODO: Should the semicolon act a operator?
+expression-block-body ::=
+  | expression ( ( NL | `;` ) expression-block-body )?
   ;
 
 -- TODO: if-let patterns
-if-expression =
-  | `if` expression expression-block else-clause?
+-- The else-clause should be mandatory except for cases when the true branch
+-- (and consequent else-if branches) returns the unit type `()`.
+expression-if ::=
+  | `if` expression expression-block expression-if-else-clause?
   ;
 
-else-clause =
-  | `else` if-expression
-  | `else` expression-block
+expression-if-else-clause ::=
+  | `else` ( expression-if | expression-block )
   ;
 
-loop-expression =
+expression-loop ::=
   | for-loop
   | while-loop
   ;
 
-for-loop =
+expression-loop-for ::=
   | `for` BINDING-PATTERN `in` expression expression-block
   ;
 
-while-loop =
+expression-loop-while ::=
   | `while` expression expression-block
   ;
 
-match-expression =
-  | `match` expression `{` match-expression-case-clause+ `}`
+expression-match ::=
+  | `match` expression expression-match-body
   ;
 
-match-expression-case-clause =
-  | `case` PATTERN `=>` expression
+expression-match-body ::=
+  | `{` expression-match-body-element+ `}`
+  ;
+
+expression-match-body-element ::=
+  | `case` MATCH-PATTERN `=>` expression
   ;
 ```
