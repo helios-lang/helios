@@ -27,7 +27,7 @@ fn main() {
                 log::error!("{}", message);
                 eprintln!("ERROR: {}.\n", message);
                 print_usage();
-            }
+            },
             ("build", Some(ref file_name)) => {
                 log::trace!("Starting build process...");
                 koi_build::build(file_name)
@@ -40,8 +40,8 @@ fn main() {
                 log::trace!("Starting REPL...");
                 koi_repl::start()
             },
-            _ => print_usage()
-        }
-        _ => print_usage()
+            _ => print_usage(),
+        },
+        _ => print_usage(),
     }
 }

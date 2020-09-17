@@ -13,6 +13,6 @@ pub fn build(file_name: &str) {
         },
         Err(error) => {
             eprintln!("Failed to load file from source: {}", error);
-        }
+        },
     }
 }

@@ -15,17 +15,21 @@ pub trait Input: salsa::Database {
     /// Retrieves the absolute source offset at a zero-based line and character
     /// editor offset. Suitable for mapping the text index of a character to its
     /// editor location.
-    fn source_offset_at_position(&self,
-                                 path: String,
-                                 line: usize,
-                                 column: usize) -> usize;
+    fn source_offset_at_position(
+        &self,
+        path: String,
+        line: usize,
+        column: usize,
+    ) -> usize;
 
     /// Retrieves the zero-based line and character editor offset at an absolute
     /// source offset. Suitable for mapping the editor location of a character
     /// to its text index.
-    fn source_position_at_offset(&self,
-                                 path: String,
-                                 offset: usize) -> (usize, usize);
+    fn source_position_at_offset(
+        &self,
+        path: String,
+        offset: usize,
+    ) -> (usize, usize);
 
     // /// Returns a parsed syntax tree of the given file.
     // fn ast(&self, path: String) -> Arc<Ast>;
@@ -58,19 +62,21 @@ fn source_line_offsets(db: &impl Input, path: String) -> Vec<usize> {
         .collect()
 }
 
-fn source_offset_at_position(db: &impl Input,
-                             path: String,
-                             line: usize,
-                             column: usize) -> usize
-{
+fn source_offset_at_position(
+    db: &impl Input,
+    path: String,
+    line: usize,
+    column: usize,
+) -> usize {
     let line_offsets = db.source_line_offsets(path);
     line_offsets[line] + column
 }
 
-fn source_position_at_offset(db: &impl Input,
-                             path: String,
-                             offset: usize) -> (usize, usize)
-{
+fn source_position_at_offset(
+    db: &impl Input,
+    path: String,
+    offset: usize,
+) -> (usize, usize) {
     let offsets = &db.source_line_offsets(path)[..];
     match offsets.binary_search(&offset) {
         // The offset was a line-offset position

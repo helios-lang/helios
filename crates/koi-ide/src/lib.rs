@@ -114,13 +114,13 @@ impl LanguageServer for KoiLanguageServer {
                     insert_text: match ident {
                         "Some" | "Ok" | "Err" => {
                             Some(format!("{}(${{1:???}})", ident))
-                        }
+                        },
                         _ => None,
                     },
                     insert_text_format: match ident {
                         "Some" | "Ok" | "Err" => {
                             Some(InsertTextFormat::Snippet)
-                        }
+                        },
                         _ => None,
                     },
                     ..CompletionItem::default()
