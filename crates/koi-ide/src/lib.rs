@@ -181,8 +181,8 @@ pub fn send_jsonrpc_response<T, U>(id: U, result: T)
     let _ = std::io::stdout().flush();
 }
 
-pub fn send_jsonrpc_response_raw<S: Into<String>>(reponse: S) {
-    let response = reponse.into();
+pub fn send_jsonrpc_response_raw<S: Into<String>>(response: S) {
+    let response = response.into();
 
     eprintln!("<- {}", response);
 
