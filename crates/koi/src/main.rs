@@ -11,6 +11,10 @@ fn print_version() {
 }
 
 fn main() {
+    // Initialize the logger
+    env_logger::init();
+    log::info!("Welcome to the koi compiler");
+
     let mut args = std::env::args();
     args.next(); // Skip path to executable
 
@@ -19,12 +23,23 @@ fn main() {
             ("-h", _) | ("--help", _) => print_usage(),
             ("-V", _) | ("--version", _) => print_version(),
             ("build", None) => {
-                eprintln!("ERROR: Missing argument for command `build`.\n");
+                let message = "Missing argument for command `build`";
+                log::error!("{}", message);
+                eprintln!("ERROR: {}.\n", message);
                 print_usage();
             }
-            ("build", Some(ref file_name)) => koi_build::build(file_name),
-            ("ide", _) => koi_ide::run(),
-            ("repl", _) => koi_repl::start(),
+            ("build", Some(ref file_name)) => {
+                log::trace!("Starting build process...");
+                koi_build::build(file_name)
+            },
+            ("ide", _) => {
+                log::trace!("Starting language server...");
+                koi_ide_new::start()
+            },
+            ("repl", _) => {
+                log::trace!("Starting REPL...");
+                koi_repl::start()
+            },
             _ => print_usage()
         }
         _ => print_usage()

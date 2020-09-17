@@ -9,4 +9,8 @@ edition = "2018"
 [dependencies]
 koi-build = { version = "0.1.0", path = "../koi-build" }
 koi-ide = { version =  "0.1.0", path = "../koi-ide" }
+koi-ide-new = { version =  "0.1.0", path = "../koi-ide-new" }
 koi-repl = { version =  "0.1.0", path = "../koi-repl" }
+
+log = "0.4.11"
+env_logger = "0.7.1"
