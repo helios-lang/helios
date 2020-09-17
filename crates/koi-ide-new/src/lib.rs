@@ -64,10 +64,83 @@ impl LanguageServer for KoiBackend {
             .log_message(MessageType::Info, format!("{:?}", params))
             .await;
 
-        Ok(Some(CompletionResponse::Array(vec![
-            CompletionItem::new_simple("foo".to_string(), "Foo detail".to_string()),
-            CompletionItem::new_simple("bar".to_string(), "Bar detail".to_string()),
-        ])))
+        use koi_syntax_old::token::Keyword;
+        let keywords: Vec<CompletionItem> = Keyword::keyword_list()
+            .into_iter()
+            .map(|keyword| {
+                CompletionItem {
+                    label: keyword.clone(),
+                    kind: Some(CompletionItemKind::Keyword),
+                    insert_text: Some(keyword + " "),
+                    detail: Some("Koi keyword".to_string()),
+                    ..CompletionItem::default()
+                }
+            })
+            .collect();
+
+        let primitive_types: Vec<CompletionItem> =
+            vec![
+                "Bool", "Char", "String",
+                "Float", "Float32", "Float64",
+                "Int", "Int8", "Int16", "Int32", "Int64",
+                "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+                "Optional", "Result",
+            ]
+            .into_iter()
+            .map(|r#type| {
+                CompletionItem {
+                    label: r#type.to_string(),
+                    kind: Some(CompletionItemKind::Struct),
+                    insert_text: match r#type {
+                        "Optional" => Some("Optional(of ${1:???})".to_string()),
+                        "Result" => Some("Result(of ${1:???}, ${2:???})".to_string()),
+                        _ => None,
+                    },
+                    insert_text_format: match r#type {
+                        "Optional" => Some(InsertTextFormat::Snippet),
+                        "Result" => Some(InsertTextFormat::Snippet),
+                        _ => None,
+                    },
+                    ..CompletionItem::default()
+                }
+            })
+            .collect();
+
+        let special_identifiers: Vec<CompletionItem> =
+            vec![
+                "True", "False",
+                "Some", "None",
+                "Ok", "Err",
+                "Self",
+            ]
+            .into_iter()
+            .map(|ident| {
+                CompletionItem {
+                    label: ident.to_string(),
+                    kind: Some(CompletionItemKind::Struct),
+                    insert_text: match ident {
+                        "Some" | "Ok" | "Err" => Some(format!("{}(${{1:???}})", ident)),
+                        _ => None
+                    },
+                    insert_text_format: match ident {
+                        "Some" | "Ok" | "Err" => Some(InsertTextFormat::Snippet),
+                        _ => None,
+                    },
+                    ..CompletionItem::default()
+                }
+            })
+            .collect();
+
+        Ok(params.context.map(|context| match context.trigger_kind {
+            CompletionTriggerKind::Invoked => CompletionResponse::Array(
+                [
+                    &keywords[..],
+                    &primitive_types[..],
+                    &special_identifiers[..],
+                ].concat()
+            ),
+            _ => CompletionResponse::Array(special_identifiers)
+        }))
     }
 
     async fn completion_resolve(&self, item: CompletionItem) -> Result<CompletionItem> {
