@@ -24,10 +24,11 @@
   | <a href="#match-expression">match-expression</a> ;
 
 <i id="function-declaration">function-declaration</i> ::=
-  | <b>def</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>(</b> <a href="#parameter-list">parameter-list</a>? <b>)</b> <a href="#type-annotation">type-annotation</a>? <b>=</b> <a href="#expression-block">expression-block</a> ;
+  | <b>def</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>(</b> <a href="#parameter-list">parameter-list</a>? <b>)</b> <a href="#type-annotation">type-annotation</a> <b>=</b> <a href="#expression">expression</a>
+  | <b>def</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>(</b> <a href="#parameter-list">parameter-list</a>? <b>)</b> <a href="#type-annotation">type-annotation</a> <a href="#expression-block">expression-block</a> ;
 
 <i id="module-declaration">module-declaration</i> ::=
-  | <b>module</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>=</b> <a href="#module-declaration-block">module-declaration-block</a> ;
+  | <b>module</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>{</b> <a href="#module-declaration-block">module-declaration-block</a> <b>}</b> ;
 
 <i id="type-declaration">type-declaration</i> ::=
   | <b>type</b> <a href="#visibility-modifier">visibility-modifier</a>? <b>IDENTIFIER</b> <b>=</b> <a href="#type-declaration-block">type-declaration-block</a> ;
@@ -46,7 +47,7 @@
   | <a href="#parameter">parameter</a> ( <b>,</b> <a href="#parameter-list">parameter-list</a> )? <b>,</b>? ;
 
 <i id="module-declaration-block">module-declaration-block</i> ::=
-  | <b>BEGIN</b> <a href="#module-declaration-block-item">module-declaration-block-item</a> <b>END</b> ;
+  | <a href="#module-declaration-block-item">module-declaration-block-item</a> ( <a href="#module-declaration-block-item">module-declaration-block-item</a> )* ;
 
 <i id="type-declaration-block">type-declaration-block</i> ::=
   | <a href="#enum-body">enum-body</a>
