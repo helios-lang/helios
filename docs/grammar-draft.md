@@ -96,14 +96,14 @@ type-annotation ::=
 
 type ::=
   | IDENTIFER generic-parameter-list?
-  | array-type
-  | function-type
-  | tuple-type
+  | array-type      -- TODO
+  | function-type   -- TODO
+  | tuple-type      -- TODO
   ;
 
 visibility ::=
   | `pub`
-  | `internal` -- Perhaps find a shorter keyword for this?
+  | `internal` -- Perhaps change this to a shorter keyword?
   ;
 
 visibility-parameterized ::=
@@ -157,11 +157,11 @@ computed-property-declaration ::=
   ;
 
 computed-property-get-clause ::=
-  | `get` ( `=>` expression | expression-block )
+  | `get` ( `=` expression | expression-block )
   ;
 
 computed-property-set-clause ::=
-  | `set` ( `=>` expression | expression-block )
+  | `set` ( `=` expression | expression-block )
   ;
 
 -- ENUMS -----------------------------------------------------------------------
