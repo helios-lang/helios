@@ -1,15 +1,14 @@
 [package]
 name = "koi-ide"
 version = "0.1.0"
-authors = ["Ta-Seen Islam <taseen00.islam@gmail.com>"]
+authors = ["tahscenery <tahscenery@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-koi-actor = { version = "0.1.0", path = "../koi-actor" }
-koi-driver = { version = "0.1.0", path = "../koi-driver" }
 koi-syntax-old = { version = "0.1.0", path = "../koi-syntax-old" }
-serde = { version = "1.0.111", features = ["derive"] }
-serde_json = "1.0.53"
-lsp-types = "0.74.2"
+
+log = "0.4.11"
+tokio = { version = "0.2.22", features = ["io-std"] }
+tower-lsp = "0.13.2"

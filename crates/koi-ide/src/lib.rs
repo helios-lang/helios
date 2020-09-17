@@ -1,208 +1,179 @@
-//! An implementation of a language server for the Koi programming language.
+use tokio::runtime::Runtime;
+use tower_lsp::jsonrpc::Result;
+use tower_lsp::lsp_types::*;
+use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-mod actors;
-
-pub use actors::{Receiver, Responder};
-use lsp_types;
-use serde::{Serialize, Deserialize};
-use serde_json;
-use std::io::prelude::Write;
-use std::sync::mpsc::Sender;
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VersionedDidSaveTextDocumentParams {
-    text_document: lsp_types::VersionedTextDocumentIdentifier,
+struct KoiBackend {
+    client: Client,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "method")]
-pub enum LspMessage {
-    #[serde(rename = "initialize")]
-    /// The client is listening for the server to respond.
-    InitializeRequest {
-        id: usize,
-        params: lsp_types::InitializeParams,
-    },
-
-    #[serde(rename = "initialized")]
-    /// The connection has been successfully initialized.
-    InitializedNotification,
-
-    #[serde(rename = "shutdown")]
-    /// The client has asked us to shutdown.
-    ShutdownRequest,
-
-    #[serde(rename = "exit")]
-    /// The client has asked us to exit now.
-    ExitNotification,
-
-    #[serde(rename = "textDocument/didOpen")]
-    /// A text document has been opened.
-    TextDocumentDidOpenNotification {
-        params: lsp_types::DidOpenTextDocumentParams
-    },
-
-    #[serde(rename = "textDocument/didChange")]
-    /// The text document has been modified.
-    TextDocumentDidChangeNotification {
-        params: lsp_types::DidChangeTextDocumentParams,
-    },
-
-    #[serde(rename = "textDocument/didSave")]
-    /// The text document has been saved.
-    TextDocumentDidSaveNotification {
-        params: VersionedDidSaveTextDocumentParams,
-    },
-
-    #[serde(rename = "textDocument/completion")]
-    /// A completion request has been sent.
-    TextDocumentCompletionRequest {
-        id: usize,
-        params: lsp_types::CompletionParams,
-    },
-
-    #[serde(rename = "textDocument/hover")]
-    /// A hover request has been sent.
-    TextDocumentHoverRequest {
-        id: usize,
-        params: lsp_types::TextDocumentPositionParams,
+#[tower_lsp::async_trait]
+impl LanguageServer for KoiBackend {
+    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+        Ok(InitializeResult {
+            server_info: Some(ServerInfo {
+                name: "KoiLS".to_string(),
+                version: Some("0.1.5".to_string()),
+            }),
+            capabilities: ServerCapabilities {
+                text_document_sync: Some(TextDocumentSyncCapability::Kind(
+                    TextDocumentSyncKind::Incremental,
+                )),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
+                completion_provider: Some(CompletionOptions {
+                    resolve_provider: Some(true),
+                    trigger_characters: Some(vec![".".to_string()]),
+                    work_done_progress_options: WorkDoneProgressOptions {
+                        work_done_progress: Some(false),
+                    }
+                }),
+                rename_provider: Some(RenameProviderCapability::Simple(true)),
+                ..ServerCapabilities::default()
+            }
+        })
     }
-}
 
-pub enum LspResponse {
-    InitializeResult {
-        id: usize,
-    },
-
-    CompletionList {
-        id: usize,
-        params: Option<lsp_types::CompletionResponse>,
-    },
-
-    HoverResult {
-        id: usize,
-        params: Option<lsp_types::Hover>,
-    },
-
-    PublishDiagnostics {
-        params: lsp_types::PublishDiagnosticsParams,
+    async fn initialized(&self, _: InitializedParams) {
+        self.client
+            .log_message(MessageType::Info, "Server successfully initialized")
+            .await;
     }
-}
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Capabilities {
-    capabilities: lsp_types::ServerCapabilities
-}
+    async fn shutdown(&self) -> Result<()> {
+        self.client
+            .log_message(MessageType::Info, "Shutting down server...")
+            .await;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct JsonRpcResponse<T> {
-    jsonrpc: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<usize>,
-    result: Option<T>,
-}
-
-impl<T> JsonRpcResponse<T> {
-    pub fn new<U: Into<Option<usize>>>(id: U, result: Option<T>) -> Self {
-        Self { jsonrpc: "2.0".to_string(), id: id.into(), result }
+        Ok(())
     }
-}
 
-#[derive(Debug, Serialize, Deserialize)]
-struct JsonRpcNotification<T> {
-    jsonrpc: String,
-    method: String,
-    params: T,
-}
-
-impl<T> JsonRpcNotification<T> {
-    pub fn new<S: Into<String>>(method: S, params: T) -> Self {
-        Self { jsonrpc: "2.0".to_string(), method: method.into(), params }
+    async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        self.client
+            .log_message(MessageType::Info, format!("{:?}", params))
+            .await;
     }
-}
 
-pub fn run() {
-    let responder = koi_actor::spawn(Responder);
-    let receiver = koi_actor::spawn(Receiver::with(responder.channel));
-    eprintln!("Established connection");
-    start(receiver.channel);
-}
+    async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        self.client
+            .log_message(MessageType::Info, format!("{:?}", params))
+            .await;
+    }
 
-pub fn start(receiver: Sender<LspMessage>) {
-    loop {
-        let mut header_buffer = String::new();
-        match std::io::stdin().read_line(&mut header_buffer) {
-            Ok(_) => {
-                let mut header_contents = header_buffer.splitn(2, ": ");
-                match (header_contents.next(), header_contents.next()) {
-                    (Some("Content-Length"), Some(msg)) => send_message(&receiver, msg),
-                    _ => unimplemented!()
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        self.client
+            .log_message(MessageType::Info, format!("{:?}", params))
+            .await;
+
+        use koi_syntax_old::token::Keyword;
+        let keywords: Vec<CompletionItem> = Keyword::keyword_list()
+            .into_iter()
+            .map(|keyword| {
+                CompletionItem {
+                    label: keyword.clone(),
+                    kind: Some(CompletionItemKind::Keyword),
+                    insert_text: Some(keyword + " "),
+                    detail: Some("Koi keyword".to_string()),
+                    ..CompletionItem::default()
                 }
-            },
-            Err(error) => eprintln!("An error occurred: {}", error)
-        }
+            })
+            .collect();
+
+        let primitive_types: Vec<CompletionItem> =
+            vec![
+                "Bool", "Char", "String",
+                "Float", "Float32", "Float64",
+                "Int", "Int8", "Int16", "Int32", "Int64",
+                "UInt", "UInt8", "UInt16", "UInt32", "UInt64",
+                "Optional", "Result",
+            ]
+            .into_iter()
+            .map(|r#type| {
+                CompletionItem {
+                    label: r#type.to_string(),
+                    kind: Some(CompletionItemKind::Struct),
+                    insert_text: match r#type {
+                        "Optional" => Some("Optional(of ${1:???})".to_string()),
+                        "Result" => Some("Result(of ${1:???}, ${2:???})".to_string()),
+                        _ => None,
+                    },
+                    insert_text_format: match r#type {
+                        "Optional" => Some(InsertTextFormat::Snippet),
+                        "Result" => Some(InsertTextFormat::Snippet),
+                        _ => None,
+                    },
+                    ..CompletionItem::default()
+                }
+            })
+            .collect();
+
+        let special_identifiers: Vec<CompletionItem> =
+            vec![
+                "True", "False",
+                "Some", "None",
+                "Ok", "Err",
+                "Self",
+            ]
+            .into_iter()
+            .map(|ident| {
+                CompletionItem {
+                    label: ident.to_string(),
+                    kind: Some(CompletionItemKind::Struct),
+                    insert_text: match ident {
+                        "Some" | "Ok" | "Err" => Some(format!("{}(${{1:???}})", ident)),
+                        _ => None
+                    },
+                    insert_text_format: match ident {
+                        "Some" | "Ok" | "Err" => Some(InsertTextFormat::Snippet),
+                        _ => None,
+                    },
+                    ..CompletionItem::default()
+                }
+            })
+            .collect();
+
+        Ok(params.context.map(|context| match context.trigger_kind {
+            CompletionTriggerKind::Invoked => CompletionResponse::Array(
+                [
+                    &keywords[..],
+                    &primitive_types[..],
+                    &special_identifiers[..],
+                ].concat()
+            ),
+            _ => CompletionResponse::Array(special_identifiers)
+        }))
+    }
+
+    async fn completion_resolve(&self, item: CompletionItem) -> Result<CompletionItem> {
+        Ok(item)
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        self.client
+            .log_message(MessageType::Info, format!("{:?}", params))
+            .await;
+
+        Ok(None)
     }
 }
 
-fn send_message(receiver: &Sender<LspMessage>, msg: &str) {
-    match deserialize_message(msg) {
-        Ok(msg) => receiver.send(msg).expect("Failed to send"),
-        Err(err) => eprintln!("!! [WARN] received unsupported message: {}", err)
-    }
+async fn __start() {
+    let stdin = tokio::io::stdin();
+    let stdout = tokio::io::stdout();
+
+    let (service, messages) = LspService::new(|client| KoiBackend { client });
+
+    Server::new(stdin, stdout)
+        .interleave(messages)
+        .serve(service)
+        .await;
 }
 
-fn deserialize_message(value: &str) -> serde_json::Result<LspMessage> {
-    use std::io::prelude::*;
-
-    let value: usize = value.trim_end().parse().unwrap();
-    let mut buffer = vec![0u8; value + 2];
-    std::io::stdin().read_exact(&mut buffer).unwrap();
-    let buffer_string = String::from_utf8(buffer).unwrap();
-
-    eprintln!("-> {}", buffer_string.as_str().trim());
-
-    serde_json::from_str::<LspMessage>(&buffer_string)
-}
-
-pub fn send_jsonrpc_response<T, U>(id: U, result: T)
-    where T: Serialize, U: Into<Option<usize>>
-{
-    let response = JsonRpcResponse::new(id, result.into());
-    let response =
-        serde_json::to_string(&response)
-            .expect("Failed to serialize JSON RPC response.");
-
-    eprintln!("<- {}", response);
-
-    print!("Content-Length: {}\r\n\r\n", response.len());
-    print!("{}", response);
-
-    let _ = std::io::stdout().flush();
-}
-
-pub fn send_jsonrpc_response_raw<S: Into<String>>(response: S) {
-    let response = response.into();
-
-    eprintln!("<- {}", response);
-
-    print!("Content-Length: {}\r\n\r\n", response.len());
-    print!("{}", response);
-
-    let _ = std::io::stdout().flush();
-}
-
-pub fn send_jsonrpc_notification<S, T>(method: S, params: T)
-    where S: Into<String>, T: Serialize
-{
-    let response = JsonRpcNotification::new(method, params);
-    let response =
-        serde_json::to_string(&response)
-            .expect("Failed to serialize JSON RPC notification.");
-
-    eprintln!("<- {}", response);
-
-    print!("Content-Length: {}\r\n\r\n", response.len());
-    print!("{}", response);
-    let _ = std::io::stdout().flush();
+/// Starts the connection between the client and server via the Language Server
+/// Protocol.
+///
+/// This function initializes and starts a `tokio` runtime, panicking if it has
+/// failed to initialize.
+pub fn start() {
+    let mut runtime = Runtime::new().expect("Failed to start tokio runtime");
+    runtime.block_on(__start());
 }

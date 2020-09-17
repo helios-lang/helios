@@ -34,7 +34,7 @@ fn main() {
             },
             ("ide", _) => {
                 log::trace!("Starting language server...");
-                koi_ide_new::start()
+                koi_ide::start()
             },
             ("repl", _) => {
                 log::trace!("Starting REPL...");
