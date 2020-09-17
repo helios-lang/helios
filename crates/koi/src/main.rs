@@ -12,20 +12,21 @@ fn print_version() {
 
 fn main() {
     let mut args = std::env::args();
+    args.next(); // Skip path to executable
 
-    match (args.next(), args.next(), args.next()) {
-        (_, Some(ref opt), _) if opt == "-h" || opt == "--help" =>
-            print_usage(),
-        (_, Some(ref opt), _) if opt == "-V" || opt == "--version" =>
-            print_version(),
-        (_, Some(ref cmd), Some(ref file_name)) if cmd == "build" =>
-            koi_build::build(file_name),
-        (_, Some(ref cmd), None) if cmd == "build" => {
-            eprintln!("ERROR: Missing argument for command `build`.\n");
-            print_usage();
-        },
-        (_, Some(ref cmd), _) if cmd == "ide" => koi_ide::run(),
-        (_, Some(ref cmd), _) if cmd == "repl" => koi_repl::start(),
+    match (args.next(), args.next()) {
+        (Some(arg), param) => match (&*arg, param) {
+            ("-h", _) | ("--help", _) => print_usage(),
+            ("-V", _) | ("--version", _) => print_version(),
+            ("build", None) => {
+                eprintln!("ERROR: Missing argument for command `build`.\n");
+                print_usage();
+            }
+            ("build", Some(ref file_name)) => koi_build::build(file_name),
+            ("ide", _) => koi_ide::run(),
+            ("repl", _) => koi_repl::start(),
+            _ => print_usage()
+        }
         _ => print_usage()
     }
 }
