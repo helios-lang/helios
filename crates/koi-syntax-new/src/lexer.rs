@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use crate::cache::TokenCache;
 use crate::errors::LexerError;
-// use crate::cache::TokenCache;
 use crate::source::{Cursor, TextSpan};
 use crate::tree::token::*;
+use std::rc::Rc;
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -50,12 +51,25 @@ fn is_symbol(c: char) -> bool {
 
 pub type LexerOut = SyntaxToken;
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum LexerMode {
+    Normal,
+    Grouping,
+}
+
+impl Default for LexerMode {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
 pub struct Lexer {
     cursor: Cursor,
     consumed_chars: Vec<char>,
     did_emit_eof_token: bool,
+    mode_stack: Vec<LexerMode>,
     group_stack: Vec<(GroupingDelimiter, usize)>,
-    // token_cache: TokenCache,
+    token_cache: TokenCache,
 }
 
 impl Lexer {
@@ -64,9 +78,30 @@ impl Lexer {
             cursor: Cursor::with(source),
             consumed_chars: Vec::new(),
             did_emit_eof_token: false,
+            mode_stack: vec![LexerMode::Normal],
             group_stack: Vec::new(),
-            // token_cache: TokenCache::new(),
+            token_cache: TokenCache::new(),
         }
+    }
+
+
+    pub fn next_token(&mut self) -> LexerOut {
+        match self.current_mode() {
+            LexerMode::Normal => self.tokenize_normal(),
+            LexerMode::Grouping => todo!("LexerMode::Grouping"),
+        }
+    }
+
+    pub(crate) fn push_mode(&mut self, mode: LexerMode) {
+        self.mode_stack.push(mode);
+    }
+
+    pub(crate) fn pop_mode(&mut self) -> Option<LexerMode> {
+        self.mode_stack.pop()
+    }
+
+    fn current_mode(&self) -> LexerMode {
+        self.mode_stack.last().cloned().unwrap_or_default()
     }
 }
 
@@ -199,19 +234,14 @@ impl Lexer {
             Some(c) => c,
             None => {
                 self.did_emit_eof_token = true;
-
-                // let eof_raw = self.token_cache.lookup(&"\0".to_string(), |s| {
-                //     RawSyntaxToken::with(TokenKind::Eof, s)
-                // });
-
-                // return SyntaxToken::with_trivia(
-                //     eof_raw.clone(),
-                //     TextSpan::new(self.current_pos(), 0),
-                //     leading_trivia,
-                //     Vec::new()
-                // );
-
-                todo!()
+                return SyntaxToken::with_trivia(
+                    self.token_cache.lookup(&"\0".to_string(), |text| {
+                        Rc::new(RawSyntaxToken::with(TokenKind::Eof, text))
+                    }),
+                    TextSpan::new(self.current_pos(), 0),
+                    leading_trivia,
+                    Vec::new(),
+                );
             }
         };
 
@@ -227,16 +257,14 @@ impl Lexer {
         let text = self.consumed_chars.drain(..).collect::<String>();
         let trailing_trivia = self.lex_trivia(false);
 
-        // SyntaxToken::with_trivia(
-        //     self.token_cache.lookup(&text, |text| {
-        //         RawSyntaxToken::with(kind, text)
-        //     }),
-        //     TextSpan::from_bounds(start, end),
-        //     leading_trivia,
-        //     trailing_trivia
-        // )
-
-        todo!()
+        SyntaxToken::with_trivia(
+            self.token_cache.lookup(&text, |text| {
+                Rc::new(RawSyntaxToken::with(kind, text))
+            }),
+            TextSpan::from_bounds(start, end),
+            leading_trivia,
+            trailing_trivia,
+        )
     }
 }
 
@@ -476,5 +504,76 @@ impl Lexer {
                 TokenKind::Error(LexerError::UnsupportedFloatLiteralBase(base))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lexer() {
+        let source = "// Adding two variables\nlet a = 10\n";
+        let mut lexer = Lexer::with(source.to_string());
+        let mut tokens = Vec::new();
+
+        while !lexer.is_at_end() {
+            let token = lexer.next_token();
+            tokens.push(token);
+        }
+
+        assert_eq!(tokens, vec! {
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Keyword(Keyword::Let),
+                    "let".to_string(),
+                )),
+                TextSpan::new(24, 3),
+                vec![
+                    SyntaxTrivia::LineComment {
+                        is_doc_comment: false,
+                        len: 23
+                    },
+                    SyntaxTrivia::LineFeed(1),
+                ],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Identifier,
+                    "a".to_string()
+                )),
+                TextSpan::new(28, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Symbol(Symbol::Eq),
+                    "=".to_string()
+                )),
+                TextSpan::new(30, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
+                    "10".to_string()
+                )),
+                TextSpan::new(32, 2),
+                vec![],
+                vec![],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Eof,
+                    "\0".to_string()
+                )),
+                TextSpan::new(35, 0),
+                vec![SyntaxTrivia::LineFeed(1)],
+                vec![],
+            ),
+        });
     }
 }

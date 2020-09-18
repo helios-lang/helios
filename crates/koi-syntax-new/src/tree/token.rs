@@ -1,10 +1,12 @@
 use crate::errors::LexerError;
 use crate::source::TextSpan;
-// use std::sync::Arc;
+use std::borrow::Borrow;
+use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SyntaxToken {
-    raw: RawSyntaxToken,
+    raw: Rc<RawSyntaxToken>,
     span: TextSpan,
     is_missing: bool,
     pub(crate) leading_trivia: Vec<SyntaxTrivia>,
@@ -13,12 +15,12 @@ pub struct SyntaxToken {
 
 impl SyntaxToken {
     /// Constructs a new `SyntaxToken` with no leading or trailing trivia.
-    pub fn with(raw: RawSyntaxToken, span: TextSpan) -> Self {
+    pub fn with(raw: Rc<RawSyntaxToken>, span: TextSpan) -> Self {
         Self::with_trivia(raw, span, Vec::new(), Vec::new())
     }
 
     /// Constructs a new `SyntaxToken` with leading and trailing trivia.
-    pub fn with_trivia(raw: RawSyntaxToken,
+    pub fn with_trivia(raw: Rc<RawSyntaxToken>,
                        span: TextSpan,
                        leading_trivia: Vec<SyntaxTrivia>,
                        trailing_trivia: Vec<SyntaxTrivia>) -> Self
@@ -38,7 +40,7 @@ impl SyntaxToken {
                                trailing_trivia: Vec<SyntaxTrivia>) -> Self
     {
         Self {
-            raw: RawSyntaxToken::with(kind, String::new()),
+            raw: Rc::new(RawSyntaxToken::with(kind, String::new())),
             span: TextSpan::zero_width(pos),
             is_missing: true,
             leading_trivia,
@@ -79,8 +81,7 @@ impl SyntaxToken {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-// #[derive(Clone, Debug, Eq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RawSyntaxToken {
     pub(crate) kind: TokenKind,
     pub(crate) text: String,
@@ -91,6 +92,18 @@ impl RawSyntaxToken {
     /// source-representation).
     pub fn with<S: Into<String>>(kind: TokenKind, text: S) -> Self {
         Self { kind, text: text.into() }
+    }
+}
+
+impl Hash for RawSyntaxToken {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.text.hash(state)
+    }
+}
+
+impl Borrow<String> for RawSyntaxToken {
+    fn borrow(&self) -> &String {
+        &self.text
     }
 }
 
