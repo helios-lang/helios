@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use crate::cache::TokenCache;
 use crate::errors::LexerError;
 use crate::source::{Cursor, TextSpan};
@@ -92,10 +89,12 @@ impl Lexer {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn push_mode(&mut self, mode: LexerMode) {
         self.mode_stack.push(mode);
     }
 
+    #[allow(dead_code)]
     pub(crate) fn pop_mode(&mut self) -> Option<LexerMode> {
         self.mode_stack.pop()
     }
@@ -328,10 +327,10 @@ impl Lexer {
 
                     let is_doc_comment = self.consume('/') || self.consume('!');
 
-                    // Consume until we're before a LF, CRLF or EOF character
+                    // Consume until we're before an EOF, LF or CRLF character
                     loop {
                         match (self.peek(), self.peek_at(1)) {
-                            ('\n', _) | ('\0', _) | ('\r', '\n') => break,
+                            ('\0', _) | ('\n', _) | ('\r', '\n') => break,
                             _ => {
                                 self.next_char();
                             },
