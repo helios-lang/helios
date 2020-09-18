@@ -28,10 +28,16 @@ impl Borrow<String> for TokenCacheKey {
 pub struct TokenCache(HashSet<TokenCacheKey>);
 
 impl TokenCache {
+    /// Creates an empty `TokenCache`.
     pub fn new() -> Self {
         Self(HashSet::new())
     }
 
+    /// Looks up a `RawSyntaxToken` with the given key (a `String`).
+    ///
+    /// If the cache does not find a `RawSyntaxToken` with the given key (i.e.
+    /// it isn't cached), the provided closure is invoked to cache a new
+    /// `RawSyntaxToken` before finally returning it.
     pub fn lookup<F, Q>(&mut self, query: &Q, default: F) -> Rc<RawSyntaxToken>
     where
         F: FnOnce(&String) -> Rc<RawSyntaxToken>,
@@ -41,7 +47,7 @@ impl TokenCache {
             self.0.insert(TokenCacheKey(default(query.borrow())));
         }
 
-        self.0.get(query.borrow()).unwrap().0.clone()
+        Rc::clone(&self.0.get(query.borrow()).unwrap().0)
     }
 
     /// Returns the number of elements in the token cache.
