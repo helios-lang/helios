@@ -20,12 +20,19 @@ impl SyntaxToken {
     }
 
     /// Constructs a new `SyntaxToken` with leading and trailing trivia.
-    pub fn with_trivia(raw: Rc<RawSyntaxToken>,
-                       span: TextSpan,
-                       leading_trivia: Vec<SyntaxTrivia>,
-                       trailing_trivia: Vec<SyntaxTrivia>) -> Self
-    {
-        Self { raw, span, is_missing: false, leading_trivia, trailing_trivia }
+    pub fn with_trivia(
+        raw: Rc<RawSyntaxToken>,
+        span: TextSpan,
+        leading_trivia: Vec<SyntaxTrivia>,
+        trailing_trivia: Vec<SyntaxTrivia>,
+    ) -> Self {
+        Self {
+            raw,
+            span,
+            is_missing: false,
+            leading_trivia,
+            trailing_trivia,
+        }
     }
 
     /// Constructs a new missing `SyntaxToken` with the given `TokenKind` and
@@ -34,11 +41,12 @@ impl SyntaxToken {
         Self::missing_with_trivia(kind, pos, Vec::new(), Vec::new())
     }
 
-    pub fn missing_with_trivia(kind: TokenKind,
-                               pos: usize,
-                               leading_trivia: Vec<SyntaxTrivia>,
-                               trailing_trivia: Vec<SyntaxTrivia>) -> Self
-    {
+    pub fn missing_with_trivia(
+        kind: TokenKind,
+        pos: usize,
+        leading_trivia: Vec<SyntaxTrivia>,
+        trailing_trivia: Vec<SyntaxTrivia>,
+    ) -> Self {
         Self {
             raw: Rc::new(RawSyntaxToken::with(kind, String::new())),
             span: TextSpan::zero_width(pos),
@@ -61,12 +69,16 @@ impl SyntaxToken {
     /// and trailing trivia it may have.
     pub fn full_span(&self) -> TextSpan {
         TextSpan::from_bounds(
-            self.leading_trivia.first().map_or(self.span().start(), |trivia| {
-                self.span().start() - trivia.len()
-            }),
-            self.trailing_trivia.last().map_or(self.span().end(), |trivia| {
-                self.span().end() + trivia.len()
-            }),
+            self.leading_trivia
+                .first()
+                .map_or(self.span().start(), |trivia| {
+                    self.span().start() - trivia.len()
+                }),
+            self.trailing_trivia
+                .last()
+                .map_or(self.span().end(), |trivia| {
+                    self.span().end() + trivia.len()
+                }),
         )
     }
 
@@ -91,7 +103,10 @@ impl RawSyntaxToken {
     /// Constructs a new `RawSyntaxToken` with a kind and text (its
     /// source-representation).
     pub fn with<S: Into<String>>(kind: TokenKind, text: S) -> Self {
-        Self { kind, text: text.into() }
+        Self {
+            kind,
+            text: text.into(),
+        }
     }
 }
 
@@ -153,15 +168,16 @@ impl SyntaxTrivia {
     pub fn len(&self) -> usize {
         match self {
             Self::Tab(n)
-                | Self::Space(n)
-                | Self::LineFeed(n)
-                | Self::CarriageReturn(n) => *n,
+            | Self::Space(n)
+            | Self::LineFeed(n)
+            | Self::CarriageReturn(n) => *n,
             Self::CarriageReturnLineFeed(n) => *n * 2,
-            Self::LineComment { len, .. } => *len
+            Self::LineComment { len, .. } => *len,
         }
     }
 }
 
+#[rustfmt::skip]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Keyword {
     And,
@@ -209,7 +225,10 @@ impl Keyword {
             "module", "not", "of", "operator", "or", "pub", "ref", "return",
             "set", "struct", "take", "trait", "type", "using", "var", "where",
             "while", "with",
-        ].into_iter().map(String::from).collect()
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect()
     }
 }
 
@@ -339,6 +358,7 @@ impl GroupingDelimiter {
 }
 
 impl Symbol {
+    #[rustfmt::skip]
     pub fn from_char(c: char) -> Self {
         use Symbol::*;
         match c {
@@ -373,7 +393,7 @@ impl Symbol {
             ']' => RBracket,
             '(' => LParen,
             ')' => RParen,
-            _ => panic!("Character `{}` is not a valid Symbol", c)
+            _ => panic!("Character `{}` is not a valid Symbol", c),
         }
     }
 
@@ -385,7 +405,7 @@ impl Symbol {
             ('<', '-') => Some(Self::LThinArrow),
             ('-', '>') => Some(Self::RThinArrow),
             ('=', '>') => Some(Self::ThickArrow),
-            _ => None
+            _ => None,
         }
     }
 }

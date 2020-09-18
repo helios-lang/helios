@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 #[derive(Debug, Eq)]
-pub struct TokenCacheKey(Rc<RawSyntaxToken>);
+struct TokenCacheKey(Rc<RawSyntaxToken>);
 
 impl PartialEq for TokenCacheKey {
     fn eq(&self, other: &Self) -> bool {
@@ -57,6 +57,7 @@ impl TokenCache {
 }
 
 #[test]
+#[rustfmt::skip]
 fn test_token_cache() {
     let mut cache = TokenCache::new();
 

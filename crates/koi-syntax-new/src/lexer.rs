@@ -40,6 +40,7 @@ fn is_grouping_delimiter(c: char) -> bool {
 }
 
 /// Checks if the given character is a recognised symbol.
+#[rustfmt::skip]
 fn is_symbol(c: char) -> bool {
     match c {
         '&' | '*' | '@' | '!' | '^' | ':' | ',' | '$' | '.' | '–' | '—' | '=' |
@@ -83,7 +84,6 @@ impl Lexer {
             token_cache: TokenCache::new(),
         }
     }
-
 
     pub fn next_token(&mut self) -> LexerOut {
         match self.current_mode() {
@@ -177,9 +177,15 @@ impl Lexer {
     /// character is reached, building a `Vec<char>` for all the characters
     /// consumed. Underscores (`_`) are also consumed, but are ignored when
     /// encountered.
-    fn consume_digits(&mut self, base: Base, first_digit: Option<char>) -> Vec<char> {
+    fn consume_digits(
+        &mut self,
+        base: Base,
+        first_digit: Option<char>,
+    ) -> Vec<char> {
         let mut vec = Vec::new();
-        if let Some(d) = first_digit { vec.push(d); }
+        if let Some(d) = first_digit {
+            vec.push(d);
+        }
 
         /// Matches the digits with the pattern(s) provided, including the
         /// underscore separator (which is ignored). Any other character will
@@ -215,7 +221,9 @@ impl Lexer {
         match base {
             Base::Binary => match_digits!('0' => '1'),
             Base::Octal => match_digits!('0' => '7'),
-            Base::Hexadecimal => match_digits!('0' => '9', 'a' => 'f', 'A' => 'F'),
+            Base::Hexadecimal => {
+                match_digits!('0' => '9', 'a' => 'f', 'A' => 'F')
+            },
             Base::Decimal => match_digits!('0' => '9'),
         }
 
@@ -242,7 +250,7 @@ impl Lexer {
                     leading_trivia,
                     Vec::new(),
                 );
-            }
+            },
         };
 
         let kind = match next_char {
@@ -324,13 +332,16 @@ impl Lexer {
                     loop {
                         match (self.peek(), self.peek_at(1)) {
                             ('\n', _) | ('\0', _) | ('\r', '\n') => break,
-                            _ => { self.next_char(); }
+                            _ => {
+                                self.next_char();
+                            },
                         }
                     }
 
                     trivia.push(SyntaxTrivia::LineComment {
                         is_doc_comment,
-                        len: TextSpan::from_bounds(start, self.current_pos()).length()
+                        len: TextSpan::from_bounds(start, self.current_pos())
+                            .length(),
                     })
                 },
                 _ => break,
@@ -355,14 +366,12 @@ impl Lexer {
                         let (delimiter, _) = self.group_stack.pop().unwrap();
                         TokenKind::GroupingEnd(delimiter)
                     },
-                    _ => {
-                        TokenKind::Error(
-                            LexerError::RedundantClosingDelimiter(new_delimiter)
-                        )
-                    }
+                    _ => TokenKind::Error(
+                        LexerError::RedundantClosingDelimiter(new_delimiter),
+                    ),
                 }
             },
-            _ => panic!("Invalid grouping delimiter: {:?}", c)
+            _ => panic!("Invalid grouping delimiter: {:?}", c),
         }
     }
 
@@ -390,7 +399,7 @@ impl Lexer {
                 } else {
                     TokenKind::Symbol(Symbol::from_char(symbol))
                 }
-            }
+            },
         }
     }
 
@@ -406,6 +415,7 @@ impl Lexer {
     /// Attempts to match the provided `string` to a keyword, returning a
     /// `TokenKind::Keyword` if a match is found, otherwise a
     /// `TokenKind::Identifier`.
+    #[rustfmt::skip]
     fn lex_keyword_or_identifier(&mut self, string: String) -> TokenKind {
         match &*string {
             "and"       => TokenKind::Keyword(Keyword::And),
@@ -442,7 +452,7 @@ impl Lexer {
             "where"     => TokenKind::Keyword(Keyword::Where),
             "while"     => TokenKind::Keyword(Keyword::While),
             "with"      => TokenKind::Keyword(Keyword::With),
-            _           => TokenKind::Identifier
+            _           => TokenKind::Identifier,
         }
     }
 
@@ -475,9 +485,9 @@ impl Lexer {
                 // Decimal literal
                 '0'..='9' | '_' => {
                     self.consume_digits(Base::Decimal, None);
-                }
+                },
                 // Just 0
-                _ => ()
+                _ => (),
             }
         } else {
             self.consume_digits(Base::Decimal, Some(first_digit));
@@ -491,7 +501,7 @@ impl Lexer {
                 '0'..='9' | '_' => {
                     self.consume_digits(Base::Decimal, None);
                 },
-                _ => ()
+                _ => (),
             }
         }
 
@@ -510,6 +520,7 @@ impl Lexer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use Base::Decimal as Dec;
 
     macro_rules! lex {
         ($source:expr) => {{
@@ -532,13 +543,14 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_lexer_one_binding() {
         let tokens = lex!("// Adding two variables\nlet a = 10\n");
 
         let kw_let = token!("let", TokenKind::Keyword(Keyword::Let));
         let id_a   = token!("a",   TokenKind::Identifier);
         let sy_eq  = token!("=",   TokenKind::Symbol(Symbol::Eq));
-        let li_ten = token!("10",  TokenKind::Literal(Literal::Integer(Base::Decimal)));
+        let li_ten = token!("10",  TokenKind::Literal(Literal::Integer(Dec)));
 
         assert_eq!(tokens, vec! {
             SyntaxToken::with_trivia(
@@ -584,13 +596,14 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_lexer_two_bindings() {
         let tokens = lex!("// Adding two variables\nlet a = 10\nlet b = a\n");
 
         let kw_let = token!("let", TokenKind::Keyword(Keyword::Let));
         let id_a   = token!("a",   TokenKind::Identifier);
         let sy_eq  = token!("=",   TokenKind::Symbol(Symbol::Eq));
-        let li_ten = token!("10",  TokenKind::Literal(Literal::Integer(Base::Decimal)));
+        let li_ten = token!("10",  TokenKind::Literal(Literal::Integer(Dec)));
         let id_b   = token!("b",   TokenKind::Identifier);
 
         assert_eq!(tokens, vec! {

@@ -1,5 +1,5 @@
-use std::vec::IntoIter;
 use std::fmt::{self, Display};
+use std::vec::IntoIter;
 
 pub const EOF_CHAR: char = '\0';
 
