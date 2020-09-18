@@ -511,23 +511,38 @@ impl Lexer {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_lexer() {
-        let source = "// Adding two variables\nlet a = 10\n";
-        let mut lexer = Lexer::with(source.to_string());
-        let mut tokens = Vec::new();
+    macro_rules! lex {
+        ($source:expr) => {{
+            let mut lexer = Lexer::with($source.to_string());
+            let mut tokens = Vec::new();
 
-        while !lexer.is_at_end() {
-            let token = lexer.next_token();
-            tokens.push(token);
-        }
+            while !lexer.is_at_end() {
+                let token = lexer.next_token();
+                tokens.push(token);
+            }
+
+            tokens
+        }};
+    }
+
+    macro_rules! token {
+        ($text:expr, $kind:expr) => {{
+            Rc::new(RawSyntaxToken::with($kind, $text.to_string()))
+        }};
+    }
+
+    #[test]
+    fn test_lexer_one_binding() {
+        let tokens = lex!("// Adding two variables\nlet a = 10\n");
+
+        let kw_let = token!("let", TokenKind::Keyword(Keyword::Let));
+        let id_a   = token!("a",   TokenKind::Identifier);
+        let sy_eq  = token!("=",   TokenKind::Symbol(Symbol::Eq));
+        let li_ten = token!("10",  TokenKind::Literal(Literal::Integer(Base::Decimal)));
 
         assert_eq!(tokens, vec! {
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
-                    TokenKind::Keyword(Keyword::Let),
-                    "let".to_string(),
-                )),
+                kw_let,
                 TextSpan::new(24, 3),
                 vec![
                     SyntaxTrivia::LineComment {
@@ -539,28 +554,19 @@ mod tests {
                 vec![SyntaxTrivia::Space(1)],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
-                    TokenKind::Identifier,
-                    "a".to_string()
-                )),
+                id_a,
                 TextSpan::new(28, 1),
                 vec![],
                 vec![SyntaxTrivia::Space(1)],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
-                    TokenKind::Symbol(Symbol::Eq),
-                    "=".to_string()
-                )),
+                sy_eq,
                 TextSpan::new(30, 1),
                 vec![],
                 vec![SyntaxTrivia::Space(1)],
             ),
             SyntaxToken::with_trivia(
-                Rc::new(RawSyntaxToken::with(
-                    TokenKind::Literal(Literal::Integer(Base::Decimal)),
-                    "10".to_string()
-                )),
+                li_ten,
                 TextSpan::new(32, 2),
                 vec![],
                 vec![],
@@ -571,6 +577,86 @@ mod tests {
                     "\0".to_string()
                 )),
                 TextSpan::new(35, 0),
+                vec![SyntaxTrivia::LineFeed(1)],
+                vec![],
+            ),
+        });
+    }
+
+    #[test]
+    fn test_lexer_two_bindings() {
+        let tokens = lex!("// Adding two variables\nlet a = 10\nlet b = a\n");
+
+        let kw_let = token!("let", TokenKind::Keyword(Keyword::Let));
+        let id_a   = token!("a",   TokenKind::Identifier);
+        let sy_eq  = token!("=",   TokenKind::Symbol(Symbol::Eq));
+        let li_ten = token!("10",  TokenKind::Literal(Literal::Integer(Base::Decimal)));
+        let id_b   = token!("b",   TokenKind::Identifier);
+
+        assert_eq!(tokens, vec! {
+            // `// Adding two variables\nlet a = 10`
+            SyntaxToken::with_trivia(
+                kw_let.clone(),
+                TextSpan::new(24, 3),
+                vec![
+                    SyntaxTrivia::LineComment {
+                        is_doc_comment: false,
+                        len: 23
+                    },
+                    SyntaxTrivia::LineFeed(1),
+                ],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                id_a.clone(),
+                TextSpan::new(28, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                sy_eq.clone(),
+                TextSpan::new(30, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                li_ten.clone(),
+                TextSpan::new(32, 2),
+                vec![],
+                vec![],
+            ),
+
+            // `let b = a\n\0`
+            SyntaxToken::with_trivia(
+                kw_let.clone(),
+                TextSpan::new(35, 3),
+                vec![SyntaxTrivia::LineFeed(1)],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                id_b.clone(),
+                TextSpan::new(39, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                sy_eq.clone(),
+                TextSpan::new(41, 1),
+                vec![],
+                vec![SyntaxTrivia::Space(1)],
+            ),
+            SyntaxToken::with_trivia(
+                id_a.clone(),
+                TextSpan::new(43, 1),
+                vec![],
+                vec![],
+            ),
+            SyntaxToken::with_trivia(
+                Rc::new(RawSyntaxToken::with(
+                    TokenKind::Eof,
+                    "\0".to_string()
+                )),
+                TextSpan::new(45, 0),
                 vec![SyntaxTrivia::LineFeed(1)],
                 vec![],
             ),
