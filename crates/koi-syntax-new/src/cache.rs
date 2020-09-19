@@ -1,21 +1,14 @@
 use crate::tree::token::*;
 use std::borrow::Borrow;
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Eq, Hash)]
 struct TokenCacheKey(Rc<RawSyntaxToken>);
 
 impl PartialEq for TokenCacheKey {
     fn eq(&self, other: &Self) -> bool {
         self.0.text.eq(&other.0.text)
-    }
-}
-
-impl Hash for TokenCacheKey {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.hash(state)
     }
 }
 
@@ -56,33 +49,38 @@ impl TokenCache {
     }
 }
 
-#[test]
-#[rustfmt::skip]
-fn test_token_cache() {
-    let mut cache = TokenCache::new();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    macro_rules! lookup_eq {
-        ($query:expr, $kind:expr) => {{
-            assert_eq!(
-                $kind,
-                cache.lookup(&$query.to_string(), |text| {
-                    Rc::new(RawSyntaxToken::with($kind, text))
-                }).kind,
-            );
-        }};
+    #[test]
+    #[rustfmt::skip]
+    fn test_token_cache() {
+        let mut cache = TokenCache::new();
+
+        macro_rules! lookup_eq {
+            ($query:expr, $kind:expr) => {{
+                assert_eq!(
+                    $kind,
+                    cache.lookup(&$query.to_string(), |text| {
+                        Rc::new(RawSyntaxToken::with($kind, text))
+                    }).kind,
+                );
+            }};
+        }
+
+        // let x = 10
+        lookup_eq!("let", TokenKind::Keyword(Keyword::Let));
+        lookup_eq!("x",   TokenKind::Identifier);
+        lookup_eq!("=",   TokenKind::Symbol(Symbol::Eq));
+        lookup_eq!("10",  TokenKind::Literal(Literal::Integer(Base::Decimal)));
+
+        // let y = 10
+        lookup_eq!("let", TokenKind::Keyword(Keyword::Let));
+        lookup_eq!("y",   TokenKind::Identifier);
+        lookup_eq!("=",   TokenKind::Symbol(Symbol::Eq));
+        lookup_eq!("x",   TokenKind::Identifier);
+
+        assert_eq!(cache.len(), 5);
     }
-
-    // let x = 10
-    lookup_eq!("let", TokenKind::Keyword(Keyword::Let));
-    lookup_eq!("x",   TokenKind::Identifier);
-    lookup_eq!("=",   TokenKind::Symbol(Symbol::Eq));
-    lookup_eq!("10",  TokenKind::Literal(Literal::Integer(Base::Decimal)));
-
-    // let y = 10
-    lookup_eq!("let", TokenKind::Keyword(Keyword::Let));
-    lookup_eq!("y",   TokenKind::Identifier);
-    lookup_eq!("=",   TokenKind::Symbol(Symbol::Eq));
-    lookup_eq!("x",   TokenKind::Identifier);
-
-    assert_eq!(cache.len(), 5);
 }
