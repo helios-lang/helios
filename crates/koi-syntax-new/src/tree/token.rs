@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SyntaxToken {
-    raw: Rc<RawSyntaxToken>,
+    pub(crate) raw: Rc<RawSyntaxToken>,
     span: TextSpan,
     is_missing: bool,
     pub(crate) leading_trivia: Vec<SyntaxTrivia>,
