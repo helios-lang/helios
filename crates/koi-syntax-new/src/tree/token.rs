@@ -68,17 +68,19 @@ impl SyntaxToken {
     /// A token's full span is it's normal span, plus the span of any leading
     /// and trailing trivia it may have.
     pub fn full_span(&self) -> TextSpan {
-        TextSpan::from_bounds(
+        let leading_trivia_len =
             self.leading_trivia
-                .first()
-                .map_or(self.span().start(), |trivia| {
-                    self.span().start() - trivia.len()
-                }),
+                .iter()
+                .fold(0, |acc, trivia| trivia.len() + acc);
+
+        let trailing_trivia_len =
             self.trailing_trivia
-                .last()
-                .map_or(self.span().end(), |trivia| {
-                    self.span().end() + trivia.len()
-                }),
+                .iter()
+                .fold(0, |acc, trivia| trivia.len() + acc);
+
+        TextSpan::from_bounds(
+            self.span().start() - leading_trivia_len,
+            self.span().end() + trailing_trivia_len,
         )
     }
 
