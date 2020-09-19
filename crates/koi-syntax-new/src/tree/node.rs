@@ -115,7 +115,9 @@ mod tests {
     #[rustfmt::skip]
     fn test_syntax_node_nested_expr() {
         /* Test string:
+        ```
         (foo + bar - 2.0) * (foo + bar - 2.0) + foo
+        ```
         */
 
         // -- RAW SYNTAX ---
@@ -246,8 +248,9 @@ mod tests {
 
     #[test]
     #[rustfmt::skip]
-    fn test_syntax_node_nested_expr_trivia() {
+    fn test_syntax_node_nested_expr_with_trivia() {
         /* Test string:
+        ```
          (  foo
         +bar -      2.0
 
@@ -255,6 +258,7 @@ mod tests {
            foo
             + bar
           - 2.0) + foo
+        ```
         */
 
         // -- RAW SYNTAX ---
