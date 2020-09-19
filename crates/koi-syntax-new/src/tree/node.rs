@@ -1,13 +1,7 @@
+use crate::tree::Syntax;
 use crate::tree::token::*;
 use crate::source::TextSpan;
-use std::fmt::Debug;
 use std::rc::Rc;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Syntax {
-    Node(Rc<SyntaxNode>),
-    Token(Rc<SyntaxToken>),
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SyntaxNode {
@@ -16,6 +10,14 @@ pub struct SyntaxNode {
 }
 
 impl SyntaxNode {
+    /// Constructs a new `SyntaxNode`.
+    pub fn with<V>(raw: Rc<RawSyntaxNode>, children: V) -> Self
+    where
+        V: Into<Option<Vec<Syntax>>>,
+    {
+        Self { raw, children: children.into().unwrap_or_default() }
+    }
+
     /// The kind of the token.
     pub fn kind(&self) -> NodeKind {
         self.raw.kind.clone()
@@ -93,7 +95,7 @@ mod tests {
                     token.span(),
                     token.full_span(),
                 );
-            }
+            },
             Syntax::Node(node) => {
                 println!("{}- NOD {:p} is {:p} => {:?} @{} (@{})",
                     "    ".repeat(level),
@@ -107,7 +109,7 @@ mod tests {
                 node.children.iter().for_each(|child| {
                     print_syntax(child, level + 1);
                 });
-            }
+            },
         }
     }
 
