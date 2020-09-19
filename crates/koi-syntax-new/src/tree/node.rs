@@ -1,11 +1,11 @@
+use crate::source::TextSpan;
 use crate::tree::Syntax;
 use crate::tree::token::*;
-use crate::source::TextSpan;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SyntaxNode {
-    raw: Rc<RawSyntaxNode>,
+    pub(crate) raw: Rc<RawSyntaxNode>,
     children: Vec<Syntax>,
 }
 
@@ -71,47 +71,62 @@ pub struct RawSyntaxNode {
     children: Vec<RawSyntax>,
 }
 
+impl RawSyntaxNode {
+    /// Constructs a new `RawSyntaxNode` with a kind and children.
+    pub fn with(kind: NodeKind, children: Vec<RawSyntax>) -> Self {
+        Self {
+            kind,
+            children,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum NodeKind {
-    LiteralExpr,
-    GroupedExpr,
     BinaryExpr,
+    GroupedExpr,
+    LiteralExpr,
     UnaryExpr,
+
+    FunDecl,
+    StructDecl,
+    TopLevelDecl,
+}
+
+#[rustfmt::skip]
+#[allow(dead_code)]
+pub(crate) fn print_syntax(syntax: &Syntax, level: usize) {
+    match syntax {
+        Syntax::Token(token) => {
+            println!("{}- TOK {:p} is {:p} => {:?} @{} (@{})",
+                "    ".repeat(level),
+                token,
+                token.raw,
+                token.kind(),
+                token.span(),
+                token.full_span(),
+            );
+        },
+        Syntax::Node(node) => {
+            println!("{}- NOD {:p} is {:p} => {:?} @{} (@{})",
+                "    ".repeat(level),
+                node,
+                node.raw,
+                node.kind(),
+                node.span(),
+                node.full_span(),
+            );
+
+            node.children.iter().for_each(|child| {
+                print_syntax(child, level + 1);
+            });
+        },
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[rustfmt::skip]
-    fn print_syntax(syntax: &Syntax, level: usize) {
-        match syntax {
-            Syntax::Token(token) => {
-                println!("{}- TOK {:p} is {:p} => {:?} @{} (@{})",
-                    "    ".repeat(level),
-                    token,
-                    token.raw,
-                    token.kind(),
-                    token.span(),
-                    token.full_span(),
-                );
-            },
-            Syntax::Node(node) => {
-                println!("{}- NOD {:p} is {:p} => {:?} @{} (@{})",
-                    "    ".repeat(level),
-                    node,
-                    node.raw,
-                    node.kind(),
-                    node.span(),
-                    node.full_span(),
-                );
-
-                node.children.iter().for_each(|child| {
-                    print_syntax(child, level + 1);
-                });
-            },
-        }
-    }
 
     #[test]
     #[rustfmt::skip]
