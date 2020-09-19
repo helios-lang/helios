@@ -104,13 +104,13 @@ mod tests {
     #[test]
     #[rustfmt::skip]
     fn test_syntax_node_nested_expr() {
-        // Test string:
-        /*
+        /* Test string:
         (foo + bar - 2.0) * (foo + bar - 2.0) + foo
         */
 
         // -- RAW SYNTAX ---
 
+        // Raw tokens
         let raw_sym_lpr = Rc::new(RawSyntaxToken::with(TokenKind::Symbol(Symbol::LParen), "(".to_string()));
         let raw_idn_foo = Rc::new(RawSyntaxToken::with(TokenKind::Identifier, "foo".to_string()));
         let raw_sym_pls = Rc::new(RawSyntaxToken::with(TokenKind::Symbol(Symbol::Plus), "+".to_string()));
@@ -120,7 +120,7 @@ mod tests {
         let raw_sym_rpr = Rc::new(RawSyntaxToken::with(TokenKind::Symbol(Symbol::RParen), ")".to_string()));
         let raw_sym_ast = Rc::new(RawSyntaxToken::with(TokenKind::Symbol(Symbol::Asterisk), "*".to_string()));
 
-        // RAW `(foo + bar - 2.0)`
+        // Raw node `(foo + bar - 2.0)`
         let raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl =
             Rc::new(RawSyntaxNode {
                 kind: NodeKind::GroupedExpr,
@@ -135,7 +135,7 @@ mod tests {
                 ],
             });
 
-        // RAW `_ * _`
+        // Raw node `_ * _`
         let raw_bin_expr_grp_expr_sym_ast_grp_expr =
             Rc::new(RawSyntaxNode {
                 kind: NodeKind::BinaryExpr,
@@ -146,7 +146,7 @@ mod tests {
                 ],
             });
 
-        // RAW `_ + foo`
+        // Raw node `_ + foo`
         let raw_bin_expr_bin_expr_sym_pls_idn_foo =
             Rc::new(RawSyntaxNode {
                 kind: NodeKind::BinaryExpr,
@@ -159,6 +159,7 @@ mod tests {
 
         // -- CONCRETE SYNTAX ---
 
+        // Concrete tokens
         let con_sym_lpr_1 = Rc::new(SyntaxToken::with       (Rc::clone(&raw_sym_lpr), TextSpan::new( 0, 1)));
         let con_idn_foo_1 = Rc::new(SyntaxToken::with_trivia(Rc::clone(&raw_idn_foo), TextSpan::new( 1, 3), Vec::new(), vec![SyntaxTrivia::Space(1)]));
         let con_sym_pls_1 = Rc::new(SyntaxToken::with_trivia(Rc::clone(&raw_sym_pls), TextSpan::new( 5, 3), Vec::new(), vec![SyntaxTrivia::Space(1)]));
@@ -177,7 +178,7 @@ mod tests {
         let con_sym_pls_3 = Rc::new(SyntaxToken::with_trivia(Rc::clone(&raw_sym_pls), TextSpan::new(38, 1), Vec::new(), vec![SyntaxTrivia::Space(1)]));
         let con_idn_foo_3 = Rc::new(SyntaxToken::with       (Rc::clone(&raw_idn_foo), TextSpan::new(40, 3)));
 
-        // CON `(foo + bar - 2.0)` 1
+        // Concrete node `(foo + bar - 2.0)` 1
         let con_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl_1 =
             Rc::new(SyntaxNode {
                 raw: Rc::clone(&raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl),
@@ -193,7 +194,7 @@ mod tests {
                 ]
             });
 
-        // CON `(foo + bar - 2.0)` 2
+        // Concrete node  `(foo + bar - 2.0)` 2
         let con_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl_2 =
             Rc::new(SyntaxNode {
                 raw: Rc::clone(&raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl),
@@ -209,7 +210,7 @@ mod tests {
                 ]
             });
 
-        // CON `_ * _`
+        // Concrete node  `_ * _`
         let con_bin_expr_grp_expr_sym_ast_grp_expr_1 =
             Rc::new(SyntaxNode {
                 raw: Rc::clone(&raw_bin_expr_grp_expr_sym_ast_grp_expr),
@@ -221,7 +222,7 @@ mod tests {
                 ]
             });
 
-        // CON `_ + foo`
+        // Concrete node  `_ + foo`
         let con_bin_expr_bin_expr_sym_pls_idn_foo_1 =
             Rc::new(SyntaxNode {
                 // raw: Rc::clone(&raw_bin_expr_grp_expr_sym_ast_grp_expr),
@@ -241,8 +242,7 @@ mod tests {
     #[test]
     #[rustfmt::skip]
     fn test_syntax_node_nested_expr_trivia() {
-        // Test string:
-        /*
+        /* Test string:
         (  foo
         +bar -      2.0
         )*(
