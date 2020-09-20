@@ -62,6 +62,7 @@ macro_rules! make_token_fn {
     ($text:expr, $kind:expr, $name:ident) => {
         pub fn $name<V1, V2>(
             cache: &mut TokenCache,
+            start: usize,
             leading_trivia: V1,
             trailing_trivia: V2,
         ) -> SyntaxToken
@@ -73,7 +74,7 @@ macro_rules! make_token_fn {
                 cache,
                 $kind,
                 $text.to_string(),
-                TextSpan::new(0, $text.len()),
+                TextSpan::new(start, $text.len()),
                 leading_trivia.into().unwrap_or_default(),
                 trailing_trivia.into().unwrap_or_default(),
             )
@@ -144,6 +145,7 @@ impl SyntaxFactory {
 
     pub fn make_identifier<S, V1, V2>(
         cache: &mut TokenCache,
+        start: usize,
         identifier: S,
         leading_trivia: V1,
         trailing_trivia: V2,
@@ -160,7 +162,7 @@ impl SyntaxFactory {
             cache,
             TokenKind::Identifier,
             identifier,
-            TextSpan::new(0, identifier_len),
+            TextSpan::new(start, identifier_len),
             leading_trivia.into().unwrap_or_default(),
             trailing_trivia.into().unwrap_or_default(),
         )
@@ -168,6 +170,7 @@ impl SyntaxFactory {
 
     pub fn make_literal<S, V1, V2>(
         cache: &mut TokenCache,
+        start: usize,
         kind: Literal,
         literal: S,
         leading_trivia: V1,
@@ -185,7 +188,7 @@ impl SyntaxFactory {
             cache,
             TokenKind::Literal(kind),
             literal,
-            TextSpan::new(0, literal_len),
+            TextSpan::new(start, literal_len),
             leading_trivia.into().unwrap_or_default(),
             trailing_trivia.into().unwrap_or_default(),
         )
@@ -261,55 +264,31 @@ mod tests {
         let expr =
             SyntaxFactory::make_binary_expr(
                 SyntaxFactory::make_grouped_expr(
-                    SyntaxFactory::make_lparen_symbol(cache, None, None),
+                    SyntaxFactory::make_lparen_symbol(cache, 0, None, None),
                     SyntaxFactory::make_binary_expr(
                         SyntaxFactory::make_literal_expr(
-                            SyntaxFactory::make_literal(
-                                cache,
-                                Literal::Integer(Base::Decimal),
-                                "5",
-                                None,
-                                None
-                            ),
+                            SyntaxFactory::make_literal(cache, 1, Literal::Integer(Base::Decimal), "5", None, vec![SyntaxTrivia::Space(1)]),
                         ),
-                        SyntaxFactory::make_asterisk_symbol(cache, None, None),
+                        SyntaxFactory::make_asterisk_symbol(cache, 3, None, vec![SyntaxTrivia::Space(1)]),
                         SyntaxFactory::make_literal_expr(
-                            SyntaxFactory::make_literal(
-                                cache,
-                                Literal::Integer(Base::Decimal),
-                                "5",
-                                None,
-                                None
-                            ),
+                            SyntaxFactory::make_literal(cache, 5, Literal::Integer(Base::Decimal), "5", None, None),
                         ),
                     ),
-                    SyntaxFactory::make_rparen_symbol(cache, None, None),
+                    SyntaxFactory::make_rparen_symbol(cache, 6, None, vec![SyntaxTrivia::Space(1)]),
                 ),
-                SyntaxFactory::make_plus_symbol(cache, None, None),
+                SyntaxFactory::make_plus_symbol(cache, 8, None, vec![SyntaxTrivia::Space(1)]),
                 SyntaxFactory::make_grouped_expr(
-                    SyntaxFactory::make_lparen_symbol(cache, None, None),
+                    SyntaxFactory::make_lparen_symbol(cache, 10, None, None),
                     SyntaxFactory::make_binary_expr(
                         SyntaxFactory::make_literal_expr(
-                            SyntaxFactory::make_literal(
-                                cache,
-                                Literal::Integer(Base::Decimal),
-                                "5",
-                                None,
-                                None
-                            ),
+                            SyntaxFactory::make_literal(cache, 11, Literal::Integer(Base::Decimal), "5", None, vec![SyntaxTrivia::Space(1)]),
                         ),
-                        SyntaxFactory::make_asterisk_symbol(cache, None, None),
+                        SyntaxFactory::make_asterisk_symbol(cache, 13, None, vec![SyntaxTrivia::Space(1)]),
                         SyntaxFactory::make_literal_expr(
-                            SyntaxFactory::make_literal(
-                                cache,
-                                Literal::Integer(Base::Decimal),
-                                "5",
-                                None,
-                                None
-                            ),
+                            SyntaxFactory::make_literal(cache, 15, Literal::Integer(Base::Decimal), "5", None, None),
                         ),
                     ),
-                    SyntaxFactory::make_rparen_symbol(cache, None, None),
+                    SyntaxFactory::make_rparen_symbol(cache, 16, None, None),
                 ),
             );
 
@@ -322,19 +301,20 @@ mod tests {
     fn test_syntax_factory_function_declaration() {
         let cache = &mut TokenCache::new();
 
+        // fun add() = 1 + 1
         let fun_decl = SyntaxFactory::make_fun_decl(
-            SyntaxFactory::make_fun_keyword(cache, None, vec![SyntaxTrivia::Space(1)]),
-            SyntaxFactory::make_identifier(cache, "add", None, vec![SyntaxTrivia::Space(1)]),
-            SyntaxFactory::make_lparen_symbol(cache, None, vec![SyntaxTrivia::Space(1)]),
-            SyntaxFactory::make_rparen_symbol(cache, None, vec![SyntaxTrivia::Space(1)]),
-            SyntaxFactory::make_eq_symbol(cache, None, vec![SyntaxTrivia::Space(1)]),
+            SyntaxFactory::make_fun_keyword(cache, 0, None, vec![SyntaxTrivia::Space(1)]),
+            SyntaxFactory::make_identifier(cache, 4, "add", None, None),
+            SyntaxFactory::make_lparen_symbol(cache, 7, None, vec![SyntaxTrivia::Space(1)]),
+            SyntaxFactory::make_rparen_symbol(cache, 8, None, vec![SyntaxTrivia::Space(1)]),
+            SyntaxFactory::make_eq_symbol(cache, 10, None, vec![SyntaxTrivia::Space(1)]),
             SyntaxFactory::make_binary_expr(
                 SyntaxFactory::make_literal_expr(
-                    SyntaxFactory::make_literal(cache, Literal::Integer(Base::Decimal), "1", None, vec![SyntaxTrivia::Space(1)]),
+                    SyntaxFactory::make_literal(cache, 12, Literal::Integer(Base::Decimal), "1", None, vec![SyntaxTrivia::Space(1)]),
                 ),
-                SyntaxFactory::make_eq_symbol(cache, None, vec![SyntaxTrivia::Space(1)]),
+                SyntaxFactory::make_plus_symbol(cache, 16, None, vec![SyntaxTrivia::Space(1)]),
                 SyntaxFactory::make_literal_expr(
-                    SyntaxFactory::make_literal(cache, Literal::Integer(Base::Decimal), "1", None, None),
+                    SyntaxFactory::make_literal(cache, 16, Literal::Integer(Base::Decimal), "1", None, None),
                 ),
             ),
         );
