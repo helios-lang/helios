@@ -1,6 +1,5 @@
 use crate::source::TextSpan;
-use crate::tree::Syntax;
-use crate::tree::token::*;
+use crate::tree::{Syntax, RawSyntax};
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -21,6 +20,10 @@ impl SyntaxNode {
     /// The kind of the token.
     pub fn kind(&self) -> NodeKind {
         self.raw.kind.clone()
+    }
+
+    pub fn children(&self) -> impl Iterator<Item=&Syntax> {
+        (&self.children).into_iter()
     }
 
     /// The span of the node.
@@ -59,27 +62,55 @@ impl SyntaxNode {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RawSyntax {
-    Node(Rc<RawSyntaxNode>),
-    Token(Rc<RawSyntaxToken>),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct RawSyntaxNode {
-    kind: NodeKind,
-    children: Vec<RawSyntax>,
+    pub(crate) kind: NodeKind,
+    pub(crate) children: Vec<RawSyntax>,
+    pub(crate) combined_text_value: String,
 }
 
 impl RawSyntaxNode {
     /// Constructs a new `RawSyntaxNode` with a kind and children.
-    pub fn with(kind: NodeKind, children: Vec<RawSyntax>) -> Self {
+    pub fn with<V>(kind: NodeKind, children: V) -> Self
+    where
+        V: Into<Option<Vec<RawSyntax>>>
+    {
+        let children = children.into().unwrap_or_default();
+        let combined_text_value = Self::generate_combined_text_value(&children);
+
         Self {
             kind,
             children,
+            combined_text_value,
         }
     }
+
+    fn generate_combined_text_value(children: &Vec<RawSyntax>) -> String {
+        children
+            .iter()
+            .fold(String::new(), |mut acc, child| {
+                acc.push_str(&*child.combined_text_value());
+                acc
+            })
+            .to_string()
+    }
+
+    pub fn combined_text_value(&self) -> &String {
+        &self.combined_text_value
+    }
 }
+
+// impl Hash for RawSyntaxNode {
+//     fn hash<H: Hasher>(&self, state: &mut H) {
+//         self.kind.hash(state)
+//     }
+// }
+
+// impl Borrow<String> for RawSyntaxNode {
+//     fn borrow(&self) -> &String {
+//         &self.combined_text_value()
+//     }
+// }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum NodeKind {
@@ -126,6 +157,7 @@ pub(crate) fn print_syntax(syntax: &Syntax, level: usize) {
 
 #[cfg(test)]
 mod tests {
+    use crate::tree::token::*;
     use super::*;
 
     #[test]
@@ -151,9 +183,9 @@ mod tests {
 
         // Raw node `(foo + bar - 2.0)`
         let raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl =
-            Rc::new(RawSyntaxNode {
-                kind: NodeKind::GroupedExpr,
-                children: vec![
+            Rc::new(RawSyntaxNode::with(
+                NodeKind::GroupedExpr,
+                vec![
                     RawSyntax::Token(Rc::clone(&raw_sym_lpr)),
                     RawSyntax::Token(Rc::clone(&raw_idn_foo)),
                     RawSyntax::Token(Rc::clone(&raw_sym_pls)),
@@ -162,29 +194,44 @@ mod tests {
                     RawSyntax::Token(Rc::clone(&raw_lit_2fl)),
                     RawSyntax::Token(Rc::clone(&raw_sym_rpr)),
                 ],
-            });
+            ));
+
+        assert_eq!(
+            "(foo+bar-2.0)",
+            raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl.combined_text_value(),
+        );
 
         // Raw node `_ * _`
         let raw_bin_expr_grp_expr_sym_ast_grp_expr =
-            Rc::new(RawSyntaxNode {
-                kind: NodeKind::BinaryExpr,
-                children: vec![
+            Rc::new(RawSyntaxNode::with(
+                NodeKind::BinaryExpr,
+                vec![
                     RawSyntax::Node(Rc::clone(&raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl)),
                     RawSyntax::Token(Rc::clone(&raw_sym_ast)),
                     RawSyntax::Node(Rc::clone(&raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl)),
                 ],
-            });
+            ));
+
+        assert_eq!(
+            "(foo+bar-2.0)*(foo+bar-2.0)",
+            raw_bin_expr_grp_expr_sym_ast_grp_expr.combined_text_value(),
+        );
 
         // Raw node `_ + foo`
         let raw_bin_expr_bin_expr_sym_pls_idn_foo =
-            Rc::new(RawSyntaxNode {
-                kind: NodeKind::BinaryExpr,
-                children: vec![
+            Rc::new(RawSyntaxNode::with(
+                NodeKind::BinaryExpr,
+                vec![
                     RawSyntax::Node(Rc::clone(&raw_bin_expr_grp_expr_sym_ast_grp_expr)),
                     RawSyntax::Token(Rc::clone(&raw_sym_pls)),
                     RawSyntax::Token(Rc::clone(&raw_idn_foo)),
                 ],
-            });
+            ));
+
+        assert_eq!(
+            "(foo+bar-2.0)*(foo+bar-2.0)+foo",
+            raw_bin_expr_bin_expr_sym_pls_idn_foo.combined_text_value(),
+        );
 
         // -- CONCRETE SYNTAX ---
 
@@ -292,9 +339,9 @@ mod tests {
 
         // Raw node `(foo + bar - 2.0)`
         let raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl =
-            Rc::new(RawSyntaxNode {
-                kind: NodeKind::GroupedExpr,
-                children: vec![
+            Rc::new(RawSyntaxNode::with(
+                NodeKind::GroupedExpr,
+                vec![
                     RawSyntax::Token(Rc::clone(&raw_sym_lpr)),
                     RawSyntax::Token(Rc::clone(&raw_idn_foo)),
                     RawSyntax::Token(Rc::clone(&raw_sym_pls)),
@@ -303,29 +350,29 @@ mod tests {
                     RawSyntax::Token(Rc::clone(&raw_lit_2fl)),
                     RawSyntax::Token(Rc::clone(&raw_sym_rpr)),
                 ],
-            });
+            ));
 
         // Raw node `_ * _`
         let raw_bin_expr_grp_expr_sym_ast_grp_expr =
-            Rc::new(RawSyntaxNode {
-                kind: NodeKind::BinaryExpr,
-                children: vec![
+            Rc::new(RawSyntaxNode::with(
+                NodeKind::BinaryExpr,
+                vec![
                     RawSyntax::Node(Rc::clone(&raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl)),
                     RawSyntax::Token(Rc::clone(&raw_sym_ast)),
                     RawSyntax::Node(Rc::clone(&raw_grp_expr_idn_foo_sym_pls_idn_bar_sym_mns_lit_2fl)),
                 ],
-            });
+            ));
 
         // Raw node `_ + foo`
         let raw_bin_expr_bin_expr_sym_pls_idn_foo =
-            Rc::new(RawSyntaxNode {
-                kind: NodeKind::BinaryExpr,
-                children: vec![
+            Rc::new(RawSyntaxNode::with(
+                NodeKind::BinaryExpr,
+                vec![
                     RawSyntax::Node(Rc::clone(&raw_bin_expr_grp_expr_sym_ast_grp_expr)),
                     RawSyntax::Token(Rc::clone(&raw_sym_pls)),
                     RawSyntax::Token(Rc::clone(&raw_idn_foo)),
                 ],
-            });
+            ));
 
         // -- CONCRETE SYNTAX ---
 

@@ -1,4 +1,4 @@
-use crate::cache::TokenCache;
+use crate::cache::{Cache, TokenCache};
 use crate::errors::LexerError;
 use crate::source::{Cursor, TextSpan};
 use crate::tree::token::*;
