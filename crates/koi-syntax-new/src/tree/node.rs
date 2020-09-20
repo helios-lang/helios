@@ -66,7 +66,6 @@ impl SyntaxNode {
 pub struct RawSyntaxNode {
     pub(crate) kind: NodeKind,
     pub(crate) children: Vec<RawSyntax>,
-    pub(crate) combined_text_value: String,
 }
 
 impl RawSyntaxNode {
@@ -75,18 +74,14 @@ impl RawSyntaxNode {
     where
         V: Into<Option<Vec<RawSyntax>>>
     {
-        let children = children.into().unwrap_or_default();
-        let combined_text_value = Self::generate_combined_text_value(&children);
-
         Self {
             kind,
-            children,
-            combined_text_value,
+            children: children.into().unwrap_or_default(),
         }
     }
 
-    fn generate_combined_text_value(children: &Vec<RawSyntax>) -> String {
-        children
+    pub fn combined_text_value(&self) -> String {
+        self.children
             .iter()
             .fold(String::new(), |mut acc, child| {
                 acc.push_str(&*child.combined_text_value());
@@ -94,23 +89,7 @@ impl RawSyntaxNode {
             })
             .to_string()
     }
-
-    pub fn combined_text_value(&self) -> &String {
-        &self.combined_text_value
-    }
 }
-
-// impl Hash for RawSyntaxNode {
-//     fn hash<H: Hasher>(&self, state: &mut H) {
-//         self.kind.hash(state)
-//     }
-// }
-
-// impl Borrow<String> for RawSyntaxNode {
-//     fn borrow(&self) -> &String {
-//         &self.combined_text_value()
-//     }
-// }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum NodeKind {
