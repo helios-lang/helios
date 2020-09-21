@@ -148,6 +148,7 @@ impl SyntaxFactory {
 impl SyntaxFactory {
     // KEYWORDS
     make_token_fn!(keyword => "fun",    Fun,     make_fun_keyword);
+    make_token_fn!(keyword => "let",    Let,     make_let_keyword);
     make_token_fn!(keyword => "struct", Struct,  make_struct_keyword);
     make_token_fn!(keyword => "type",   Type,    make_type_keyword);
 
