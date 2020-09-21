@@ -183,7 +183,7 @@ impl NodeId {
     /// # Examples
     ///
     /// ```rust
-    /// # use crate::isaac::{Arena, NodeId};
+    /// # use crate::koi_arena::{Arena, NodeId};
     /// let mut arena = &mut Arena::new();
     /// let root_node = arena.insert("1");
     /// let second_node = arena.insert("2");
@@ -217,7 +217,7 @@ impl NodeId {
     /// # Examples
     ///
     /// ```rust
-    /// # use crate::isaac::{Arena, NodeId};
+    /// # use crate::koi_arena::{Arena, NodeId};
     /// let arena = &mut Arena::new();
     /// let root_node = arena.insert("1");
     /// let second_node = arena.insert("2");
@@ -233,7 +233,7 @@ impl NodeId {
     /// in question, allowing methods to be chained in a readable fashion.
     ///
     /// ```rust
-    /// # use crate::isaac::{Arena, NodeId};
+    /// # use crate::koi_arena::{Arena, NodeId};
     /// let arena = &mut Arena::new();
     /// let root_node = arena.insert("1");
     /// let second_node = arena.insert("2");
