@@ -11,7 +11,7 @@ impl ToSyntax for FunKeyword {
                 Rc::new(SyntaxToken::with_trivia(
                     builder.cache.lookup(&"fun".to_string(), |text| {
                         Rc::new(RawSyntaxToken::with(
-                            TokenKind::Symbol(Symbol::Eq),
+                            TokenKind::Keyword(Keyword::Fun),
                             text,
                         ))
                     }),
@@ -67,6 +67,72 @@ impl ToSyntax for EqualSymbol {
 // ---
 
 crate::make_token_constructor! {
+    LparenSymbol {}
+}
+
+impl ToSyntax for LparenSymbol {
+    fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
+        let syntax = (|builder: &mut SyntaxBuilder| {
+            Syntax::Token(
+                Rc::new(SyntaxToken::with_trivia(
+                    builder.cache.lookup(&"(".to_string(), |text| {
+                        Rc::new(RawSyntaxToken::with(
+                            TokenKind::Symbol(Symbol::LParen),
+                            text,
+                        ))
+                    }),
+                    TextSpan::new(self.start, 1),
+                    self.leading_trivia.0.clone(),
+                    self.trailing_trivia.0.clone(),
+                ))
+            )
+        })(builder);
+
+        let node = builder.arena.insert(syntax.clone());
+        if let Some(parent) = self.parent {
+            parent.add_child(builder.arena, node);
+        }
+
+        syntax
+    }
+}
+
+// ---
+
+crate::make_token_constructor! {
+    RparenSymbol {}
+}
+
+impl ToSyntax for RparenSymbol {
+    fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
+        let syntax = (|builder: &mut SyntaxBuilder| {
+            Syntax::Token(
+                Rc::new(SyntaxToken::with_trivia(
+                    builder.cache.lookup(&")".to_string(), |text| {
+                        Rc::new(RawSyntaxToken::with(
+                            TokenKind::Symbol(Symbol::RParen),
+                            text,
+                        ))
+                    }),
+                    TextSpan::new(self.start, 1),
+                    self.leading_trivia.0.clone(),
+                    self.trailing_trivia.0.clone(),
+                ))
+            )
+        })(builder);
+
+        let node = builder.arena.insert(syntax.clone());
+        if let Some(parent) = self.parent {
+            parent.add_child(builder.arena, node);
+        }
+
+        syntax
+    }
+}
+
+// ---
+
+crate::make_token_constructor! {
     Identifier {
         text: String,
     }
@@ -79,7 +145,7 @@ impl ToSyntax for Identifier {
                 Rc::new(SyntaxToken::with_trivia(
                     builder.cache.lookup(&self.text.to_string(), |text| {
                         Rc::new(RawSyntaxToken::with(
-                            TokenKind::Symbol(Symbol::Eq),
+                            TokenKind::Identifier,
                             text,
                         ))
                     }),
@@ -100,29 +166,3 @@ impl ToSyntax for Identifier {
 }
 
 // ---
-
-// #[test]
-// fn test_token_equal_symbol() {
-//     let mut arena = Arena::new();
-//     let mut cache = TokenCache::new();
-//     let mut builder = SyntaxBuilder::new(&mut arena, &mut cache);
-
-//     let syntax = SF::make_function_declaration(None)
-//         .fun_keyword(|parent| {
-//             SF::make_fun_keyword(parent)
-//                 .start(0)
-//                 .trailing_trivia(SyntaxTrivia::Space(1))
-//         })
-//         .identifier(|parent| {
-//             SF::make_identifier(parent)
-//                 .start(4)
-//                 .text("add")
-//                 .trailing_trivia(SyntaxTrivia::Space(1))
-//         })
-//         .equal_symbol(|parent| {
-//             SF::make_equal_symbol(parent)
-//                 .start(5)
-//         });
-
-//     print_syntax(&syntax.to_syntax(&mut builder), 0);
-// }
