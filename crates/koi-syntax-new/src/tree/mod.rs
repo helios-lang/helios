@@ -3,6 +3,7 @@ pub mod factory_new;
 pub mod node;
 pub mod token;
 
+use crate::source::TextSpan;
 use node::*;
 use token::*;
 use std::rc::Rc;
@@ -40,6 +41,20 @@ impl Syntax {
         match self {
             Self::Node(node) => Box::new(node.children()),
             Self::Token(_) => Box::new(std::iter::empty()),
+        }
+    }
+
+    pub fn span(&self) -> TextSpan {
+        match self {
+            Self::Node(node) => node.span(),
+            Self::Token(token) => token.span(),
+        }
+    }
+
+    pub fn full_span(&self) -> TextSpan {
+        match self {
+            Self::Node(node) => node.full_span(),
+            Self::Token(token) => token.full_span(),
         }
     }
 }

@@ -1,6 +1,3 @@
-// #![allow(dead_code)]
-// #![allow(unused_variables)]
-
 use crate::cache::{Cache, TokenCache};
 use crate::source::TextSpan;
 use crate::tree::{RawSyntax, Syntax};
@@ -27,7 +24,7 @@ impl From<Vec<SyntaxTrivia>> for SyntaxTriviaList {
 pub type SF = SyntaxFactory;
 
 pub trait ToSyntax {
-    fn to_syntax(&self, builder: SyntaxBuilder) -> Syntax;
+    fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax;
 }
 
 pub struct SyntaxBuilder<'arena, 'cache> {
@@ -44,13 +41,13 @@ impl<'arena, 'cache> SyntaxBuilder<'arena, 'cache> {
 pub struct SyntaxFactory;
 
 impl SyntaxFactory {
-    pub fn construct<F, S>(arena: &mut Arena<Syntax>, cache: &mut TokenCache, constructor: F) -> Syntax
+    pub fn build_syntax<F, S>(arena: &mut Arena<Syntax>, cache: &mut TokenCache, constructor: F) -> Syntax
     where
-        F: FnOnce(Option<NodeId>) -> S,
+        F: FnOnce() -> S,
         S: ToSyntax,
     {
-        let builder = SyntaxBuilder::new(arena, cache);
-        let syntax = constructor(None).to_syntax(builder);
+        let mut builder = SyntaxBuilder::new(arena, cache);
+        let syntax = constructor().to_syntax(&mut builder);
         arena.insert(syntax.clone());
         syntax
     }
@@ -68,7 +65,7 @@ impl SyntaxFactory {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FunctionDeclaration {
     parent: Option<NodeId>,
     fun_keyword: Option<FunKeyword>,
@@ -84,6 +81,7 @@ impl FunctionDeclaration {
     where
         F: FnOnce(Option<NodeId>) -> FunKeyword,
     {
+        assert!(self.fun_keyword == None, "Already constructed fun_keyword");
         self.fun_keyword = Some(constructor(self.parent));
         self
     }
@@ -92,15 +90,22 @@ impl FunctionDeclaration {
     where
         F: FnOnce(Option<NodeId>) -> Identifier,
     {
+        assert!(self.identifier == None, "Already constructed identifier");
         self.identifier = Some(constructor(self.parent));
         self
     }
 }
 
 impl ToSyntax for FunctionDeclaration {
-    fn to_syntax(&self, builder: SyntaxBuilder) -> Syntax {
+    fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
         let fun_keyword = self.fun_keyword.clone().unwrap();
         let identifier = self.identifier.clone().unwrap();
+
+        // Expect identifier to be at least after where fun_keyword starts
+        assert!(
+            identifier.start > fun_keyword.start,
+            "in FunctionDeclaration: Identifier must follow FunKeyword"
+        );
 
         let raw_fun_keyword = builder.cache.lookup(&"fun".to_string(), |text| {
             Rc::new(RawSyntaxToken::with(TokenKind::Keyword(Keyword::Fun), text))
@@ -120,22 +125,8 @@ impl ToSyntax for FunctionDeclaration {
                     ]
                 )),
                 vec![
-                    Syntax::Token(
-                        Rc::new(SyntaxToken::with_trivia(
-                            raw_fun_keyword.clone(),
-                            TextSpan::new(fun_keyword.start, 3),
-                            fun_keyword.leading_trivia.0,
-                            fun_keyword.trailing_trivia.0,
-                        ))
-                    ),
-                    Syntax::Token(
-                        Rc::new(SyntaxToken::with_trivia(
-                            raw_identifier.clone(),
-                            TextSpan::new(0, 0),
-                            identifier.leading_trivia.0,
-                            identifier.trailing_trivia.0,
-                        ))
-                    ),
+                    fun_keyword.to_syntax(builder),
+                    identifier.to_syntax(builder),
                 ]
             ))
         );
@@ -150,7 +141,7 @@ impl ToSyntax for FunctionDeclaration {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct FunKeyword {
     parent: Option<NodeId>,
     start: usize,
@@ -186,7 +177,7 @@ impl FunKeyword {
 }
 
 impl ToSyntax for FunKeyword {
-    fn to_syntax(&self, builder: SyntaxBuilder) -> Syntax {
+    fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
         let text = "fun".to_string();
         let text_len = text.len();
 
@@ -213,7 +204,7 @@ impl ToSyntax for FunKeyword {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Identifier {
     parent: Option<NodeId>,
     start: usize,
@@ -258,7 +249,7 @@ impl Identifier {
 }
 
 impl ToSyntax for Identifier {
-    fn to_syntax(&self, builder: SyntaxBuilder) -> Syntax {
+    fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
         let syntax = Syntax::Token(
             Rc::new(SyntaxToken::with_trivia(
                 builder.cache.lookup(&self.text, |_| {
@@ -288,8 +279,8 @@ fn test_builder() {
     let cache = &mut TokenCache::new();
 
     let fun_decl =
-        SF::construct(arena, cache, |root| {
-            SF::make_function_declaration(root)
+        SF::build_syntax(arena, cache, || {
+            SF::make_function_declaration(None)
                 .fun_keyword(|parent| {
                     SF::make_fun_keyword(parent)
                         .start(0)
@@ -304,4 +295,5 @@ fn test_builder() {
         });
 
     print_syntax(&fun_decl, 0);
+    println!("{}", fun_decl.full_span())
 }
