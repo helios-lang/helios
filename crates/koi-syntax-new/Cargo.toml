@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 koi-arena = { version = "0.1.0", path = "../koi-arena" }
+paste = "1.0.1"
 unicode-xid = "0.2.0"
