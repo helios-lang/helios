@@ -72,7 +72,7 @@ crate::make_token_constructor! {
 
 impl ToSyntax for LparenSymbol {
     fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
-        let syntax = (|builder: &mut SyntaxBuilder| {
+        let syntax =
             Syntax::Token(
                 Rc::new(SyntaxToken::with_trivia(
                     builder.cache.lookup(&"(".to_string(), |text| {
@@ -85,8 +85,7 @@ impl ToSyntax for LparenSymbol {
                     self.leading_trivia.0.clone(),
                     self.trailing_trivia.0.clone(),
                 ))
-            )
-        })(builder);
+            );
 
         let node = builder.arena.insert(syntax.clone());
         if let Some(parent) = self.parent {

@@ -93,4 +93,5 @@ fn test_builder() {
         });
 
     print_syntax(&fun_decl, 0);
+    println!("{:#?}", arena);
 }
