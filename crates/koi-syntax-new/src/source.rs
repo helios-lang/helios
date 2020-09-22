@@ -23,7 +23,7 @@ impl TextSpan {
         assert! {
             end >= start,
             format! {
-                "end position of TextSpan ({}) must not be less than its start \
+                "TextSpan end position ({}) must not be less than its start \
                  position ({})",
                 end,
                 start,
