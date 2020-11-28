@@ -1,9 +1,10 @@
 {
-  "editor.tabSize": 4,
-  "editor.snippetSuggestions": "none",
-  "editor.rulers": [80, 120],
-  "rust-analyzer.inlayHints.parameterHints": false,
   "editor.fontFamily": "'JetBrains Mono', 'IBM Plex Mono', Menlo, Monaco, 'Courier New', monospace",
+  "editor.formatOnSave": true,
+  "editor.rulers": [80, 120],
+  "editor.snippetSuggestions": "none",
+  "editor.tabSize": 4,
   "rust-analyzer.inlayHints.enable": false,
+  "rust-analyzer.inlayHints.parameterHints": false,
   "rust-analyzer.lens.implementations": false,
 }
