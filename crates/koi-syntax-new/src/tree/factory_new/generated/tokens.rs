@@ -1,17 +1,17 @@
 use super::*;
 
 crate::make_token_constructor! {
-    FunKeyword {}
+    FunctionKeyword {}
 }
 
-impl ToSyntax for FunKeyword {
+impl ToSyntax for FunctionKeyword {
     fn to_syntax(&self, builder: &mut SyntaxBuilder) -> Syntax {
         let syntax = (|builder: &mut SyntaxBuilder| {
             Syntax::Token(
                 Rc::new(SyntaxToken::with_trivia(
-                    builder.cache.lookup(&"fun".to_string(), |text| {
+                    builder.cache.lookup(&"function".to_string(), |text| {
                         Rc::new(RawSyntaxToken::with(
-                            TokenKind::Keyword(Keyword::Fun),
+                            TokenKind::Keyword(Keyword::Function),
                             text,
                         ))
                     }),

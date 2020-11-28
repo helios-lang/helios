@@ -68,15 +68,15 @@ impl SyntaxToken {
     /// A token's full span is it's normal span, plus the span of any leading
     /// and trailing trivia it may have.
     pub fn full_span(&self) -> TextSpan {
-        let leading_trivia_len =
-            self.leading_trivia
-                .iter()
-                .fold(0, |acc, trivia| trivia.len() + acc);
+        let leading_trivia_len = self
+            .leading_trivia
+            .iter()
+            .fold(0, |acc, trivia| trivia.len() + acc);
 
-        let trailing_trivia_len =
-            self.trailing_trivia
-                .iter()
-                .fold(0, |acc, trivia| trivia.len() + acc);
+        let trailing_trivia_len = self
+            .trailing_trivia
+            .iter()
+            .fold(0, |acc, trivia| trivia.len() + acc);
 
         TextSpan::from_bounds(
             self.span().start() - leading_trivia_len,
@@ -182,37 +182,32 @@ impl SyntaxTrivia {
 #[rustfmt::skip]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Keyword {
+    Alias,
     And,
     As,
-    Case,
     Const,
     Else,
-    Enum,
     Extend,
     External,           // not reserved
     For,
-    Fun,
-    Get,                // not reserved
+    Function,
     If,
+    Import,
     In,
+    Interface,
     Internal,           // not reserved
     Let,
     Match,
     Module,
     Not,
     Of,
-    Operator,           // not reserved
     Or,
-    Pub,
+    Public,
     Ref,
     Return,
-    Set,                // not reserved
-    Struct,
     Take,               // not reserved
-    Trait,
     Type,
     Unimplemented,
-    Using,
     Var,
     Where,
     While,
@@ -222,11 +217,10 @@ pub enum Keyword {
 impl Keyword {
     pub fn keyword_list() -> Vec<String> {
         vec![
-            "and", "as", "case", "const", "else", "enum", "extend", "external",
-            "for", "fun", "get", "if", "in", "internal", "let", "match",
-            "module", "not", "of", "operator", "or", "pub", "ref", "return",
-            "set", "struct", "take", "trait", "type", "using", "var", "where",
-            "while", "with",
+            "alias", "and", "as", "const", "else", "extend", "external", "for",
+            "function", "if", "import", "in", "internal", "let", "match",
+            "module", "not", "of", "or", "public", "ref", "return", "type",
+            "var", "where", "while", "with",
         ]
         .into_iter()
         .map(String::from)

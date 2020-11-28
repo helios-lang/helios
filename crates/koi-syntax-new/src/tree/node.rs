@@ -98,7 +98,7 @@ pub enum NodeKind {
     LiteralExpr,
     UnaryExpr,
 
-    FunDecl,
+    FunctionDecl,
     StructDecl,
     TopLevelDecl,
 }
@@ -108,7 +108,7 @@ pub enum NodeKind {
 pub(crate) fn print_syntax(syntax: &Syntax, level: usize) {
     match syntax {
         Syntax::Token(token) => {
-            println!("{}- TOK {:p} is {:p} => {:?} @{} (@{})",
+            println!("{}- TOK {:p} ({:p}) => {:?} @{} (@{})",
                 "    ".repeat(level),
                 token,
                 token.raw,
@@ -118,7 +118,7 @@ pub(crate) fn print_syntax(syntax: &Syntax, level: usize) {
             );
         },
         Syntax::Node(node) => {
-            println!("{}- NOD {:p} is {:p} => {:?} @{} (@{})",
+            println!("{}- NOD {:p} ({:p}) => {:?} @{} (@{})",
                 "    ".repeat(level),
                 node,
                 node.raw,

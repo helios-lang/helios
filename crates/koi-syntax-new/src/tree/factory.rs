@@ -147,20 +147,19 @@ impl SyntaxFactory {
 // TOKENS
 impl SyntaxFactory {
     // KEYWORDS
-    make_token_fn!(keyword => "fun",    Fun,     make_fun_keyword);
-    make_token_fn!(keyword => "let",    Let,     make_let_keyword);
-    make_token_fn!(keyword => "struct", Struct,  make_struct_keyword);
-    make_token_fn!(keyword => "type",   Type,    make_type_keyword);
+    make_token_fn!(keyword => "function",   Function,   make_fun_keyword);
+    make_token_fn!(keyword => "let",        Let,        make_let_keyword);
+    make_token_fn!(keyword => "type",       Type,       make_type_keyword);
 
     // SYMBOLS
-    make_token_fn!(symbol  => "*",      Asterisk,make_asterisk_symbol);
-    make_token_fn!(symbol  => "=",      Eq,      make_eq_symbol);
-    make_token_fn!(symbol  => "-",      Minus,   make_minus_symbol);
-    make_token_fn!(symbol  => "+",      Plus,    make_plus_symbol);
-    make_token_fn!(symbol  => "{",      LBrace,  make_lbrace_symbol);
-    make_token_fn!(symbol  => "}",      RBrace,  make_rbrace_symbol);
-    make_token_fn!(symbol  => "(",      LParen,  make_lparen_symbol);
-    make_token_fn!(symbol  => ")",      RParen,  make_rparen_symbol);
+    make_token_fn!(symbol  => "*",  Asterisk,   make_asterisk_symbol);
+    make_token_fn!(symbol  => "=",  Eq,         make_eq_symbol);
+    make_token_fn!(symbol  => "-",  Minus,      make_minus_symbol);
+    make_token_fn!(symbol  => "+",  Plus,       make_plus_symbol);
+    make_token_fn!(symbol  => "{",  LBrace,     make_lbrace_symbol);
+    make_token_fn!(symbol  => "}",  RBrace,     make_rbrace_symbol);
+    make_token_fn!(symbol  => "(",  LParen,     make_lparen_symbol);
+    make_token_fn!(symbol  => ")",  RParen,     make_rparen_symbol);
 }
 
 // NODES
@@ -185,8 +184,8 @@ impl SyntaxFactory {
     );
 
     // DECLARATIONS
-    create_make_node_function!(FunDecl, make_fun_decl,
-        fun_keyword: SyntaxToken,
+    create_make_node_function!(FunctionDecl, make_function_decl,
+        function_keyword: SyntaxToken,
         fun_identifier: SyntaxToken,
         lparen_symbol: SyntaxToken,
         rparen_symbol: SyntaxToken,
@@ -210,6 +209,7 @@ mod tests {
     #[test]
     #[rustfmt::skip]
     fn test_syntax_factory_nested_binary_expression() {
+        let now = std::time::Instant::now();
         let cache = &mut TokenCache::new();
 
         // (5 * 5) + (5 * 5)
@@ -306,17 +306,20 @@ mod tests {
                 ),
             );
 
+        let elapsed = now.elapsed();
         let root = Syntax::Node(Rc::new(expr));
         print_syntax(&root, 0);
+        println!("Elapsed: {:?}", elapsed);
     }
 
     #[test]
     #[rustfmt::skip]
     fn test_syntax_factory_function_declaration() {
+        let now = std::time::Instant::now();
         let cache = &mut TokenCache::new();
 
-        // fun add() = 1 + 1
-        let fun_decl = SyntaxFactory::make_fun_decl(
+        // function add() = 1 + 1
+        let function_decl = SyntaxFactory::make_function_decl(
             SyntaxFactory::make_fun_keyword(
                 cache,
                 0,
@@ -378,7 +381,9 @@ mod tests {
             ),
         );
 
-        let root = Syntax::Node(Rc::new(fun_decl));
+        let elapsed = now.elapsed();
+        let root = Syntax::Node(Rc::new(function_decl));
         print_syntax(&root, 0);
+        println!("Elapsed: {:?}", elapsed);
     }
 }

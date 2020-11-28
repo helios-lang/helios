@@ -59,15 +59,16 @@ impl SyntaxFactory {
 
 #[test]
 fn test_builder() {
+    let now = std::time::Instant::now();
     let arena = &mut Arena::new();
     let cache = &mut TokenCache::new();
 
-    // fun add() = ???
+    // function add() = ???
     let fun_decl =
         SF::build_syntax(arena, cache, || {
             SF::make_function_declaration(None)
-                .fun_keyword(|parent| {
-                    SF::make_fun_keyword(parent)
+                .function_keyword(|parent| {
+                    SF::make_function_keyword(parent)
                         .start(0)
                         .trailing_trivia(SyntaxTrivia::Space(1))
                 })
@@ -92,6 +93,8 @@ fn test_builder() {
                 })
         });
 
+    let elapsed = now.elapsed();
     print_syntax(&fun_decl, 0);
     println!("{:#?}", arena);
+    println!("Elapsed: {:?}", elapsed);
 }
