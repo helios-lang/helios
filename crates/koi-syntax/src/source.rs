@@ -1,179 +1,94 @@
-use std::fmt::{self, Debug, Display};
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Result, Stdin};
-use std::path::PathBuf;
+use std::fmt::{self, Display};
 use std::vec::IntoIter;
 
 pub const EOF_CHAR: char = '\0';
 
-#[derive(Copy, Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Position {
-    pub line: usize,
-    pub column: usize,
-    pub offset: usize,
+/// Describes the start offset and length of a given node, token or trivia.
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct TextSpan {
+    start: usize,
+    length: usize,
 }
 
-impl Position {
-    pub fn new(line: usize, column: usize, offset: usize) -> Self {
-        Self {
-            line,
-            column,
-            offset,
-        }
+impl TextSpan {
+    /// Creates a new `TextSpan` with the given start offset and length.
+    pub fn new(start: usize, length: usize) -> Self {
+        Self { start, length }
     }
 
-    pub fn advance(&mut self) {
-        self.column += 1;
-        self.offset += 1;
-    }
-
-    pub fn advance_line(&mut self) {
-        self.line += 1;
-        self.column = 0;
-        self.offset += 1;
-    }
-}
-
-impl Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.line, self.column)
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Span {
-    pub start: Position,
-    pub end: Position,
-}
-
-impl Span {
-    pub fn new(start: Position, end: Position) -> Self {
+    /// Creates a new `TextSpan` within the bounds of the given start and end
+    /// offsets. This function will assert that the end position is equal to or
+    /// greater than the start position.
+    pub fn from_bounds(start: usize, end: usize) -> Self {
         assert! {
             end >= start,
             format! {
-                "start position of Span ({}) must not be greater than its end position ({})",
-                start,
+                "TextSpan end position ({}) must not be less than its start \
+                 position ({})",
                 end,
+                start,
             }
         }
 
-        Self { start, end }
+        let length = end - start;
+        Self { start, length }
     }
 
-    pub fn zero_width(position: Position) -> Self {
-        Self::new(position, position)
+    /// Creates a new `TextSpan` that covers the boundaries of the `TextSpan`s.
+    ///
+    /// The new `TextSpan` will start from the start offset of the first
+    /// `TextSpan` and end at the end offset of the second `TextSpan`.
+    pub fn from_spans(start: Self, end: Self) -> Self {
+        Self::from_bounds(start.start(), end.end())
     }
 
-    pub fn from_bounds(first: Self, second: Self) -> Self {
-        assert! {
-            second.end >= first.start,
-            format! {
-                "illegal bounds of Span: start = {}, end = {}",
-                first.start,
-                second.end,
-            }
-        }
+    /// Creates a new zero-width `TextSpan` (for spanning items that have a
+    /// length of 0).
+    pub fn zero_width(start: usize) -> Self {
+        Self::new(start, 0)
+    }
 
-        Self {
-            start: first.start,
-            end: second.end,
-        }
+    /// The start position of the given spanning item.
+    ///
+    /// This offset is a zero-based UTF-8 character index into the source text.
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
+    /// The length of the given spanning item.
+    pub fn length(&self) -> usize {
+        self.length
+    }
+
+    /// The end position of the given spanning item.
+    pub fn end(&self) -> usize {
+        self.start + self.length
     }
 }
 
-impl Display for Span {
+impl Display for TextSpan {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}..{}", self.start, self.end)
-    }
-}
-
-#[derive(Copy, Clone)]
-pub enum SourceType {
-    File,
-    Stdin,
-    Stream,
-}
-
-pub struct Source<'a> {
-    pub source_type: SourceType,
-    pub file_name: Option<PathBuf>,
-    input: Box<dyn BufRead + 'a>,
-}
-
-impl<'a> Source<'a> {
-    pub fn stdin(stdin: &'a Stdin) -> Result<Self> {
-        Ok(Self {
-            source_type: SourceType::Stdin,
-            file_name: None,
-            input: Box::new(stdin.lock()),
-        })
-    }
-
-    pub fn file<P: Into<PathBuf> + Clone>(path: P) -> Result<Self> {
-        File::open(path.clone().into()).map(|file| Self {
-            source_type: SourceType::File,
-            file_name: Some(path.into()),
-            input: Box::new(BufReader::new(file)),
-        })
-    }
-
-    pub fn stream(input: &'a mut dyn BufRead) -> Result<Self> {
-        Ok(Self {
-            source_type: SourceType::Stream,
-            file_name: None,
-            input: Box::new(input),
-        })
-    }
-}
-
-impl<'a> Read for Source<'a> {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.input.read(buf)
-    }
-}
-
-impl<'a> BufRead for Source<'a> {
-    fn fill_buf(&mut self) -> Result<&[u8]> {
-        self.input.fill_buf()
-    }
-
-    fn consume(&mut self, amt: usize) {
-        self.input.consume(amt);
+        write!(f, "{}..{}", self.start, self.end())
     }
 }
 
 pub(crate) struct Cursor {
     chars: IntoIter<char>,
-    pub(crate) pos: Position,
+    pub(crate) pos: usize,
 }
 
 impl Cursor {
-    pub(crate) fn with(mut source: Source) -> Self {
-        let mut buffer = String::new();
-        let chars = match source.read_to_string(&mut buffer) {
-            Ok(0) => None,
-            Ok(_) => Some(buffer.chars().collect::<Vec<_>>().into_iter()),
-            Err(error) => {
-                eprintln!("Failed to read line: {}", error);
-                None
-            }
-        };
-
+    pub(crate) fn new(source: String) -> Self {
         Self {
-            chars: chars.unwrap_or(Vec::new().into_iter()),
-            pos: Position::default(),
+            chars: source.chars().collect::<Vec<_>>().into_iter(),
+            pos: 0,
         }
     }
 
     /// Advances to the next character in the iterator.
     pub(crate) fn advance(&mut self) -> Option<char> {
         self.chars.next().map(|next_char| {
-            if next_char == '\n' {
-                self.pos.advance_line();
-            } else {
-                self.pos.advance();
-            }
-
+            self.pos += 1;
             next_char
         })
     }
