@@ -1,6 +1,4 @@
-use koi_syntax_old::source::Source;
-use koi_syntax_old::Ast;
+use koi_syntax::source::Source;
 
-pub fn parse<'a>(source: Source<'a>) -> Ast {
-    koi_syntax_old::parse(source)
-}
+#[allow(unused_variables)]
+pub fn parse<'a>(source: Source<'a>) {}

@@ -1,3 +1,6 @@
+pub mod source;
+pub mod lexer;
+
 #[cfg(test)]
 mod tests {
     #[test]
