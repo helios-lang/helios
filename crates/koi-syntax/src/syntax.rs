@@ -117,7 +117,8 @@ pub enum SyntaxKind {
     Lit_String,
 
     Exp_Binary,
-    Exp_Unary,
+    Exp_UnaryPrefix,
+    Exp_UnaryPostfix,
 
     LineComment,
     LineDocComment,

@@ -3,42 +3,47 @@ use crate::syntax::SyntaxKind;
 
 /// Determines the prefix binding power of the given token. Currently, the only
 /// legal prefix symbols are `SyntaxKind::Sym_Minus` and `SyntaxKind::Sym_Bang`.
-#[allow(dead_code)]
-fn prefix_binding_power(token: SyntaxKind) -> Option<u8> {
+fn prefix_binding_power(token: SyntaxKind) -> ((), u8) {
     use crate::Sym as S;
-    let power = match token {
-        S!["-"] | S!["!"] => 9,
-        _ => return None,
-    };
-
-    Some(power)
+    match token {
+        S!["-"] | S!["!"] => ((), 11),
+        _ => panic!("Bad prefix operator: {:?}", token),
+    }
 }
 
 /// Determines the infix binding power of the given token. A higher binding
 /// power means higher precedence, meaning that it is more likely to hold onto
 /// its adjacent operands.
-fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
+fn infix_binding_power(token: SyntaxKind) -> (u8, u8) {
     use crate::Sym as S;
-    let power = match token {
+    match token {
         S![";"] => (1, 2),
         S!["<-"] => (3, 2),
         S!["="] | S!["!="] => (4, 3),
         S!["<"] | S![">"] | S!["<="] | S![">="] => (5, 6),
         S!["+"] | S!["-"] => (7, 8),
         S!["*"] | S!["/"] => (9, 10),
-        _ => return None,
-    };
-
-    Some(power)
+        _ => panic!("Bad infix operator: {:?}", token),
+    }
 }
 
-pub fn parse_expr(parser: &mut Parser, min_binding_power: u8) {
+pub fn parse_expr(parser: &mut Parser, min_bp: u8) {
     let checkpoint = parser.checkpoint();
 
     match parser.peek() {
         Some(SyntaxKind::Lit_Integer) | Some(SyntaxKind::Identifier) => {
             parser.bump()
-        }
+        },
+        Some(op @ SyntaxKind::Sym_Minus) | Some(op @ SyntaxKind::Sym_Bang) => {
+            let ((), right_bp) = prefix_binding_power(op);
+
+            // Consume the operator token.
+            parser.bump();
+
+            parser.start_node_at(checkpoint, SyntaxKind::Exp_UnaryPrefix);
+            parse_expr(parser, right_bp);
+            parser.finish_node();
+        },
         _ => {}
     }
 
@@ -48,24 +53,17 @@ pub fn parse_expr(parser: &mut Parser, min_binding_power: u8) {
             _ => break,
         };
 
-        if let Some((left_binding_pow, right_binding_pow)) =
-            infix_binding_power(op)
-        {
-            if left_binding_pow < min_binding_power {
-                return;
-            }
-
-            // Eat the operator's token.
-            parser.bump();
-
-            parser.start_node_at(checkpoint, SyntaxKind::Exp_Binary);
-            parse_expr(parser, right_binding_pow);
-            parser.finish_node();
-
-            continue;
+        let (left_bp, right_bp) = infix_binding_power(op);
+        if left_bp < min_bp {
+            return;
         }
 
-        break;
+        // Consume the operator token.
+        parser.bump();
+
+        parser.start_node_at(checkpoint, SyntaxKind::Exp_Binary);
+        parse_expr(parser, right_bp);
+        parser.finish_node();
     }
 }
 
@@ -91,6 +89,33 @@ Root@0..3
             expect![[r#"
 Root@0..7
   Identifier@0..7 "counter""#]],
+        );
+    }
+
+    #[test]
+    fn test_unary_prefix_expression_simple() {
+        check(
+            "-10",
+            expect![[r#"
+Root@0..3
+  Exp_UnaryPrefix@0..3
+    Sym_Minus@0..1 "-"
+    Lit_Integer@1..3 "10""#]],
+        );
+    }
+
+    #[test]
+    fn test_parse_with_proper_binding_powers() {
+        check(
+            "-10+20",
+            expect![[r#"
+Root@0..6
+  Exp_Binary@0..6
+    Exp_UnaryPrefix@0..3
+      Sym_Minus@0..1 "-"
+      Lit_Integer@1..3 "10"
+    Sym_Plus@3..4 "+"
+    Lit_Integer@4..6 "20""#]],
         );
     }
 
@@ -143,5 +168,11 @@ Root@0..7
     Sym_Minus@5..6 "-"
     Lit_Integer@6..7 "4""#]],
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "Bad infix operator: Sym_Question")]
+    fn test_parse_bad_operator() {
+        check("10?20$a", expect![[]]);
     }
 }
