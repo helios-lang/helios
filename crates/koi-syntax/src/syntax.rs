@@ -121,7 +121,7 @@ impl SyntaxKind {
         }
     }
 
-    pub fn symbol_composed_from(first: char, second: char) -> Option<Self> {
+    pub fn symbol_from_chars(first: char, second: char) -> Option<Self> {
         match (first, second) {
             ('!', '=') => Some(SyntaxKind::Sym_BangEq),
             ('<', '=') => Some(SyntaxKind::Sym_LtEq),
@@ -138,4 +138,53 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
     fn from(kind: SyntaxKind) -> Self {
         Self(kind as u16)
     }
+}
+
+#[test]
+fn test_symbol_from_char() {
+    use SyntaxKind::*;
+
+    assert_eq!(SyntaxKind::symbol_from_char('&'), Sym_Ampersand);
+    assert_eq!(SyntaxKind::symbol_from_char('*'), Sym_Asterisk);
+    assert_eq!(SyntaxKind::symbol_from_char('@'), Sym_At);
+    assert_eq!(SyntaxKind::symbol_from_char('\\'), Sym_BackSlash);
+    assert_eq!(SyntaxKind::symbol_from_char('!'), Sym_Bang);
+    assert_eq!(SyntaxKind::symbol_from_char('^'), Sym_Caret);
+    assert_eq!(SyntaxKind::symbol_from_char(':'), Sym_Colon);
+    assert_eq!(SyntaxKind::symbol_from_char(','), Sym_Comma);
+    assert_eq!(SyntaxKind::symbol_from_char('$'), Sym_Dollar);
+    assert_eq!(SyntaxKind::symbol_from_char('.'), Sym_Dot);
+    assert_eq!(SyntaxKind::symbol_from_char('—'), Sym_EmDash);
+    assert_eq!(SyntaxKind::symbol_from_char('–'), Sym_EnDash);
+    assert_eq!(SyntaxKind::symbol_from_char('='), Sym_Eq);
+    assert_eq!(SyntaxKind::symbol_from_char('/'), Sym_ForwardSlash);
+    assert_eq!(SyntaxKind::symbol_from_char('-'), Sym_Minus);
+    assert_eq!(SyntaxKind::symbol_from_char('%'), Sym_Percent);
+    assert_eq!(SyntaxKind::symbol_from_char('|'), Sym_Pipe);
+    assert_eq!(SyntaxKind::symbol_from_char('+'), Sym_Plus);
+    assert_eq!(SyntaxKind::symbol_from_char('#'), Sym_Pound);
+    assert_eq!(SyntaxKind::symbol_from_char('?'), Sym_Question);
+    assert_eq!(SyntaxKind::symbol_from_char(';'), Sym_Semicolon);
+    assert_eq!(SyntaxKind::symbol_from_char('£'), Sym_Sterling);
+    assert_eq!(SyntaxKind::symbol_from_char('~'), Sym_Tilde);
+    assert_eq!(SyntaxKind::symbol_from_char('<'), Sym_Lt);
+    assert_eq!(SyntaxKind::symbol_from_char('>'), Sym_Gt);
+    assert_eq!(SyntaxKind::symbol_from_char('{'), Sym_LBrace);
+    assert_eq!(SyntaxKind::symbol_from_char('}'), Sym_RBrace);
+    assert_eq!(SyntaxKind::symbol_from_char('['), Sym_LBracket);
+    assert_eq!(SyntaxKind::symbol_from_char(']'), Sym_RBracket);
+    assert_eq!(SyntaxKind::symbol_from_char('('), Sym_LParen);
+    assert_eq!(SyntaxKind::symbol_from_char(')'), Sym_RParen);
+}
+
+#[test]
+fn test_symbol_composed_from_chars() {
+    use SyntaxKind::*;
+
+    assert_eq!(SyntaxKind::symbol_from_chars('!', '='), Some(Sym_BangEq));
+    assert_eq!(SyntaxKind::symbol_from_chars('<', '='), Some(Sym_LtEq));
+    assert_eq!(SyntaxKind::symbol_from_chars('>', '='), Some(Sym_GtEq));
+    assert_eq!(SyntaxKind::symbol_from_chars('<', '-'), Some(Sym_LThinArrow));
+    assert_eq!(SyntaxKind::symbol_from_chars('-', '>'), Some(Sym_RThinArrow));
+    assert_eq!(SyntaxKind::symbol_from_chars('=', '>'), Some(Sym_ThickArrow));
 }

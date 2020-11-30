@@ -194,7 +194,7 @@ impl Lexer {
             }
             _ => {
                 if let Some(symbol) =
-                    SyntaxKind::symbol_composed_from(symbol, self.peek())
+                    SyntaxKind::symbol_from_chars(symbol, self.peek())
                 {
                     self.next_char();
                     symbol
