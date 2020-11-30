@@ -309,6 +309,81 @@ mod tests {
     }
 
     #[test]
+    fn test_lex_keywords() {
+        check("???", SyntaxKind::Kwd_Unimplemented);
+        check("alias", SyntaxKind::Kwd_Alias);
+        check("and", SyntaxKind::Kwd_And);
+        check("as", SyntaxKind::Kwd_As);
+        check("const", SyntaxKind::Kwd_Const);
+        check("else", SyntaxKind::Kwd_Else);
+        check("extend", SyntaxKind::Kwd_Extend);
+        check("external", SyntaxKind::Kwd_External);
+        check("for", SyntaxKind::Kwd_For);
+        check("function", SyntaxKind::Kwd_Function);
+        check("if", SyntaxKind::Kwd_If);
+        check("import", SyntaxKind::Kwd_Import);
+        check("in", SyntaxKind::Kwd_In);
+        check("internal", SyntaxKind::Kwd_Internal);
+        check("let", SyntaxKind::Kwd_Let);
+        check("match", SyntaxKind::Kwd_Match);
+        check("module", SyntaxKind::Kwd_Module);
+        check("not", SyntaxKind::Kwd_Not);
+        check("of", SyntaxKind::Kwd_Of);
+        check("or", SyntaxKind::Kwd_Or);
+        check("public", SyntaxKind::Kwd_Public);
+        check("ref", SyntaxKind::Kwd_Ref);
+        check("return", SyntaxKind::Kwd_Return);
+        check("take", SyntaxKind::Kwd_Take);
+        check("type", SyntaxKind::Kwd_Type);
+        check("var", SyntaxKind::Kwd_Var);
+        check("where", SyntaxKind::Kwd_Where);
+        check("while", SyntaxKind::Kwd_While);
+        check("with", SyntaxKind::Kwd_With);
+    }
+
+    #[test]
+    fn test_lex_symbols() {
+        check("&", SyntaxKind::Sym_Ampersand);
+        check("*", SyntaxKind::Sym_Asterisk);
+        check("@", SyntaxKind::Sym_At);
+        check("\\", SyntaxKind::Sym_BackSlash);
+        check("!", SyntaxKind::Sym_Bang);
+        check("^", SyntaxKind::Sym_Caret);
+        check(":", SyntaxKind::Sym_Colon);
+        check(",", SyntaxKind::Sym_Comma);
+        check("$", SyntaxKind::Sym_Dollar);
+        check(".", SyntaxKind::Sym_Dot);
+        check("—", SyntaxKind::Sym_EmDash);
+        check("–", SyntaxKind::Sym_EnDash);
+        check("=", SyntaxKind::Sym_Eq);
+        check("/", SyntaxKind::Sym_ForwardSlash);
+        check("-", SyntaxKind::Sym_Minus);
+        check("%", SyntaxKind::Sym_Percent);
+        check("|", SyntaxKind::Sym_Pipe);
+        check("+", SyntaxKind::Sym_Plus);
+        check("#", SyntaxKind::Sym_Pound);
+        check("?", SyntaxKind::Sym_Question);
+        check(";", SyntaxKind::Sym_Semicolon);
+        check("£", SyntaxKind::Sym_Sterling);
+        check("~", SyntaxKind::Sym_Tilde);
+
+        check("<", SyntaxKind::Sym_Lt);
+        check(">", SyntaxKind::Sym_Gt);
+        check("<=", SyntaxKind::Sym_LtEq);
+        check(">=", SyntaxKind::Sym_GtEq);
+        check("<-", SyntaxKind::Sym_LThinArrow);
+        check("->", SyntaxKind::Sym_RThinArrow);
+        check("=>", SyntaxKind::Sym_ThickArrow);
+
+        check("{", SyntaxKind::Sym_LBrace);
+        check("}", SyntaxKind::Sym_RBrace);
+        check("[", SyntaxKind::Sym_LBracket);
+        check("]", SyntaxKind::Sym_RBracket);
+        check("(", SyntaxKind::Sym_LParen);
+        check(")", SyntaxKind::Sym_RParen);
+    }
+
+    #[test]
     fn test_lex_literal_numbers() {
         check("0", SyntaxKind::Lit_Integer);
         check("123", SyntaxKind::Lit_Integer);
