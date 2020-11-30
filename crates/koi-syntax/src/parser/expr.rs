@@ -79,6 +79,7 @@ pub fn parse_expr(parser: &mut Parser, min_bp: u8) {
             // Consume the operator token
             parser.bump();
 
+            // Consume RHS
             parser.start_node_at(checkpoint, SyntaxKind::Exp_Binary);
             parse_expr(parser, right_bp);
             parser.finish_node();

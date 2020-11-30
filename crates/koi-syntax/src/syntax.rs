@@ -2,38 +2,52 @@ use crate::lang::Language;
 
 pub(crate) type SyntaxNode = rowan::SyntaxNode<Language>;
 
+/// A convenient way to construct a new `SyntaxNode`.
+///
+/// # Examples
+/// ```rust
+/// use koi_syntax::Sym;
+/// assert_eq!(Sym!["$"], koi_syntax::syntax::SyntaxKind::Sym_Dollar);
+/// ```
 #[macro_export]
 macro_rules! Sym {
-    ["&"] => (SyntaxKind::Sym_Ampersand);
-    ["*"] => (SyntaxKind::Sym_Asterisk);
-    ["@"] => (SyntaxKind::Sym_At);
-    ["!"] => (SyntaxKind::Sym_Bang);
-    ["!="]=> (SyntaxKind::Sym_BangEq);
-    ["^"] => (SyntaxKind::Sym_Caret);
-    [","] => (SyntaxKind::Sym_Comma);
-    ["$"] => (SyntaxKind::Sym_Dollar);
-    ["."] => (SyntaxKind::Sym_Dot);
-    ["—"] => (SyntaxKind::Sym_EmDash);
-    ["–"] => (SyntaxKind::Sym_EnDash);
-    ["="] => (SyntaxKind::Sym_Eq);
-    ["/"] => (SyntaxKind::Sym_ForwardSlash);
-    ["-"] => (SyntaxKind::Sym_Minus);
-    ["%"] => (SyntaxKind::Sym_Percent);
-    ["|"] => (SyntaxKind::Sym_Pipe);
-    ["+"] => (SyntaxKind::Sym_Plus);
-    ["#"] => (SyntaxKind::Sym_Pound);
-    ["?"] => (SyntaxKind::Sym_Question);
-    [";"] => (SyntaxKind::Sym_Semicolon);
-    ["£"] => (SyntaxKind::Sym_Sterling);
-    ["~"] => (SyntaxKind::Sym_Tilde);
+    ["&"] => ($crate::syntax::SyntaxKind::Sym_Ampersand);
+    ["*"] => ($crate::syntax::SyntaxKind::Sym_Asterisk);
+    ["@"] => ($crate::syntax::SyntaxKind::Sym_At);
+    ["!"] => ($crate::syntax::SyntaxKind::Sym_Bang);
+    ["!="]=> ($crate::syntax::SyntaxKind::Sym_BangEq);
+    ["^"] => ($crate::syntax::SyntaxKind::Sym_Caret);
+    [","] => ($crate::syntax::SyntaxKind::Sym_Comma);
+    ["$"] => ($crate::syntax::SyntaxKind::Sym_Dollar);
+    ["."] => ($crate::syntax::SyntaxKind::Sym_Dot);
+    ["—"] => ($crate::syntax::SyntaxKind::Sym_EmDash);
+    ["–"] => ($crate::syntax::SyntaxKind::Sym_EnDash);
+    ["="] => ($crate::syntax::SyntaxKind::Sym_Eq);
+    ["/"] => ($crate::syntax::SyntaxKind::Sym_ForwardSlash);
+    ["-"] => ($crate::syntax::SyntaxKind::Sym_Minus);
+    ["%"] => ($crate::syntax::SyntaxKind::Sym_Percent);
+    ["|"] => ($crate::syntax::SyntaxKind::Sym_Pipe);
+    ["+"] => ($crate::syntax::SyntaxKind::Sym_Plus);
+    ["#"] => ($crate::syntax::SyntaxKind::Sym_Pound);
+    ["?"] => ($crate::syntax::SyntaxKind::Sym_Question);
+    [";"] => ($crate::syntax::SyntaxKind::Sym_Semicolon);
+    ["£"] => ($crate::syntax::SyntaxKind::Sym_Sterling);
+    ["~"] => ($crate::syntax::SyntaxKind::Sym_Tilde);
 
-    ["<"] => (SyntaxKind::Sym_Lt);
-    ["<="]=> (SyntaxKind::Sym_LtEq);
-    [">"] => (SyntaxKind::Sym_Gt);
-    [">="]=> (SyntaxKind::Sym_GtEq);
-    ["<-"]=> (SyntaxKind::Sym_LThinArrow);
-    ["->"]=> (SyntaxKind::Sym_RThinArrow);
-    ["=>"]=> (SyntaxKind::Sym_ThickArrow);
+    ["<"] => ($crate::syntax::SyntaxKind::Sym_Lt);
+    ["<="]=> ($crate::syntax::SyntaxKind::Sym_LtEq);
+    [">"] => ($crate::syntax::SyntaxKind::Sym_Gt);
+    [">="]=> ($crate::syntax::SyntaxKind::Sym_GtEq);
+    ["<-"]=> ($crate::syntax::SyntaxKind::Sym_LThinArrow);
+    ["->"]=> ($crate::syntax::SyntaxKind::Sym_RThinArrow);
+    ["=>"]=> ($crate::syntax::SyntaxKind::Sym_ThickArrow);
+
+    ["{"] => ($crate::syntax::SyntaxKind::Sym_LParen);
+    ["}"] => ($crate::syntax::SyntaxKind::Sym_RParen);
+    ["["] => ($crate::syntax::SyntaxKind::Sym_LBracket);
+    ["]"] => ($crate::syntax::SyntaxKind::Sym_RBracket);
+    ["("] => ($crate::syntax::SyntaxKind::Sym_LParen);
+    [")"] => ($crate::syntax::SyntaxKind::Sym_RParen);
 }
 
 #[allow(non_camel_case_types)]
