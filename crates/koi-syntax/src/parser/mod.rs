@@ -2,7 +2,7 @@ mod expr;
 
 use crate::lexer::Lexer;
 use crate::syntax::{SyntaxKind, SyntaxNode};
-use rowan::{GreenNode, GreenNodeBuilder};
+use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 use std::iter::Peekable;
 
 pub struct Parser {
@@ -21,7 +21,7 @@ impl Parser {
     pub fn parse(mut self) -> ParserResult {
         self.builder.start_node(SyntaxKind::Root.into());
 
-        expr::parse_expr(&mut self);
+        expr::parse_expr(&mut self, 0);
 
         self.builder.finish_node();
 
@@ -36,9 +36,21 @@ impl Parser {
         self.lexer.peek().map(|(kind, _)| *kind)
     }
 
-    pub(crate) fn bump(&mut self) {
+    fn bump(&mut self) {
         let (kind, text) = self.lexer.next().expect("Failed to get next token");
         self.builder.token(kind.into(), text.into())
+    }
+
+    fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) {
+        self.builder.start_node_at(checkpoint, kind.into());
+    }
+
+    fn finish_node(&mut self) {
+        self.builder.finish_node();
+    }
+
+    fn checkpoint(&mut self) -> Checkpoint {
+        self.builder.checkpoint()
     }
 }
 
