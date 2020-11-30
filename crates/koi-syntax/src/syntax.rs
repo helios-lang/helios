@@ -1,3 +1,7 @@
+use crate::lang::Language;
+
+pub(crate) type SyntaxNode = rowan::SyntaxNode<Language>;
+
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u16)]
@@ -73,13 +77,18 @@ pub enum SyntaxKind {
     Sym_LParen,
     Sym_RParen,
 
+    Lit_Character,
+    Lit_Float,
+    Lit_Integer,
+    Lit_String,
+
     LineComment,
     LineDocComment,
     Whitespace,
 
     Identifier,
     Error,
-    Root,
+    Root, // this should be last
 }
 
 impl SyntaxKind {

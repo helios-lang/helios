@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::source::Cursor;
 use crate::syntax::SyntaxKind;
 use unicode_xid::UnicodeXID;
@@ -28,6 +26,7 @@ fn is_identifier_continue(c: char) -> bool {
 }
 
 /// Checks if the given character is a grouping delimiter.
+#[allow(dead_code)]
 fn is_grouping_delimiter(c: char) -> bool {
     matches!(c, '{' | '}' | '[' | ']' | '(' | ')')
 }
@@ -43,6 +42,12 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
+/// Checks if the given character is a digit.
+fn is_digit(c: char) -> bool {
+    matches!(c, '0'..='9')
+}
+
+/// Checks if the given character is a whitespace delimiter.
 fn is_whitespace(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\r' | '\n')
 }
@@ -113,12 +118,14 @@ impl Lexer {
         self.cursor.source_len() == 0
     }
 
+    #[allow(dead_code)]
     pub(crate) fn current_pos(&self) -> usize {
         self.cursor.pos
     }
 
     /// Attempts to consume the next character if it matches the provided
     /// character `c`. Returns a `bool` indicating if it was successful or not.
+    #[allow(dead_code)]
     fn consume(&mut self, c: char) -> bool {
         if self.peek() == c {
             self.next_char();
@@ -159,15 +166,17 @@ impl Lexer {
 }
 
 impl Lexer {
-    fn tokenize_normal(&mut self) -> Option<SyntaxKind> {
+    fn tokenize_normal(&mut self) -> Option<(SyntaxKind, String)> {
         let kind = match self.next_char()? {
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
+            c if is_digit(c) => self.lex_number(c),
             c => todo!("Lexer::tokenize_normal({:?})", c),
         };
 
-        Some(kind)
+        let consumed = self.consumed_chars.drain(..).collect();
+        Some((kind, consumed))
     }
 
     fn lex_whitespace(&mut self, _: char) -> SyntaxKind {
@@ -251,10 +260,36 @@ impl Lexer {
             _           => SyntaxKind::Identifier,
         }
     }
+
+    /// Matches any valid sequence of digits that can form an integer or float
+    /// literal.
+    ///
+    /// The lexer doesn't verify if the the number literal is correctly
+    /// formatted in binary, octal, or hexadecimal. Essentially, only integers
+    /// should use the aforementioned bases and must start with `0` followed by
+    /// a letter to differentiate the which base is desired.
+    fn lex_number(&mut self, _: char) -> SyntaxKind {
+        fn is_digit_continue(c: char) -> bool {
+            matches!(c, '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
+        }
+
+        // Consume while we find underscores, digits, or letters (for base
+        // literals such as hexadecimal `0xfff` or binary `0b101`).
+        self.consume_while(is_digit_continue);
+
+        // Check if there's a decimal point.
+        if self.peek() == '.' && self.peek_at(1) != '.' {
+            self.next_char();
+            self.consume_while(is_digit_continue);
+            SyntaxKind::Lit_Float
+        } else {
+            SyntaxKind::Lit_Integer
+        }
+    }
 }
 
 impl Iterator for Lexer {
-    type Item = SyntaxKind;
+    type Item = (SyntaxKind, String);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_mode() {
@@ -264,10 +299,19 @@ impl Iterator for Lexer {
     }
 }
 
-#[test]
-fn test_lexer() {
-    let source = "function add(x: Int, y: Int): Int = x + y";
-    let lexer = Lexer::new(source.to_string());
-    let tokens = lexer.collect::<Vec<_>>();
-    println!("{:?}", tokens);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn check(input: impl Into<String> + Clone, kind: SyntaxKind) {
+        let mut lexer = Lexer::new(input.clone().into());
+        assert_eq!(lexer.next(), Some((kind, input.into())));
+    }
+
+    #[test]
+    fn test_lex_literal_numbers() {
+        check("0", SyntaxKind::Lit_Integer);
+        check("123", SyntaxKind::Lit_Integer);
+        check("123.321", SyntaxKind::Lit_Float);
+    }
 }
