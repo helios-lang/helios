@@ -1,3 +1,5 @@
+mod expr;
+
 use crate::lexer::Lexer;
 use crate::syntax::{SyntaxKind, SyntaxNode};
 use rowan::{GreenNode, GreenNodeBuilder};
@@ -19,12 +21,7 @@ impl Parser {
     pub fn parse(mut self) -> ParserResult {
         self.builder.start_node(SyntaxKind::Root.into());
 
-        match self.lexer.peek().map(|(kind, _)| *kind) {
-            Some(SyntaxKind::Lit_Integer) | Some(SyntaxKind::Identifier) => {
-                self.bump()
-            },
-            _ => {}
-        }
+        expr::parse_expr(&mut self);
 
         self.builder.finish_node();
 
@@ -32,8 +29,14 @@ impl Parser {
             green_node: self.builder.finish(),
         }
     }
+}
 
-    fn bump(&mut self) {
+impl Parser {
+    pub(crate) fn peek(&mut self) -> Option<SyntaxKind> {
+        self.lexer.peek().map(|(kind, _)| *kind)
+    }
+
+    pub(crate) fn bump(&mut self) {
         let (kind, text) = self.lexer.next().expect("Failed to get next token");
         self.builder.token(kind.into(), text.into())
     }
@@ -54,37 +57,18 @@ impl ParserResult {
 }
 
 #[cfg(test)]
+fn check(input: &str, expected_tree: expect_test::Expect) {
+    let parse_result = Parser::new(input.to_string()).parse();
+    expected_tree.assert_eq(&parse_result.debug_tree());
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
-    use expect_test::{expect, Expect};
-
-    fn check(input: &str, expected_tree: Expect) {
-        let parse_result = Parser::new(input.to_string()).parse();
-        expected_tree.assert_eq(&parse_result.debug_tree());
-    }
+    use expect_test::expect;
 
     #[test]
     fn test_parse_nothing() {
         check("", expect![[r#"Root@0..0"#]]);
-    }
-
-    #[test]
-    fn test_parse_lone_integer() {
-        check(
-            "123",
-            expect![[r#"
-Root@0..3
-  Lit_Integer@0..3 "123""#]],
-        );
-    }
-
-    #[test]
-    fn test_parse_lone_identifier() {
-        check(
-            "counter",
-            expect![[r#"
-Root@0..7
-  Identifier@0..7 "counter""#]],
-        );
     }
 }

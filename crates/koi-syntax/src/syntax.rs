@@ -82,6 +82,9 @@ pub enum SyntaxKind {
     Lit_Integer,
     Lit_String,
 
+    Exp_Binary,
+    Exp_Unary,
+
     LineComment,
     LineDocComment,
     Whitespace,
