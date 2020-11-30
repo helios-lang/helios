@@ -314,4 +314,44 @@ mod tests {
         check("123", SyntaxKind::Lit_Integer);
         check("123.321", SyntaxKind::Lit_Float);
     }
+
+    #[test]
+    fn test_lex_identifiers() {
+        check("a", SyntaxKind::Identifier);
+        check("abc", SyntaxKind::Identifier);
+        check("abc123", SyntaxKind::Identifier);
+        check("abc_123_abc", SyntaxKind::Identifier);
+        check("abc_123_abc_123", SyntaxKind::Identifier);
+    }
+
+    #[test]
+    fn test_lex_identifiers_unicode() {
+        // Latin-extended
+        check("åçéîñøœßü", SyntaxKind::Identifier);
+        check("njerëzore", SyntaxKind::Identifier);
+        check("čovjek", SyntaxKind::Identifier);
+        check("člověk", SyntaxKind::Identifier);
+
+        // Other scripts
+        check("بشري", SyntaxKind::Identifier); // Arabic
+        check("ሰው", SyntaxKind::Identifier); // Amharic
+        check("մարդ", SyntaxKind::Identifier); // Armenian
+        check("মানব", SyntaxKind::Identifier); // Bengali
+        check("人的", SyntaxKind::Identifier); // Chinese
+        check("человек", SyntaxKind::Identifier); // Cyrillic
+        check("मानव", SyntaxKind::Identifier); // Devanagari
+        check("ადამიანური", SyntaxKind::Identifier); // Gregorian
+        check("άνθρωπος", SyntaxKind::Identifier); // Greek
+        check("માનવ", SyntaxKind::Identifier); // Gujarati
+        check("אנוש", SyntaxKind::Identifier); // Hebrew
+        check("ヒューマン", SyntaxKind::Identifier); // Japanese (Katakana)
+        check("ಮಾನವ", SyntaxKind::Identifier); // Kannada
+        check("មនុស្ស", SyntaxKind::Identifier); // Khmer
+        check("인간", SyntaxKind::Identifier); // Korean
+        check("ມະນຸດ", SyntaxKind::Identifier); // Lao
+        check("മനുഷ്യൻ", SyntaxKind::Identifier); // Malayalam
+        check("လူ့", SyntaxKind::Identifier); // Myanmar
+        check("ମାନବ", SyntaxKind::Identifier); // Odia
+        check("มนุษย์", SyntaxKind::Identifier); // Thai
+    }
 }
