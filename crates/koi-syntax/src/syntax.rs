@@ -2,6 +2,40 @@ use crate::lang::Language;
 
 pub(crate) type SyntaxNode = rowan::SyntaxNode<Language>;
 
+#[macro_export]
+macro_rules! Sym {
+    ["&"] => (SyntaxKind::Sym_Ampersand);
+    ["*"] => (SyntaxKind::Sym_Asterisk);
+    ["@"] => (SyntaxKind::Sym_At);
+    ["!"] => (SyntaxKind::Sym_Bang);
+    ["!="]=> (SyntaxKind::Sym_BangEq);
+    ["^"] => (SyntaxKind::Sym_Caret);
+    [","] => (SyntaxKind::Sym_Comma);
+    ["$"] => (SyntaxKind::Sym_Dollar);
+    ["."] => (SyntaxKind::Sym_Dot);
+    ["—"] => (SyntaxKind::Sym_EmDash);
+    ["–"] => (SyntaxKind::Sym_EnDash);
+    ["="] => (SyntaxKind::Sym_Eq);
+    ["/"] => (SyntaxKind::Sym_ForwardSlash);
+    ["-"] => (SyntaxKind::Sym_Minus);
+    ["%"] => (SyntaxKind::Sym_Percent);
+    ["|"] => (SyntaxKind::Sym_Pipe);
+    ["+"] => (SyntaxKind::Sym_Plus);
+    ["#"] => (SyntaxKind::Sym_Pound);
+    ["?"] => (SyntaxKind::Sym_Question);
+    [";"] => (SyntaxKind::Sym_Semicolon);
+    ["£"] => (SyntaxKind::Sym_Sterling);
+    ["~"] => (SyntaxKind::Sym_Tilde);
+
+    ["<"] => (SyntaxKind::Sym_Lt);
+    ["<="]=> (SyntaxKind::Sym_LtEq);
+    [">"] => (SyntaxKind::Sym_Gt);
+    [">="]=> (SyntaxKind::Sym_GtEq);
+    ["<-"]=> (SyntaxKind::Sym_LThinArrow);
+    ["->"]=> (SyntaxKind::Sym_RThinArrow);
+    ["=>"]=> (SyntaxKind::Sym_ThickArrow);
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u16)]
