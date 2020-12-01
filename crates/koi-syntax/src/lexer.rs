@@ -1,5 +1,5 @@
 use crate::source::Cursor;
-use crate::syntax::SyntaxKind;
+use crate::syntax::{self, SyntaxKind};
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -203,12 +203,12 @@ impl Lexer {
             }
             _ => {
                 if let Some(symbol) =
-                    SyntaxKind::symbol_from_two_chars(symbol, self.peek())
+                    syntax::symbol_from_two_chars(symbol, self.peek())
                 {
                     self.next_char();
                     symbol
                 } else {
-                    SyntaxKind::symbol_from_char(symbol)
+                    syntax::symbol_from_char(symbol)
                 }
             }
         }

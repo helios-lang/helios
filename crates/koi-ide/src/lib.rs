@@ -70,17 +70,16 @@ impl LanguageServer for KoiLanguageServer {
             .log_message(MessageType::Info, format!("{:?}", params))
             .await;
 
-        // use koi_syntax_old::token::Keyword;
-        // let keywords: Vec<CompletionItem> = Keyword::keyword_list()
-        //     .into_iter()
-        //     .map(|keyword| CompletionItem {
-        //         label: keyword.clone(),
-        //         kind: Some(CompletionItemKind::Keyword),
-        //         insert_text: Some(keyword + " "),
-        //         detail: Some("Koi keyword".to_string()),
-        //         ..CompletionItem::default()
-        //     })
-        //     .collect();
+        let keywords = koi_syntax::syntax::keyword_list()
+            .into_iter()
+            .map(|keyword| CompletionItem {
+                label: keyword.clone(),
+                kind: Some(CompletionItemKind::Keyword),
+                insert_text: Some(keyword + " "),
+                detail: Some("Koi keyword".to_string()),
+                ..CompletionItem::default()
+            })
+            .collect::<Vec<_>>();
 
         let primitive_types: Vec<CompletionItem> = vec![
             "Bool", "Char", "String", "Float", "Float32", "Float64", "Int",
@@ -114,13 +113,13 @@ impl LanguageServer for KoiLanguageServer {
                     insert_text: match ident {
                         "Some" | "Ok" | "Err" => {
                             Some(format!("{}(${{1:???}})", ident))
-                        },
+                        }
                         _ => None,
                     },
                     insert_text_format: match ident {
                         "Some" | "Ok" | "Err" => {
                             Some(InsertTextFormat::Snippet)
-                        },
+                        }
                         _ => None,
                     },
                     ..CompletionItem::default()
@@ -130,7 +129,7 @@ impl LanguageServer for KoiLanguageServer {
         Ok(params.context.map(|context| match context.trigger_kind {
             CompletionTriggerKind::Invoked => CompletionResponse::Array(
                 [
-                    // &keywords[..],
+                    &keywords[..],
                     &primitive_types[..],
                     &special_identifiers[..],
                 ]
