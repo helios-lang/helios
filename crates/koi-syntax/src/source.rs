@@ -3,7 +3,7 @@ use std::vec::IntoIter;
 
 pub const EOF_CHAR: char = '\0';
 
-/// Describes the start offset and length of a given node, token or trivia.
+/// Describes the start offset and length of a given node or token.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct TextSpan {
     start: usize,

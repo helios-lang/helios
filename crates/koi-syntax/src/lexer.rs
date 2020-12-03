@@ -232,7 +232,6 @@ impl Lexer {
             "alias"     => SyntaxKind::Kwd_Alias,
             "and"       => SyntaxKind::Kwd_And,
             "as"        => SyntaxKind::Kwd_As,
-            "const"     => SyntaxKind::Kwd_Const,
             "else"      => SyntaxKind::Kwd_Else,
             "extend"    => SyntaxKind::Kwd_Extend,
             "external"  => SyntaxKind::Kwd_External,
@@ -241,7 +240,6 @@ impl Lexer {
             "if"        => SyntaxKind::Kwd_If,
             "import"    => SyntaxKind::Kwd_Import,
             "in"        => SyntaxKind::Kwd_In,
-            "internal"  => SyntaxKind::Kwd_Internal,
             "let"       => SyntaxKind::Kwd_Let,
             "match"     => SyntaxKind::Kwd_Match,
             "module"    => SyntaxKind::Kwd_Module,
@@ -251,7 +249,6 @@ impl Lexer {
             "public"    => SyntaxKind::Kwd_Public,
             "ref"       => SyntaxKind::Kwd_Ref,
             "return"    => SyntaxKind::Kwd_Return,
-            "take"      => SyntaxKind::Kwd_Take,
             "type"      => SyntaxKind::Kwd_Type,
             "var"       => SyntaxKind::Kwd_Var,
             "where"     => SyntaxKind::Kwd_Where,
@@ -314,7 +311,6 @@ mod tests {
         check("alias", SyntaxKind::Kwd_Alias);
         check("and", SyntaxKind::Kwd_And);
         check("as", SyntaxKind::Kwd_As);
-        check("const", SyntaxKind::Kwd_Const);
         check("else", SyntaxKind::Kwd_Else);
         check("extend", SyntaxKind::Kwd_Extend);
         check("external", SyntaxKind::Kwd_External);
@@ -323,7 +319,6 @@ mod tests {
         check("if", SyntaxKind::Kwd_If);
         check("import", SyntaxKind::Kwd_Import);
         check("in", SyntaxKind::Kwd_In);
-        check("internal", SyntaxKind::Kwd_Internal);
         check("let", SyntaxKind::Kwd_Let);
         check("match", SyntaxKind::Kwd_Match);
         check("module", SyntaxKind::Kwd_Module);
@@ -333,7 +328,6 @@ mod tests {
         check("public", SyntaxKind::Kwd_Public);
         check("ref", SyntaxKind::Kwd_Ref);
         check("return", SyntaxKind::Kwd_Return);
-        check("take", SyntaxKind::Kwd_Take);
         check("type", SyntaxKind::Kwd_Type);
         check("var", SyntaxKind::Kwd_Var);
         check("where", SyntaxKind::Kwd_Where);
