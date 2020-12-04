@@ -218,14 +218,14 @@ pub fn symbol_from_char(c: char) -> SyntaxKind {
     }
 }
 
-pub fn symbol_from_two_chars(first: char, second: char) -> Option<SyntaxKind> {
-    match (first, second) {
-        ('!', '=') => Some(SyntaxKind::Sym_BangEq),
-        ('<', '=') => Some(SyntaxKind::Sym_LtEq),
-        ('>', '=') => Some(SyntaxKind::Sym_GtEq),
-        ('<', '-') => Some(SyntaxKind::Sym_LThinArrow),
-        ('-', '>') => Some(SyntaxKind::Sym_RThinArrow),
-        ('=', '>') => Some(SyntaxKind::Sym_ThickArrow),
+pub fn symbol_from_chars(chars: &[char]) -> Option<SyntaxKind> {
+    match chars {
+        ['!', '='] => Some(SyntaxKind::Sym_BangEq),
+        ['<', '='] => Some(SyntaxKind::Sym_LtEq),
+        ['>', '='] => Some(SyntaxKind::Sym_GtEq),
+        ['<', '-'] => Some(SyntaxKind::Sym_LThinArrow),
+        ['-', '>'] => Some(SyntaxKind::Sym_RThinArrow),
+        ['=', '>'] => Some(SyntaxKind::Sym_ThickArrow),
         _ => None,
     }
 }
@@ -234,63 +234,57 @@ pub fn symbol_from_two_chars(first: char, second: char) -> Option<SyntaxKind> {
 mod tests {
     use super::*;
 
+    macro_rules! check {
+        ([$( $cs:expr ),+ $(,)?] => $kind:ident) => {{
+            assert_eq!(symbol_from_chars(&[$($cs),*]), Some(SyntaxKind::$kind));
+        }};
+        ($c:expr => $kind:ident) => {{
+            assert_eq!(symbol_from_char($c), SyntaxKind::$kind);
+        }};
+    }
+
     #[test]
     fn test_symbol_from_char() {
-        macro_rules! expect {
-            ($c:expr => $kind:ident) => {{
-                assert_eq!(symbol_from_char($c), SyntaxKind::$kind);
-            }};
-        }
-
-        expect!('&' => Sym_Ampersand);
-        expect!('*' => Sym_Asterisk);
-        expect!('@' => Sym_At);
-        expect!('\\'=> Sym_BackSlash);
-        expect!('!' => Sym_Bang);
-        expect!('^' => Sym_Caret);
-        expect!(':' => Sym_Colon);
-        expect!(',' => Sym_Comma);
-        expect!('$' => Sym_Dollar);
-        expect!('.' => Sym_Dot);
-        expect!('—' => Sym_EmDash);
-        expect!('–' => Sym_EnDash);
-        expect!('=' => Sym_Eq);
-        expect!('/' => Sym_ForwardSlash);
-        expect!('-' => Sym_Minus);
-        expect!('%' => Sym_Percent);
-        expect!('|' => Sym_Pipe);
-        expect!('+' => Sym_Plus);
-        expect!('#' => Sym_Pound);
-        expect!('?' => Sym_Question);
-        expect!(';' => Sym_Semicolon);
-        expect!('£' => Sym_Sterling);
-        expect!('~' => Sym_Tilde);
-        expect!('<' => Sym_Lt);
-        expect!('>' => Sym_Gt);
-        expect!('{' => Sym_LBrace);
-        expect!('}' => Sym_RBrace);
-        expect!('[' => Sym_LBracket);
-        expect!(']' => Sym_RBracket);
-        expect!('(' => Sym_LParen);
-        expect!(')' => Sym_RParen);
+        check!('&' => Sym_Ampersand);
+        check!('*' => Sym_Asterisk);
+        check!('@' => Sym_At);
+        check!('\\'=> Sym_BackSlash);
+        check!('!' => Sym_Bang);
+        check!('^' => Sym_Caret);
+        check!(':' => Sym_Colon);
+        check!(',' => Sym_Comma);
+        check!('$' => Sym_Dollar);
+        check!('.' => Sym_Dot);
+        check!('—' => Sym_EmDash);
+        check!('–' => Sym_EnDash);
+        check!('=' => Sym_Eq);
+        check!('/' => Sym_ForwardSlash);
+        check!('-' => Sym_Minus);
+        check!('%' => Sym_Percent);
+        check!('|' => Sym_Pipe);
+        check!('+' => Sym_Plus);
+        check!('#' => Sym_Pound);
+        check!('?' => Sym_Question);
+        check!(';' => Sym_Semicolon);
+        check!('£' => Sym_Sterling);
+        check!('~' => Sym_Tilde);
+        check!('<' => Sym_Lt);
+        check!('>' => Sym_Gt);
+        check!('{' => Sym_LBrace);
+        check!('}' => Sym_RBrace);
+        check!('[' => Sym_LBracket);
+        check!(']' => Sym_RBracket);
+        check!('(' => Sym_LParen);
+        check!(')' => Sym_RParen);
     }
 
     #[test]
     fn test_symbol_from_two_chars() {
-        macro_rules! expect {
-            ($a:expr, $b:expr => $kind:ident) => {{
-                assert_eq!(
-                    symbol_from_two_chars($a, $b),
-                    Some(SyntaxKind::$kind)
-                );
-            }};
-        }
-
-        expect!('!', '=' => Sym_BangEq);
-        expect!('<', '=' => Sym_LtEq);
-        expect!('>', '=' => Sym_GtEq);
-        expect!('<', '-' => Sym_LThinArrow);
-        expect!('-', '>' => Sym_RThinArrow);
-        expect!('=', '>' => Sym_ThickArrow);
+        check!(['!', '='] => Sym_BangEq);
+        check!(['<', '='] => Sym_LtEq);
+        check!(['>', '='] => Sym_GtEq);
+        check!(['<', '-'] => Sym_LThinArrow);
+        check!(['-', '>'] => Sym_RThinArrow);
+        check!(['=', '>'] => Sym_ThickArrow);
     }
 }

@@ -203,7 +203,7 @@ impl Lexer {
             }
             _ => {
                 if let Some(symbol) =
-                    syntax::symbol_from_two_chars(symbol, self.peek())
+                    syntax::symbol_from_chars(&[symbol, self.peek()])
                 {
                     self.next_char();
                     symbol
@@ -386,6 +386,7 @@ mod tests {
 
     #[test]
     fn test_lex_identifiers() {
+        check("_", SyntaxKind::Identifier);
         check("a", SyntaxKind::Identifier);
         check("abc", SyntaxKind::Identifier);
         check("abc123", SyntaxKind::Identifier);
