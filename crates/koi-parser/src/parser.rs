@@ -5,6 +5,7 @@ use koi_syntax::{SyntaxKind, SyntaxNode};
 use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 use std::iter::Peekable;
 
+/// A lazy, lossless, error-tolerant parser for the Koi programming language.
 pub struct Parser {
     lexer: Peekable<Lexer>,
     builder: GreenNodeBuilder<'static>,
