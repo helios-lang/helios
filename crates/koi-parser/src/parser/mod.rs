@@ -1,7 +1,7 @@
 mod expr;
 
 use crate::lexer::Lexer;
-use crate::syntax::{SyntaxKind, SyntaxNode};
+use koi_syntax::{SyntaxKind, SyntaxNode};
 use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
 use std::iter::Peekable;
 

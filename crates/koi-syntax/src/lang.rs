@@ -1,7 +1,7 @@
-use crate::syntax::SyntaxKind;
+use crate::SyntaxKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Language;
+pub struct Language;
 
 impl rowan::Language for Language {
     type Kind = SyntaxKind;

@@ -1,10 +1,10 @@
 use super::Parser;
-use crate::syntax::SyntaxKind;
+use koi_syntax::SyntaxKind;
 
 /// Determines the prefix binding power of the given token. Currently, the only
 /// legal prefix symbols are `SyntaxKind::Sym_Minus` and `SyntaxKind::Sym_Bang`.
 fn prefix_binding_power(token: SyntaxKind) -> Option<((), u8)> {
-    use crate::Sym as S;
+    use koi_syntax::Sym as S;
     let power = match token {
         S!["-"] | S!["!"] => ((), 11),
         _ => return None,
@@ -17,7 +17,8 @@ fn prefix_binding_power(token: SyntaxKind) -> Option<((), u8)> {
 /// power means higher precedence, meaning that it is more likely to hold onto
 /// its adjacent operands.
 fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
-    use crate::Sym as S;
+  use koi_syntax::Sym as S;
+
     let power = match token {
         S![";"] => (1, 2),
         S!["<-"] => (3, 2),

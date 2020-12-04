@@ -70,7 +70,7 @@ impl LanguageServer for KoiLanguageServer {
             .log_message(MessageType::Info, format!("{:?}", params))
             .await;
 
-        let keywords = koi_syntax::syntax::keyword_list()
+        let keywords = koi_syntax::keyword_list()
             .into_iter()
             .map(|keyword| CompletionItem {
                 label: keyword.clone(),
