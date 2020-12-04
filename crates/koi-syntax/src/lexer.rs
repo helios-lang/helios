@@ -52,10 +52,22 @@ fn is_whitespace(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\r' | '\n')
 }
 
-#[derive(Clone, Debug, PartialEq)]
+/// An enumeration of all the possible modes the [`Lexer`] may be in.
+///
+/// Because the grammar of the Koi programming language is not context free (at
+/// the moment), it is necessary for the lexer to know its context. As a result,
+/// the lexer stores all the current modes in a LIFO stack. This would allow
+/// it to behave a little differently depending on where it is in the source.
+///
+/// For example, string interpolation requires special tokens to signify the
+/// start and end of an embedded expression. This will be established with the
+/// [`LexerMode::StringInterpolation`] variant.
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LexerMode {
+    /// The default, normal mode.
     Normal,
-    Grouping,
+    /// An interpolated expression in a string literal.
+    StringInterpolation,
 }
 
 impl Default for LexerMode {
@@ -64,6 +76,19 @@ impl Default for LexerMode {
     }
 }
 
+/// A lazy and lossless lexer for the Koi programming language.
+///
+/// This lexer works with `char`s to seamlessly work with Unicode characters. It
+/// also implements the [`Iterator`] trait, which means that it is lazy in
+/// nature. This allows it to only tokenize as much of the source text as
+/// required.
+///
+/// This structure shouldn't need to be manipulated manually. It is instead
+/// recommended to use the [`Parser`] structure or any of the public top-level
+/// functions of this crate to properly tokenize and parse a given Koi source
+/// file.
+///
+/// [`Parser`]: crate::parser::Parser
 pub struct Lexer {
     cursor: Cursor,
     consumed_chars: Vec<char>,
@@ -71,6 +96,10 @@ pub struct Lexer {
 }
 
 impl Lexer {
+    /// Construct a new `Lexer` with the given input (a `String`).
+    ///
+    /// The lexer will initialise with the default [`LexerMode`] and set the
+    /// current cursor position to the start.
     pub fn new(source: String) -> Self {
         Self {
             cursor: Cursor::new(source),
@@ -291,7 +320,7 @@ impl Iterator for Lexer {
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
-            LexerMode::Grouping => todo!("LexerMode::Grouping"),
+            mode => todo!("Unimplemented Lexer mode: LexerMode::{:?}", mode),
         }
     }
 }
