@@ -77,7 +77,7 @@ impl Default for LexerMode {
     }
 }
 
-/// A lazy and lossless lexer for the Koi programming language.
+/// A lazy, lossless lexer for the Koi programming language.
 ///
 /// This lexer works with `char`s to seamlessly work with Unicode characters. It
 /// also implements the [`Iterator`] trait, which means that it is lazy in

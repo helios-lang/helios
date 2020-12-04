@@ -3,7 +3,7 @@ use std::vec::IntoIter;
 /// End-of-file character.
 pub const EOF_CHAR: char = '\0';
 
-/// A cursor into the characters of the Koi source file.
+/// A structure representing the current position in a Koi source file.
 pub struct Cursor {
     chars: IntoIter<char>,
     pub(crate) pos: usize,

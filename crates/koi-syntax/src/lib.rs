@@ -52,6 +52,7 @@ macro_rules! Sym {
     [")"] => ($crate::SyntaxKind::Sym_RParen);
 }
 
+/// All the possible nodes and tokens defined in the Koi grammar.
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(u16)]
@@ -149,6 +150,7 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
     }
 }
 
+/// A list of all the keywords defined in the Koi grammar.
 pub fn keyword_list() -> Vec<String> {
     [
         "alias",
@@ -183,6 +185,20 @@ pub fn keyword_list() -> Vec<String> {
     .collect()
 }
 
+/// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
+/// character.
+///
+/// This function panics if an invalid character is given.
+///
+/// # Examples
+///
+/// ```rust
+/// use koi_syntax::{symbol_from_char, SyntaxKind};
+///
+/// assert_eq!(symbol_from_char('@'), SyntaxKind::Sym_At);
+/// assert_eq!(symbol_from_char('%'), SyntaxKind::Sym_Percent);
+/// assert_eq!(symbol_from_char('$'), SyntaxKind::Sym_Dollar);
+/// ```
 pub fn symbol_from_char(c: char) -> SyntaxKind {
     match c {
         '&' => SyntaxKind::Sym_Ampersand,
@@ -220,6 +236,18 @@ pub fn symbol_from_char(c: char) -> SyntaxKind {
     }
 }
 
+/// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
+/// sequence of characters.
+///
+/// # Examples
+///
+/// ```rust
+/// use koi_syntax::{symbol_from_chars, SyntaxKind};
+///
+/// assert_eq!(symbol_from_chars(&['!', '=']), Some(SyntaxKind::Sym_BangEq));
+/// assert_eq!(symbol_from_chars(&['>', '=']), Some(SyntaxKind::Sym_GtEq));
+/// assert_eq!(symbol_from_chars(&['?', '?']), None);
+/// ```
 pub fn symbol_from_chars(chars: &[char]) -> Option<SyntaxKind> {
     match chars {
         ['!', '='] => Some(SyntaxKind::Sym_BangEq),
