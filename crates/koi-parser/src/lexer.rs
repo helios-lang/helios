@@ -67,6 +67,7 @@ pub enum LexerMode {
     /// The default, normal mode.
     Normal,
     /// An interpolated expression in a string literal.
+    #[allow(dead_code)]
     StringInterpolation,
 }
 
