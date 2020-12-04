@@ -97,7 +97,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    /// Construct a new `Lexer` with the given input (a `String`).
+    /// Construct a new [`Lexer`] with a given source text.
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
     /// current cursor position to the start.

@@ -1,12 +1,11 @@
 use super::Parser;
-use koi_syntax::SyntaxKind;
+use koi_syntax::{Sym, SyntaxKind};
 
 /// Determines the prefix binding power of the given token. Currently, the only
 /// legal prefix symbols are `SyntaxKind::Sym_Minus` and `SyntaxKind::Sym_Bang`.
 fn prefix_binding_power(token: SyntaxKind) -> Option<((), u8)> {
-    use koi_syntax::Sym as S;
     let power = match token {
-        S!["-"] | S!["!"] => ((), 11),
+        Sym!["-"] | Sym!["!"] => ((), 11),
         _ => return None,
     };
 
@@ -17,21 +16,20 @@ fn prefix_binding_power(token: SyntaxKind) -> Option<((), u8)> {
 /// power means higher precedence, meaning that it is more likely to hold onto
 /// its adjacent operands.
 fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
-  use koi_syntax::Sym as S;
-
     let power = match token {
-        S![";"] => (1, 2),
-        S!["<-"] => (3, 2),
-        S!["="] | S!["!="] => (4, 3),
-        S!["<"] | S![">"] | S!["<="] | S![">="] => (5, 6),
-        S!["+"] | S!["-"] => (7, 8),
-        S!["*"] | S!["/"] => (9, 10),
+        Sym![";"] => (1, 2),
+        Sym!["<-"] => (3, 2),
+        Sym!["="] | Sym!["!="] => (4, 3),
+        Sym!["<"] | Sym![">"] | Sym!["<="] | Sym![">="] => (5, 6),
+        Sym!["+"] | Sym!["-"] => (7, 8),
+        Sym!["*"] | Sym!["/"] => (9, 10),
         _ => return None,
     };
 
     Some(power)
 }
 
+/// Parse an expression.
 pub fn parse_expr(parser: &mut Parser, min_bp: u8) {
     let checkpoint = parser.checkpoint();
 
@@ -40,6 +38,7 @@ pub fn parse_expr(parser: &mut Parser, min_bp: u8) {
             parser.bump()
         }
         Some(op @ SyntaxKind::Sym_Minus) | Some(op @ SyntaxKind::Sym_Bang) => {
+            // Get the right binding power of the operator
             let ((), right_bp) = prefix_binding_power(op).unwrap();
 
             // Consume the operator token
@@ -67,11 +66,13 @@ pub fn parse_expr(parser: &mut Parser, min_bp: u8) {
     }
 
     loop {
+        // Peek the next token, assuming it's an operator
         let op = match parser.peek() {
             Some(token) => token,
             _ => break,
         };
 
+        // Get the left and right binding power of the assumed operator
         if let Some((left_bp, right_bp)) = infix_binding_power(op) {
             if left_bp < min_bp {
                 return;

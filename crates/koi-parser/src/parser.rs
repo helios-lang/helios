@@ -12,6 +12,7 @@ pub struct Parser {
 }
 
 impl Parser {
+    /// Construct a new [`Parser`] with a given source text.
     pub fn new(source: String) -> Self {
         Self {
             lexer: Lexer::new(source).peekable(),
@@ -19,11 +20,14 @@ impl Parser {
         }
     }
 
+    /// Start the parsing process.
+    ///
+    /// This function will attempt to build a concrete syntax tree of the given
+    /// source text (no matter how invalid it is). Once done, it will return a
+    /// [`ParserResult`] containing the root green node.
     pub fn parse(mut self) -> ParserResult {
         self.builder.start_node(SyntaxKind::Root.into());
-
         expr::parse_expr(&mut self, 0);
-
         self.builder.finish_node();
 
         ParserResult {
@@ -33,10 +37,12 @@ impl Parser {
 }
 
 impl Parser {
+    /// Peeks the next [`SyntaxKind`] token without consuming it.
     pub(crate) fn peek(&mut self) -> Option<SyntaxKind> {
         self.lexer.peek().map(|(kind, _)| *kind)
     }
 
+    /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     fn bump(&mut self) {
         let (kind, text) = self.lexer.next().expect("Failed to get next token");
         self.builder.token(kind.into(), text.into())
@@ -55,11 +61,14 @@ impl Parser {
     }
 }
 
+/// The result of parsing a source text.
 pub struct ParserResult {
+    /// The root green node of the syntax tree.
     green_node: GreenNode,
 }
 
 impl ParserResult {
+    /// Returns a formatted string representation of the syntax tree.
     pub fn debug_tree(&self) -> String {
         let syntax_node = SyntaxNode::new_root(self.green_node.clone());
         let formatted = format!("{:#?}", syntax_node);
