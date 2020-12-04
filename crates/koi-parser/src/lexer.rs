@@ -408,10 +408,90 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_literal_numbers() {
+    fn test_lex_valid_literal_integers() {
+        // Decimal integers
         check("0", SyntaxKind::Lit_Integer);
+        check("0_", SyntaxKind::Lit_Integer);
         check("123", SyntaxKind::Lit_Integer);
-        check("123.321", SyntaxKind::Lit_Float);
+        check("123_456", SyntaxKind::Lit_Integer);
+
+        // Binary integers
+        check("0b000", SyntaxKind::Lit_Integer);
+        check("0b111", SyntaxKind::Lit_Integer);
+        check("0b101", SyntaxKind::Lit_Integer);
+        check("0b000_000", SyntaxKind::Lit_Integer);
+        check("0b111_111", SyntaxKind::Lit_Integer);
+        check("0b101_101", SyntaxKind::Lit_Integer);
+
+        // Octal integers
+        check("0o000", SyntaxKind::Lit_Integer);
+        check("0o777", SyntaxKind::Lit_Integer);
+        check("0o767", SyntaxKind::Lit_Integer);
+        check("0o000_000", SyntaxKind::Lit_Integer);
+        check("0o777_777", SyntaxKind::Lit_Integer);
+        check("0o767_767", SyntaxKind::Lit_Integer);
+
+        // Hexadecimal integers
+        check("0x000", SyntaxKind::Lit_Integer);
+        check("0xfff", SyntaxKind::Lit_Integer);
+        check("0xfef", SyntaxKind::Lit_Integer);
+        check("0x000_000", SyntaxKind::Lit_Integer);
+        check("0xfff_fff", SyntaxKind::Lit_Integer);
+        check("0xfef_fef", SyntaxKind::Lit_Integer);
+    }
+
+    #[test]
+    fn test_lex_invalid_literal_integers() {
+        // Decimal integers
+        check("0z", SyntaxKind::Lit_Integer);
+        check("1z2y3x", SyntaxKind::Lit_Integer);
+        check("1z2y3x_4w5v6u", SyntaxKind::Lit_Integer);
+
+        // Binary integers
+        check("0b0z0y0x", SyntaxKind::Lit_Integer);
+        check("0b1z1y1x", SyntaxKind::Lit_Integer);
+        check("0b1z0y1x", SyntaxKind::Lit_Integer);
+        check("0b0z0y0x_0w0v0u", SyntaxKind::Lit_Integer);
+        check("0b1z1y1x_1w1v1u", SyntaxKind::Lit_Integer);
+        check("0b1z0y1x_1w0v1u", SyntaxKind::Lit_Integer);
+
+        // Octal integers
+        check("0o0z0y0x", SyntaxKind::Lit_Integer);
+        check("0o7z7y7x", SyntaxKind::Lit_Integer);
+        check("0o7z6y7x", SyntaxKind::Lit_Integer);
+        check("0o0z0y0x_0w0v0u", SyntaxKind::Lit_Integer);
+        check("0o7z7y7x_7w7v7u", SyntaxKind::Lit_Integer);
+        check("0o7z6y7x_7w6v7u", SyntaxKind::Lit_Integer);
+
+        // Hexadecimal integers
+        check("0x0z0y0x", SyntaxKind::Lit_Integer);
+        check("0xfzfyfx", SyntaxKind::Lit_Integer);
+        check("0xfzeyfx", SyntaxKind::Lit_Integer);
+        check("0x0z0y0x_0w0v0u", SyntaxKind::Lit_Integer);
+        check("0xfzfyfx_fwfvfu", SyntaxKind::Lit_Integer);
+        check("0xfzeyfx_fwevfu", SyntaxKind::Lit_Integer);
+    }
+
+    #[test]
+    fn test_lex_valid_literal_floats() {
+        check("0.", SyntaxKind::Lit_Float);
+        check("0.0", SyntaxKind::Lit_Float);
+        check("0_.", SyntaxKind::Lit_Float);
+        check("0_.0_", SyntaxKind::Lit_Float);
+        check("000.000", SyntaxKind::Lit_Float);
+        check("1.23456", SyntaxKind::Lit_Float);
+        check("12345.6", SyntaxKind::Lit_Float);
+        check("123.456", SyntaxKind::Lit_Float);
+    }
+
+    #[test]
+    fn test_lex_invalid_literal_floats() {
+        check("0.a", SyntaxKind::Lit_Float);
+        check("0.a0", SyntaxKind::Lit_Float);
+        check("0a0b.0c0d", SyntaxKind::Lit_Float);
+        check("1.a2b3c4d5e6", SyntaxKind::Lit_Float);
+        check("1a2b3c4d5e.6", SyntaxKind::Lit_Float);
+        check("1a2b3c.4d5e6", SyntaxKind::Lit_Float);
     }
 
     #[test]
@@ -420,8 +500,8 @@ mod tests {
         check("a", SyntaxKind::Identifier);
         check("abc", SyntaxKind::Identifier);
         check("abc123", SyntaxKind::Identifier);
-        check("abc_123_abc", SyntaxKind::Identifier);
-        check("abc_123_abc_123", SyntaxKind::Identifier);
+        check("abc123_abc", SyntaxKind::Identifier);
+        check("abc123_abc123", SyntaxKind::Identifier);
     }
 
     #[test]
