@@ -1,3 +1,16 @@
+//! The module responsible for tokenizing a Koi source file.
+//!
+//! The showrunner of this module is the [`Lexer`] type. It essentially takes
+//! an input as a `String` and provides a vector of [`Lexeme`]s that may be used
+//! by anyone, such as the [`Parser`].
+//!
+//! The lexer aims to be as error-tolerant as possible and support UTF-8
+//! encoding (which is enforced by Rust's `String` and `char` types). It is also
+//! lossless, meaning that it represents the original text exactly (including
+//! whitespace and comments).
+//!
+//! [`Parser`]: crate::parser::Parser
+
 use crate::cursor::Cursor;
 use koi_syntax::{self, SyntaxKind};
 use unicode_xid::UnicodeXID;
