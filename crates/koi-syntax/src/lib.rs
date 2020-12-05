@@ -54,7 +54,7 @@ macro_rules! Sym {
 
 /// All the possible nodes and tokens defined in the Koi grammar.
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[repr(u16)]
 pub enum SyntaxKind {
     Kwd_Alias,

@@ -39,13 +39,16 @@ impl Parser {
 impl Parser {
     /// Peeks the next [`SyntaxKind`] token without consuming it.
     pub(crate) fn peek(&mut self) -> Option<SyntaxKind> {
-        self.lexer.peek().map(|(kind, _)| *kind)
+        self.lexer.peek().map(|lexeme| lexeme.kind)
     }
 
     /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     fn bump(&mut self) {
-        let (kind, text) = self.lexer.next().expect("Failed to get next token");
-        self.builder.token(kind.into(), text.into())
+        let lexeme = self.lexer.next().expect("Failed to get next token");
+        self.builder.token(
+            lexeme.clone().kind.into(),
+            lexeme.clone().text.clone().into(),
+        )
     }
 
     fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) {

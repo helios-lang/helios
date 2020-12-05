@@ -52,6 +52,27 @@ fn is_whitespace(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\r' | '\n')
 }
 
+/// The unit of a tokenized Koi source file.
+///
+/// This is the `Item` type of the [`Lexer`] iterator. This structure holds the
+/// [`SyntaxKind`] of the lexeme, as well as the text that formed this token.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Lexeme {
+    pub(crate) kind: SyntaxKind,
+    pub(crate) text: String,
+}
+
+impl Lexeme {
+    /// Constructs a new [`Lexeme`] with the kind and text (its representation
+    /// in the source text).
+    pub fn new<S: Into<String>>(kind: SyntaxKind, text: S) -> Self {
+        Self {
+            kind,
+            text: text.into(),
+        }
+    }
+}
+
 /// An enumeration of all the possible modes the [`Lexer`] may be in.
 ///
 /// Because the grammar of the Koi programming language is not context free (at
@@ -196,7 +217,7 @@ impl Lexer {
 }
 
 impl Lexer {
-    fn tokenize_normal(&mut self) -> Option<(SyntaxKind, String)> {
+    fn tokenize_normal(&mut self) -> Option<Lexeme> {
         let kind = match self.next_char()? {
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
@@ -205,16 +226,17 @@ impl Lexer {
             c => todo!("Lexer::tokenize_normal({:?})", c),
         };
 
-        let consumed = self.consumed_chars.drain(..).collect();
-        Some((kind, consumed))
+        let text = self.consumed_chars.drain(..).collect::<String>();
+        Some(Lexeme::new(kind, text))
     }
 
+    /// Tokenizes a contiguous series of whitespace delimiters.
     fn lex_whitespace(&mut self, _: char) -> SyntaxKind {
         self.consume_while(is_whitespace);
         SyntaxKind::Whitespace
     }
 
-    /// Matches any character that is a valid symbol.
+    /// Tokenizes a valid symbol.
     ///
     /// _TODO:_ Perhaps we could handle cases with confused symbols, such as
     /// U+037E, the Greek question mark, which looks like a semicolon (compare
@@ -244,8 +266,11 @@ impl Lexer {
         }
     }
 
-    /// Matches every character that can be part of an identifier. This includes
-    /// upper and lower-case letters, decimal digits and the underscore.
+    /// Tokenizes a contiguous series of characters that may be part of an
+    /// identifier.
+    ///
+    /// This includes upper- and lower-case letters, decimal digits and the
+    /// underscore.
     fn lex_identifier(&mut self, first_char: char) -> SyntaxKind {
         let rest = self.consume_build(is_identifier_continue);
         let vec = [&vec![first_char], &rest[..]].concat();
@@ -253,9 +278,7 @@ impl Lexer {
         self.lex_keyword_or_identifier(string)
     }
 
-    /// Attempts to match the provided `string` to a keyword, returning a
-    /// `TokenKind::Keyword` if a match is found, otherwise a
-    /// `TokenKind::Identifier`.
+    /// Attempts to tokenize the provided string into a keyword or identifier.
     #[rustfmt::skip]
     fn lex_keyword_or_identifier(&mut self, string: String) -> SyntaxKind {
         match &*string {
@@ -288,13 +311,11 @@ impl Lexer {
         }
     }
 
-    /// Matches any valid sequence of digits that can form an integer or float
-    /// literal.
+    /// Tokenizes a contiguous series of characters that may be part of an
+    /// integer or float literal.
     ///
-    /// The lexer doesn't verify if the the number literal is correctly
-    /// formatted in binary, octal, or hexadecimal. Essentially, only integers
-    /// should use the aforementioned bases and must start with `0` followed by
-    /// a letter to differentiate the which base is desired.
+    /// _NOTE:_ the lexer does not verify if the the number literal is correctly
+    /// formatted in binary, octal, or hexadecimal.
     fn lex_number(&mut self, _: char) -> SyntaxKind {
         fn is_digit_continue(c: char) -> bool {
             matches!(c, '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
@@ -316,7 +337,7 @@ impl Lexer {
 }
 
 impl Iterator for Lexer {
-    type Item = (SyntaxKind, String);
+    type Item = Lexeme;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_mode() {
@@ -332,7 +353,7 @@ mod tests {
 
     fn check(input: impl Into<String> + Clone, kind: SyntaxKind) {
         let mut lexer = Lexer::new(input.clone().into());
-        assert_eq!(lexer.next(), Some((kind, input.into())));
+        assert_eq!(lexer.next(), Some(Lexeme::new(kind, input.into())));
     }
 
     #[test]
