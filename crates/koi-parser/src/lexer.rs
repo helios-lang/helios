@@ -1,13 +1,17 @@
-//! The module responsible for tokenizing a Koi source file.
+//! Tokenizing Koi source files.
 //!
 //! The showrunner of this module is the [`Lexer`] type. It essentially takes
-//! an input as a `String` and provides a vector of [`Lexeme`]s that may be used
-//! by anyone, such as the [`Parser`].
+//! an input as a `String` and provides a vector of [`Lexeme`]s. Although this
+//! may not be useful on its own, it is heavily dependent by the [`Parser`] to
+//! parse a Koi source file. Refer to it's documentation for more information.
 //!
-//! The lexer aims to be as error-tolerant as possible and support UTF-8
-//! encoding (which is enforced by Rust's `String` and `char` types). It is also
-//! lossless, meaning that it represents the original text exactly (including
-//! whitespace and comments).
+//! The lexer aims to be as error-tolerant and UTF-8 friendly as possible (the
+//! latter of which is enforced by Rust's `String` and `char` types). It is also
+//! lossless, meaning that it represents the original text exactly as it is
+//! (including whitespace and comments).
+//!
+//! Refer to `Lexer`'s and `Lexeme`'s documentation for more information on how
+//! tokenization is done.
 //!
 //! [`Parser`]: crate::parser::Parser
 
@@ -67,8 +71,8 @@ fn is_whitespace(c: char) -> bool {
 
 /// The unit of a tokenized Koi source file.
 ///
-/// This is the `Item` type of the [`Lexer`] iterator. This structure holds the
-/// [`SyntaxKind`] of the lexeme, as well as the text that formed this token.
+/// This structure holds the [`SyntaxKind`] of a lexeme, as well as the text
+/// that formed it. It is also the `Item` type of the [`Lexer`] iterator.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Lexeme {
     pub(crate) kind: SyntaxKind,
@@ -91,7 +95,8 @@ impl Lexeme {
 /// Because the grammar of the Koi programming language is not context free (at
 /// the moment), it is necessary for the lexer to know its context. As a result,
 /// the lexer stores all the current modes in a LIFO stack. This would allow
-/// it to behave a little differently depending on where it is in the source.
+/// it to behave a little differently depending on its location in the source
+/// text.
 ///
 /// For example, string interpolation requires special tokens to signify the
 /// start and end of an embedded expression. This will be established with the
@@ -120,8 +125,7 @@ impl Default for LexerMode {
 ///
 /// This structure shouldn't need to be manipulated manually. It is instead
 /// recommended to use the [`Parser`] structure or any of the public top-level
-/// functions of this crate to properly tokenize and parse a given Koi source
-/// file.
+/// functions of this crate to properly tokenize and parse a Koi source file.
 ///
 /// [`Parser`]: crate::parser::Parser
 pub struct Lexer {
@@ -134,7 +138,7 @@ impl Lexer {
     /// Construct a new [`Lexer`] with a given source text.
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
-    /// current cursor position to the start.
+    /// cursor position to the start.
     pub fn new(source: String) -> Self {
         Self {
             cursor: Cursor::new(source),

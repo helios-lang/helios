@@ -1,9 +1,22 @@
+//! Abstractions for iterating over the characters of a Koi source file.
+//!
+//! This module exports the [`Cursor`] structure, which is responsible for
+//! iterating over the characters of a source text. It also provides methods for
+//! advancing to the next character and peeking a character at a given index.
+
 use std::vec::IntoIter;
 
 /// End-of-file character.
 pub const EOF_CHAR: char = '\0';
 
-/// A structure representing the current position in a Koi source file.
+/// A structure representing the current position in a Koi source text.
+///
+/// This type should not be manipulated directly. The [`Lexer`] is another
+/// abstraction over this type that handles the iteration and tokenization of
+/// a Koi source text for you. Please refer to its documentation for more
+/// information.
+///
+/// [`Lexer`]: crate::lexer::Lexer
 pub struct Cursor {
     chars: IntoIter<char>,
     pub(crate) pos: usize,

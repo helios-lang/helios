@@ -1,3 +1,14 @@
+//! Parsing Koi source files.
+//!
+//! The showrunner of this module is the [`Parser`] type. It is responsible for
+//! parsing an input (a `String`) and returning a concrete syntax tree (CST)
+//! using the [`rowan`] library.
+//!
+//! Refer to [`Parser`] and [`ParserResult`] for more information on how parsing
+//! is done.
+//!
+//! [`rowan`]: https://docs.rs/rowan/0.10.0/rowan
+
 mod expr;
 
 use crate::lexer::Lexer;
