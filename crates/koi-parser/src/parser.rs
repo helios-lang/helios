@@ -21,14 +21,14 @@ use rowan::GreenNode;
 use std::iter::Peekable;
 
 /// A lazy, lossless, error-tolerant parser for the Koi programming language.
-pub struct Parser {
-    lexer: Peekable<Lexer>,
+pub struct Parser<'src> {
+    lexer: Peekable<Lexer<'src>>,
     events: Vec<Event>,
 }
 
-impl Parser {
+impl<'src> Parser<'src> {
     /// Construct a new [`Parser`] with a given source text.
-    pub fn new(source: String) -> Self {
+    pub fn new(source: &'src str) -> Self {
         Self {
             lexer: Lexer::new(source).peekable(),
             events: Vec::new(),
@@ -53,7 +53,7 @@ impl Parser {
     }
 }
 
-impl Parser {
+impl<'src> Parser<'src> {
     /// Peeks the next [`SyntaxKind`] token without consuming it.
     fn peek(&mut self) -> Option<SyntaxKind> {
         self.lexer.peek().map(|lexeme| lexeme.kind)
@@ -104,7 +104,7 @@ impl ParserResult {
 
 #[cfg(test)]
 fn check(input: &str, expected_tree: expect_test::Expect) {
-    let parse_result = Parser::new(input.to_string()).parse();
+    let parse_result = Parser::new(input).parse();
     expected_tree.assert_eq(&parse_result.debug_tree());
 }
 
