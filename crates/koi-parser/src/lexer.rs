@@ -303,25 +303,24 @@ impl Lexer {
             "and"       => SyntaxKind::Kwd_And,
             "as"        => SyntaxKind::Kwd_As,
             "else"      => SyntaxKind::Kwd_Else,
-            "extend"    => SyntaxKind::Kwd_Extend,
+            "export"    => SyntaxKind::Kwd_Export,
             "external"  => SyntaxKind::Kwd_External,
             "for"       => SyntaxKind::Kwd_For,
-            "function"  => SyntaxKind::Kwd_Function,
+            "forall"    => SyntaxKind::Kwd_Forall,
+            "fun"       => SyntaxKind::Kwd_Fun,
             "if"        => SyntaxKind::Kwd_If,
             "import"    => SyntaxKind::Kwd_Import,
             "in"        => SyntaxKind::Kwd_In,
             "let"       => SyntaxKind::Kwd_Let,
+            "loop"      => SyntaxKind::Kwd_Loop,
             "match"     => SyntaxKind::Kwd_Match,
             "module"    => SyntaxKind::Kwd_Module,
             "not"       => SyntaxKind::Kwd_Not,
             "of"        => SyntaxKind::Kwd_Of,
             "or"        => SyntaxKind::Kwd_Or,
-            "public"    => SyntaxKind::Kwd_Public,
             "ref"       => SyntaxKind::Kwd_Ref,
-            "return"    => SyntaxKind::Kwd_Return,
             "type"      => SyntaxKind::Kwd_Type,
-            "var"       => SyntaxKind::Kwd_Var,
-            "where"     => SyntaxKind::Kwd_Where,
+            "val"       => SyntaxKind::Kwd_Val,
             "while"     => SyntaxKind::Kwd_While,
             "with"      => SyntaxKind::Kwd_With,
             _           => SyntaxKind::Identifier,
@@ -380,25 +379,24 @@ mod tests {
         check("and", SyntaxKind::Kwd_And);
         check("as", SyntaxKind::Kwd_As);
         check("else", SyntaxKind::Kwd_Else);
-        check("extend", SyntaxKind::Kwd_Extend);
+        check("export", SyntaxKind::Kwd_Export);
         check("external", SyntaxKind::Kwd_External);
         check("for", SyntaxKind::Kwd_For);
-        check("function", SyntaxKind::Kwd_Function);
+        check("forall", SyntaxKind::Kwd_Forall);
+        check("fun", SyntaxKind::Kwd_Fun);
         check("if", SyntaxKind::Kwd_If);
         check("import", SyntaxKind::Kwd_Import);
         check("in", SyntaxKind::Kwd_In);
         check("let", SyntaxKind::Kwd_Let);
+        check("loop", SyntaxKind::Kwd_Loop);
         check("match", SyntaxKind::Kwd_Match);
         check("module", SyntaxKind::Kwd_Module);
         check("not", SyntaxKind::Kwd_Not);
         check("of", SyntaxKind::Kwd_Of);
         check("or", SyntaxKind::Kwd_Or);
-        check("public", SyntaxKind::Kwd_Public);
         check("ref", SyntaxKind::Kwd_Ref);
-        check("return", SyntaxKind::Kwd_Return);
         check("type", SyntaxKind::Kwd_Type);
-        check("var", SyntaxKind::Kwd_Var);
-        check("where", SyntaxKind::Kwd_Where);
+        check("val", SyntaxKind::Kwd_Val);
         check("while", SyntaxKind::Kwd_While);
         check("with", SyntaxKind::Kwd_With);
     }
