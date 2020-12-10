@@ -22,7 +22,7 @@ pub struct Cursor<'source> {
     chars: Chars<'source>,
     source: &'source str,
     pos: usize,
-    checkpoint: usize,
+    checkpoints: Vec<usize>,
 }
 
 impl<'source> Cursor<'source> {
@@ -32,7 +32,7 @@ impl<'source> Cursor<'source> {
             chars: source.chars(),
             source,
             pos: 0,
-            checkpoint: 0,
+            checkpoints: Vec::new(),
         }
     }
 
@@ -56,30 +56,33 @@ impl<'source> Cursor<'source> {
     /// doesn't “consume” the input (it merely acts as a window over a `&str`),
     /// however, one could argue that this detail is abstracted away and thus
     /// doesn't really matter.
+    ///
+    /// [`Cursor::slice`]: crate::cursor::Cursor::slice
     #[inline]
-    pub fn mark_checkpoint(&mut self) {
-        self.checkpoint = self.pos;
+    pub fn checkpoint(&mut self) {
+        self.checkpoints.push(self.pos);
     }
 
     /// The range of the consumed tokens from the last-marked checkpoint.
+    ///
+    /// This method will remove the most recent checkpoint from the stack before
+    /// returning the range (hence why this method requires `&mut self`).
     #[inline]
-    pub fn span(&self) -> Range<usize> {
-        self.checkpoint..self.pos
+    pub fn span(&mut self) -> Range<usize> {
+        (self.checkpoints.pop().unwrap_or_default())..self.pos
     }
 
     /// Returns a slice of the source text from the last-marked checkpoint to
     /// the current cursor position.
     ///
-    /// A checkpoint can be created with the [`Cursor::mark_checkpoint`] method.
-    /// Refer to its documentation for more information.
+    /// The most recent checkpoint will be removed from the stack. A checkpoint
+    /// can be created with the [`Cursor::checkpoint`] method. Refer to
+    /// its documentation for more information.
     ///
-    /// [`Cursor::mark_checkpoint`]: crate::cursor::Cursor::mark_checkpoint
+    /// [`Cursor::checkpoint`]: crate::cursor::Cursor::checkpoint
     #[inline]
-    pub fn slice(&self) -> &'source str {
-        // unsafe { self.source.get_unchecked(self.span()) }
-        // &self.source.get(self.span()).expect("Invalid range")
-        // println!("{:?}", self.span());
-        &self.source[self.span()]
+    pub fn slice(&mut self) -> &'source str {
+        unsafe { self.source.get_unchecked(self.span()) }
     }
 
     /// The number of characters of the source text in full.
@@ -176,10 +179,10 @@ mod tests {
         let mut cursor = Cursor::new("hello, world!");
         assert_eq!(cursor.source_len(), 13);
 
-        cursor.mark_checkpoint();
+        cursor.checkpoint();
         assert_eq!(cursor.slice(), "");
 
-        cursor.mark_checkpoint();
+        cursor.checkpoint();
         assert_eq!(cursor.advance(), Some('h'));
         assert_eq!(cursor.advance(), Some('e'));
         assert_eq!(cursor.advance(), Some('l'));
@@ -187,7 +190,7 @@ mod tests {
         assert_eq!(cursor.advance(), Some('o'));
         assert_eq!(cursor.slice(), "hello");
 
-        cursor.mark_checkpoint();
+        cursor.checkpoint();
         assert_eq!(cursor.advance(), Some(','));
         assert_eq!(cursor.advance(), Some(' '));
         assert_eq!(cursor.advance(), Some('w'));
@@ -204,10 +207,7 @@ mod tests {
         let mut cursor = Cursor::new("héllö, wørl∂¿");
         assert_eq!(cursor.source_len(), 19);
 
-        cursor.mark_checkpoint();
-        assert_eq!(cursor.slice(), "");
-
-        cursor.mark_checkpoint();
+        cursor.checkpoint();
         assert_eq!(cursor.advance(), Some('h'));
         assert_eq!(cursor.advance(), Some('é'));
         assert_eq!(cursor.advance(), Some('l'));
@@ -215,7 +215,7 @@ mod tests {
         assert_eq!(cursor.advance(), Some('ö'));
         assert_eq!(cursor.slice(), "héllö");
 
-        cursor.mark_checkpoint();
+        cursor.checkpoint();
         assert_eq!(cursor.advance(), Some(','));
         assert_eq!(cursor.advance(), Some(' '));
         assert_eq!(cursor.advance(), Some('w'));

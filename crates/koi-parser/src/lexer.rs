@@ -216,7 +216,7 @@ impl<'source> Lexer<'source> {
     where
         F: Fn(char) -> bool,
     {
-        self.cursor.mark_checkpoint();
+        self.cursor.checkpoint();
         self.consume_while(predicate);
         self.cursor.slice()
     }
@@ -224,7 +224,7 @@ impl<'source> Lexer<'source> {
 
 impl<'source> Lexer<'source> {
     fn tokenize_normal(&mut self) -> Option<Lexeme<'source>> {
-        self.cursor.mark_checkpoint();
+        self.cursor.checkpoint();
 
         let kind = match self.cursor.advance()? {
             c if is_whitespace(c) => self.lex_whitespace(c),
@@ -234,7 +234,6 @@ impl<'source> Lexer<'source> {
             c => todo!("Lexer::tokenize_normal({:?})", c),
         };
 
-        // println!("-> {:?}", self.cursor.span());
         let text = self.cursor.slice();
         Some(Lexeme::new(kind, text))
     }
@@ -364,34 +363,34 @@ mod tests {
         assert_eq!(lexer.next(), Some(Lexeme::new(kind, input)));
     }
 
-    // #[test]
-    // fn test_lex_keywords() {
-    //     check("???", SyntaxKind::Kwd_Unimplemented);
-    //     check("alias", SyntaxKind::Kwd_Alias);
-    //     check("and", SyntaxKind::Kwd_And);
-    //     check("as", SyntaxKind::Kwd_As);
-    //     check("else", SyntaxKind::Kwd_Else);
-    //     check("export", SyntaxKind::Kwd_Export);
-    //     check("external", SyntaxKind::Kwd_External);
-    //     check("for", SyntaxKind::Kwd_For);
-    //     check("forall", SyntaxKind::Kwd_Forall);
-    //     check("fun", SyntaxKind::Kwd_Fun);
-    //     check("if", SyntaxKind::Kwd_If);
-    //     check("import", SyntaxKind::Kwd_Import);
-    //     check("in", SyntaxKind::Kwd_In);
-    //     check("let", SyntaxKind::Kwd_Let);
-    //     check("loop", SyntaxKind::Kwd_Loop);
-    //     check("match", SyntaxKind::Kwd_Match);
-    //     check("module", SyntaxKind::Kwd_Module);
-    //     check("not", SyntaxKind::Kwd_Not);
-    //     check("of", SyntaxKind::Kwd_Of);
-    //     check("or", SyntaxKind::Kwd_Or);
-    //     check("ref", SyntaxKind::Kwd_Ref);
-    //     check("type", SyntaxKind::Kwd_Type);
-    //     check("val", SyntaxKind::Kwd_Val);
-    //     check("while", SyntaxKind::Kwd_While);
-    //     check("with", SyntaxKind::Kwd_With);
-    // }
+    #[test]
+    fn test_lex_keywords() {
+        check("???", SyntaxKind::Kwd_Unimplemented);
+        check("alias", SyntaxKind::Kwd_Alias);
+        check("and", SyntaxKind::Kwd_And);
+        check("as", SyntaxKind::Kwd_As);
+        check("else", SyntaxKind::Kwd_Else);
+        check("export", SyntaxKind::Kwd_Export);
+        check("external", SyntaxKind::Kwd_External);
+        check("for", SyntaxKind::Kwd_For);
+        check("forall", SyntaxKind::Kwd_Forall);
+        check("fun", SyntaxKind::Kwd_Fun);
+        check("if", SyntaxKind::Kwd_If);
+        check("import", SyntaxKind::Kwd_Import);
+        check("in", SyntaxKind::Kwd_In);
+        check("let", SyntaxKind::Kwd_Let);
+        check("loop", SyntaxKind::Kwd_Loop);
+        check("match", SyntaxKind::Kwd_Match);
+        check("module", SyntaxKind::Kwd_Module);
+        check("not", SyntaxKind::Kwd_Not);
+        check("of", SyntaxKind::Kwd_Of);
+        check("or", SyntaxKind::Kwd_Or);
+        check("ref", SyntaxKind::Kwd_Ref);
+        check("type", SyntaxKind::Kwd_Type);
+        check("val", SyntaxKind::Kwd_Val);
+        check("while", SyntaxKind::Kwd_While);
+        check("with", SyntaxKind::Kwd_With);
+    }
 
     #[test]
     fn test_lex_symbols() {
@@ -522,44 +521,44 @@ mod tests {
         check("1a2b3c.4d5e6", SyntaxKind::Lit_Float);
     }
 
-    // #[test]
-    // fn test_lex_identifiers() {
-    //     check("_", SyntaxKind::Identifier);
-    //     check("a", SyntaxKind::Identifier);
-    //     check("abc", SyntaxKind::Identifier);
-    //     check("abc123", SyntaxKind::Identifier);
-    //     check("abc123_abc", SyntaxKind::Identifier);
-    //     check("abc123_abc123", SyntaxKind::Identifier);
-    // }
+    #[test]
+    fn test_lex_identifiers() {
+        check("_", SyntaxKind::Identifier);
+        check("a", SyntaxKind::Identifier);
+        check("abc", SyntaxKind::Identifier);
+        check("abc123", SyntaxKind::Identifier);
+        check("abc123_abc", SyntaxKind::Identifier);
+        check("abc123_abc123", SyntaxKind::Identifier);
+    }
 
-    // #[test]
-    // fn test_lex_identifiers_unicode() {
-    //     // Latin-extended
-    //     check("åçéîñøœßü", SyntaxKind::Identifier);
-    //     check("njerëzore", SyntaxKind::Identifier);
-    //     check("čovjek", SyntaxKind::Identifier);
-    //     check("člověk", SyntaxKind::Identifier);
+    #[test]
+    fn test_lex_identifiers_unicode() {
+        // Latin-extended
+        check("åçéîñøœßü", SyntaxKind::Identifier);
+        check("njerëzore", SyntaxKind::Identifier);
+        check("čovjek", SyntaxKind::Identifier);
+        check("člověk", SyntaxKind::Identifier);
 
-    //     // Other scripts
-    //     check("بشري", SyntaxKind::Identifier); // Arabic
-    //     check("ሰው", SyntaxKind::Identifier); // Amharic
-    //     check("մարդ", SyntaxKind::Identifier); // Armenian
-    //     check("মানব", SyntaxKind::Identifier); // Bengali
-    //     check("人的", SyntaxKind::Identifier); // Chinese
-    //     check("человек", SyntaxKind::Identifier); // Cyrillic
-    //     check("मानव", SyntaxKind::Identifier); // Devanagari
-    //     check("ადამიანური", SyntaxKind::Identifier); // Gregorian
-    //     check("άνθρωπος", SyntaxKind::Identifier); // Greek
-    //     check("માનવ", SyntaxKind::Identifier); // Gujarati
-    //     check("אנוש", SyntaxKind::Identifier); // Hebrew
-    //     check("ヒューマン", SyntaxKind::Identifier); // Japanese (Katakana)
-    //     check("ಮಾನವ", SyntaxKind::Identifier); // Kannada
-    //     check("មនុស្ស", SyntaxKind::Identifier); // Khmer
-    //     check("인간", SyntaxKind::Identifier); // Korean
-    //     check("ມະນຸດ", SyntaxKind::Identifier); // Lao
-    //     check("മനുഷ്യൻ", SyntaxKind::Identifier); // Malayalam
-    //     check("လူ့", SyntaxKind::Identifier); // Myanmar
-    //     check("ମାନବ", SyntaxKind::Identifier); // Odia
-    //     check("มนุษย์", SyntaxKind::Identifier); // Thai
-    // }
+        // Other scripts
+        check("بشري", SyntaxKind::Identifier); // Arabic
+        check("ሰው", SyntaxKind::Identifier); // Amharic
+        check("մարդ", SyntaxKind::Identifier); // Armenian
+        check("মানব", SyntaxKind::Identifier); // Bengali
+        check("人的", SyntaxKind::Identifier); // Chinese
+        check("человек", SyntaxKind::Identifier); // Cyrillic
+        check("मानव", SyntaxKind::Identifier); // Devanagari
+        check("ადამიანური", SyntaxKind::Identifier); // Gregorian
+        check("άνθρωπος", SyntaxKind::Identifier); // Greek
+        check("માનવ", SyntaxKind::Identifier); // Gujarati
+        check("אנוש", SyntaxKind::Identifier); // Hebrew
+        check("ヒューマン", SyntaxKind::Identifier); // Japanese (Katakana)
+        check("ಮಾನವ", SyntaxKind::Identifier); // Kannada
+        check("មនុស្ស", SyntaxKind::Identifier); // Khmer
+        check("인간", SyntaxKind::Identifier); // Korean
+        check("ມະນຸດ", SyntaxKind::Identifier); // Lao
+        check("മനുഷ്യൻ", SyntaxKind::Identifier); // Malayalam
+        check("လူ့", SyntaxKind::Identifier); // Myanmar
+        check("ମାନବ", SyntaxKind::Identifier); // Odia
+        check("มนุษย์", SyntaxKind::Identifier); // Thai
+    }
 }
