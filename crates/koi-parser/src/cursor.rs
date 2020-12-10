@@ -92,6 +92,7 @@ impl<'source> Cursor<'source> {
     }
 
     /// The remaining length of the unprocessed input.
+    #[inline]
     pub fn remaining_len(&self) -> usize {
         self.source_len() - self.pos()
     }
@@ -102,13 +103,14 @@ impl<'source> Cursor<'source> {
         self.pos
     }
 
-    /// Get a character of the source text at the given index.
+    /// Returns the character of the source text at the given index.
     #[inline]
     pub fn nth(&self, n: usize) -> char {
         self.chars.clone().nth(n).unwrap_or(EOF_CHAR)
     }
 
     /// Checks if the cursor has reached the end of the input.
+    #[inline]
     pub fn is_at_end(&self) -> bool {
         self.pos() >= self.source_len()
     }
