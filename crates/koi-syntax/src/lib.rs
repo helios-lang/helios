@@ -1,6 +1,6 @@
 mod lang;
 
-use lang::Language;
+pub use lang::Language;
 
 pub type SyntaxNode = rowan::SyntaxNode<Language>;
 

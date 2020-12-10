@@ -9,17 +9,21 @@
 //!
 //! [`rowan`]: https://docs.rs/rowan/0.10.0/rowan
 
+mod event;
 mod expr;
+mod sink;
 
-use crate::lexer::Lexer;
+use self::event::Event;
+use self::sink::Sink;
+use crate::lexer::{Lexeme, Lexer};
 use koi_syntax::{SyntaxKind, SyntaxNode};
-use rowan::{Checkpoint, GreenNode, GreenNodeBuilder};
+use rowan::GreenNode;
 use std::iter::Peekable;
 
 /// A lazy, lossless, error-tolerant parser for the Koi programming language.
 pub struct Parser {
     lexer: Peekable<Lexer>,
-    builder: GreenNodeBuilder<'static>,
+    events: Vec<Event>,
 }
 
 impl Parser {
@@ -27,7 +31,7 @@ impl Parser {
     pub fn new(source: String) -> Self {
         Self {
             lexer: Lexer::new(source).peekable(),
-            builder: GreenNodeBuilder::new(),
+            events: Vec::new(),
         }
     }
 
@@ -37,41 +41,47 @@ impl Parser {
     /// source text (no matter how invalid it is). Once done, it will return a
     /// [`ParserResult`] containing the root green node.
     pub fn parse(mut self) -> ParserResult {
-        self.builder.start_node(SyntaxKind::Root.into());
+        self.start_node(SyntaxKind::Root.into());
         expr::parse_expr(&mut self, 0);
-        self.builder.finish_node();
+        self.finish_node();
+
+        let sink = Sink::new(self.events);
 
         ParserResult {
-            green_node: self.builder.finish(),
+            green_node: sink.finish(),
         }
     }
 }
 
 impl Parser {
     /// Peeks the next [`SyntaxKind`] token without consuming it.
-    pub(crate) fn peek(&mut self) -> Option<SyntaxKind> {
+    fn peek(&mut self) -> Option<SyntaxKind> {
         self.lexer.peek().map(|lexeme| lexeme.kind)
     }
 
     /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     fn bump(&mut self) {
-        let lexeme = self.lexer.next().expect("Failed to get next token");
-        self.builder.token(
-            lexeme.clone().kind.into(),
-            lexeme.clone().text.clone().into(),
-        )
+        let Lexeme { kind, text } = self.lexer.next().unwrap();
+        self.events.push(Event::AddToken {
+            kind,
+            text: text.into(),
+        })
     }
 
-    fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) {
-        self.builder.start_node_at(checkpoint, kind.into());
+    fn start_node(&mut self, kind: SyntaxKind) {
+        self.events.push(Event::StartNode { kind });
+    }
+
+    fn start_node_at(&mut self, checkpoint: usize, kind: SyntaxKind) {
+        self.events.push(Event::StartNodeAt { kind, checkpoint });
     }
 
     fn finish_node(&mut self) {
-        self.builder.finish_node();
+        self.events.push(Event::FinishNode);
     }
 
-    fn checkpoint(&mut self) -> Checkpoint {
-        self.builder.checkpoint()
+    fn checkpoint(&mut self) -> usize {
+        self.events.len()
     }
 }
 

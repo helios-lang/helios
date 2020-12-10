@@ -30,7 +30,7 @@ fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
 }
 
 /// Parse an expression.
-pub fn parse_expr(parser: &mut Parser, min_bp: u8) {
+pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
     let checkpoint = parser.checkpoint();
 
     match parser.peek() {
