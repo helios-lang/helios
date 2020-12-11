@@ -227,6 +227,7 @@ impl<'source> Lexer<'source> {
         self.cursor.checkpoint();
 
         let kind = match self.cursor.advance()? {
+            c if c == '-' && self.peek() == '-' => self.lex_comment(c),
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
@@ -236,6 +237,11 @@ impl<'source> Lexer<'source> {
 
         let text = self.cursor.slice();
         Some(Lexeme::new(kind, text))
+    }
+
+    fn lex_comment(&mut self, _: char) -> SyntaxKind {
+        self.consume_while(|c| c != '\n');
+        SyntaxKind::Comment
     }
 
     /// Tokenizes a contiguous series of whitespace delimiters.
@@ -361,6 +367,14 @@ mod tests {
     fn check(input: &str, kind: SyntaxKind) {
         let mut lexer = Lexer::new(input);
         assert_eq!(lexer.next(), Some(Lexeme::new(kind, input)));
+    }
+
+    #[test]
+    fn test_lex_line_comment() {
+        check("--", SyntaxKind::Comment);
+        check("--abc", SyntaxKind::Comment);
+        check("-- abc 123", SyntaxKind::Comment);
+        check("-- This is a random line comment", SyntaxKind::Comment);
     }
 
     #[test]

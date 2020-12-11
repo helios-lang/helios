@@ -27,9 +27,13 @@ impl<'lexemes, 'source> Source<'lexemes, 'source> {
     }
 
     fn eat_trivia(&mut self) {
-        while self.peek_kind_raw() == Some(SyntaxKind::Whitespace) {
+        while self.at_trivia() {
             self.cursor += 1;
         }
+    }
+
+    fn at_trivia(&self) -> bool {
+        self.peek_kind_raw().map_or(false, SyntaxKind::is_trivia)
     }
 
     fn peek_kind_raw(&self) -> Option<SyntaxKind> {

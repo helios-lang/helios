@@ -57,7 +57,7 @@ impl<'lexemes, 'source> Sink<'lexemes, 'source> {
 
     fn eat_trivia(&mut self) {
         while let Some(lexeme) = self.lexemes.get(self.cursor) {
-            if lexeme.kind != SyntaxKind::Whitespace {
+            if !lexeme.kind.is_trivia() {
                 break;
             }
 

@@ -133,13 +133,33 @@ pub enum SyntaxKind {
     Exp_UnaryPrefix,
     Exp_UnaryPostfix,
 
-    LineComment,
-    LineDocComment,
+    Comment,
+    DocComment,
     Whitespace,
 
     Identifier,
     Error,
     Root, // this should be last
+}
+
+impl SyntaxKind {
+    /// Determines if the [`SyntaxKind`] is a discardable token (i.e. syntax
+    /// trivia).
+    ///
+    /// This method doesn't take a reference to a [`SyntaxKind`]. Due to the
+    /// fact that [`SyntaxKind`] is one byte in size, it is much more efficient
+    /// to pass by value than by reference. A reference is much larger in size
+    /// (eight bytes on 64-bit systems), which would have required an unneeded
+    /// allocation of memory. Note that [`SyntaxKind`] is `Copy`, so any other
+    /// references to the instance is not consumed.
+    pub fn is_trivia(self) -> bool {
+        matches!(
+            self,
+            SyntaxKind::Comment
+                | SyntaxKind::DocComment
+                | SyntaxKind::Whitespace
+        )
+    }
 }
 
 impl From<SyntaxKind> for rowan::SyntaxKind {
