@@ -34,9 +34,9 @@ pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
     let checkpoint = parser.checkpoint();
 
     match parser.peek() {
-        Some(SyntaxKind::Lit_Integer) | Some(SyntaxKind::Identifier) => {
-            parser.bump()
-        }
+        Some(SyntaxKind::Lit_Integer)
+        | Some(SyntaxKind::Lit_Float)
+        | Some(SyntaxKind::Identifier) => parser.bump(),
         Some(op @ SyntaxKind::Sym_Minus) | Some(op @ SyntaxKind::Sym_Bang) => {
             // Get the right binding power of the operator
             let ((), right_bp) = prefix_binding_power(op).unwrap();
