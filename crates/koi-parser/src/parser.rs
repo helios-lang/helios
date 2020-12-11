@@ -12,25 +12,37 @@
 mod event;
 mod expr;
 mod sink;
+mod source;
 
 use self::event::Event;
 use self::sink::Sink;
 use crate::lexer::{Lexeme, Lexer};
 use koi_syntax::{SyntaxKind, SyntaxNode};
 use rowan::GreenNode;
-use std::iter::Peekable;
+use source::Source;
+
+pub fn parse(source: &str) -> ParserResult {
+    let lexemes = Lexer::new(source).collect::<Vec<_>>();
+    let parser = Parser::new(&lexemes);
+    let events = parser.parse();
+    let sink = Sink::new(&lexemes, events);
+
+    ParserResult {
+        green_node: sink.finish(),
+    }
+}
 
 /// A lazy, lossless, error-tolerant parser for the Koi programming language.
-pub struct Parser<'src> {
-    lexer: Peekable<Lexer<'src>>,
+struct Parser<'lexemes, 'source> {
+    source: Source<'lexemes, 'source>,
     events: Vec<Event>,
 }
 
-impl<'src> Parser<'src> {
-    /// Construct a new [`Parser`] with a given source text.
-    pub fn new(source: &'src str) -> Self {
+impl<'lexemes, 'source> Parser<'lexemes, 'source> {
+    /// Construct a new [`Parser`] with a given slice of [`Lexeme`]s.
+    pub fn new(lexemes: &'lexemes [Lexeme<'source>]) -> Self {
         Self {
-            lexer: Lexer::new(source).peekable(),
+            source: Source::new(lexemes),
             events: Vec::new(),
         }
     }
@@ -40,31 +52,27 @@ impl<'src> Parser<'src> {
     /// This function will attempt to build a concrete syntax tree of the given
     /// source text (no matter how invalid it is). Once done, it will return a
     /// [`ParserResult`] containing the root green node.
-    pub fn parse(mut self) -> ParserResult {
+    pub fn parse(mut self) -> Vec<Event> {
         self.start_node(SyntaxKind::Root.into());
         expr::parse_expr(&mut self, 0);
         self.finish_node();
 
-        let sink = Sink::new(self.events);
-
-        ParserResult {
-            green_node: sink.finish(),
-        }
+        self.events
     }
 }
 
-impl<'src> Parser<'src> {
+impl<'lexeme, 'source> Parser<'lexeme, 'source> {
     /// Peeks the next [`SyntaxKind`] token without consuming it.
     fn peek(&mut self) -> Option<SyntaxKind> {
-        self.lexer.peek().map(|lexeme| lexeme.kind)
+        self.source.peek_kind()
     }
 
     /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     fn bump(&mut self) {
-        let Lexeme { kind, text } = self.lexer.next().unwrap();
+        let Lexeme { kind, text } = self.source.next_lexeme().unwrap();
         self.events.push(Event::AddToken {
-            kind,
-            text: text.into(),
+            kind: *kind,
+            text: (*text).into(),
         })
     }
 
@@ -104,7 +112,7 @@ impl ParserResult {
 
 #[cfg(test)]
 fn check(input: &str, expected_tree: expect_test::Expect) {
-    let parse_result = Parser::new(input).parse();
+    let parse_result = parse(input);
     expected_tree.assert_eq(&parse_result.debug_tree());
 }
 
@@ -116,5 +124,15 @@ mod tests {
     #[test]
     fn test_parse_nothing() {
         check("", expect![[r#"Root@0..0"#]]);
+    }
+
+    #[test]
+    fn test_parse_whitespace() {
+        check(
+            "   ",
+            expect![[r#"
+Root@0..3
+  Whitespace@0..3 "   ""#]],
+        );
     }
 }

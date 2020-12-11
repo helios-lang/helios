@@ -249,4 +249,38 @@ Root@0..20
       Lit_Integer@19..20 "5""#]],
         )
     }
+
+    #[test]
+    fn test_parse_number_preceded_by_whitespace() {
+        check(
+            "   9876",
+            expect![[r#"
+Root@0..7
+  Whitespace@0..3 "   "
+  Lit_Integer@3..7 "9876""#]],
+        );
+    }
+
+    #[test]
+    fn test_parse_number_followed_by_whitespace() {
+        check(
+            "1234   ",
+            expect![[r#"
+Root@0..7
+  Lit_Integer@0..4 "1234"
+  Whitespace@4..7 "   ""#]],
+        );
+    }
+
+    #[test]
+    fn test_parse_number_surrounded_by_whitespace() {
+        check(
+            " 123     ",
+            expect![[r#"
+Root@0..9
+  Whitespace@0..1 " "
+  Lit_Integer@1..4 "123"
+  Whitespace@4..9 "     ""#]],
+        );
+    }
 }
