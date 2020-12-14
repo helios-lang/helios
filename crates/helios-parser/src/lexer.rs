@@ -94,17 +94,10 @@ impl<'text> Lexeme<'text> {
 /// result, the lexer stores all the current modes in a LIFO stack. This would
 /// allow it to behave a little differently depending on its location in the
 /// source text.
-///
-/// For example, string interpolation requires special tokens to signify the
-/// start and end of an embedded expression. This will be established with the
-/// [`LexerMode::StringInterpolation`] variant.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LexerMode {
     /// The default, normal mode.
     Normal,
-    /// An interpolated expression in a string literal.
-    #[allow(dead_code)]
-    StringInterpolation,
 }
 
 impl Default for LexerMode {
@@ -142,22 +135,42 @@ impl<'source> Lexer<'source> {
         }
     }
 
+    /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
+    fn tokenize_normal(&mut self) -> Option<Lexeme<'source>> {
+        self.cursor.checkpoint();
+
+        let kind = match self.cursor.advance()? {
+            c if c == '/' && self.peek() == '/' => self.lex_comment(c),
+            c if is_whitespace(c) => self.lex_whitespace(c),
+            c if is_symbol(c) => self.lex_symbol(c),
+            c if is_identifier_start(c) => self.lex_identifier(c),
+            c if is_digit(c) => self.lex_number(c),
+            c => todo!("Lexer::tokenize_normal({:?})", c),
+        };
+
+        let text = self.cursor.slice();
+        Some(Lexeme::new(kind, text))
+    }
+}
+
+impl<'source> Lexer<'source> {
+    /// Pushes a new [`LexerMode`] to the mode stack.
     #[allow(dead_code)]
     pub(crate) fn push_mode(&mut self, mode: LexerMode) {
         self.mode_stack.push(mode);
     }
 
+    /// Pops off the last [`LexerMode`] from the mode stack.
     #[allow(dead_code)]
     pub(crate) fn pop_mode(&mut self) -> Option<LexerMode> {
         self.mode_stack.pop()
     }
 
+    /// The current mode of the lexer.
     fn current_mode(&self) -> LexerMode {
         self.mode_stack.last().cloned().unwrap_or_default()
     }
-}
 
-impl<'source> Lexer<'source> {
     /// Retrieves the next character in the iterator.
     fn next_char(&mut self) -> Option<char> {
         self.cursor.advance()
@@ -223,23 +236,6 @@ impl<'source> Lexer<'source> {
 }
 
 impl<'source> Lexer<'source> {
-    /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
-    fn tokenize_normal(&mut self) -> Option<Lexeme<'source>> {
-        self.cursor.checkpoint();
-
-        let kind = match self.cursor.advance()? {
-            c if c == '/' && self.peek() == '/' => self.lex_comment(c),
-            c if is_whitespace(c) => self.lex_whitespace(c),
-            c if is_symbol(c) => self.lex_symbol(c),
-            c if is_identifier_start(c) => self.lex_identifier(c),
-            c if is_digit(c) => self.lex_number(c),
-            c => todo!("Lexer::tokenize_normal({:?})", c),
-        };
-
-        let text = self.cursor.slice();
-        Some(Lexeme::new(kind, text))
-    }
-
     /// Tokenizes a line comment.
     ///
     /// A line comment starts with two forward slashes (`//`) and ends at the
@@ -374,7 +370,6 @@ impl<'source> Iterator for Lexer<'source> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_mode() {
             LexerMode::Normal => self.tokenize_normal(),
-            mode => todo!("Unimplemented Lexer mode: LexerMode::{:?}", mode),
         }
     }
 }
