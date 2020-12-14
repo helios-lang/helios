@@ -1,0 +1,13 @@
+[package]
+name = "helios-ide"
+version = "0.2.0"
+authors = ["Ta-Seen Islam <taseen00.islam@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+helios-syntax = { version = "0.2.0", path = "../helios-syntax" }
+log = "0.4.11"
+tokio = { version = "0.2.22", features = ["io-std"] }
+tower-lsp = "0.13.2"

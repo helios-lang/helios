@@ -1,4 +1,4 @@
-# Koi Grammar
+# Helios Grammar
 
 <pre>
 <i id="program">program</i> ::=
