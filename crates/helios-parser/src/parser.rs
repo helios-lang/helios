@@ -21,14 +21,32 @@ use helios_syntax::{SyntaxKind, SyntaxNode};
 use rowan::GreenNode;
 use source::Source;
 
-pub fn parse(source: &str) -> ParserResult {
+/// Parse the given source text into a [`Parse`].
+pub fn parse(source: &str) -> Parse {
     let lexemes = Lexer::new(source).collect::<Vec<_>>();
     let parser = Parser::new(&lexemes);
     let events = parser.parse();
     let sink = Sink::new(&lexemes, events);
 
-    ParserResult {
+    Parse {
         green_node: sink.finish(),
+    }
+}
+
+/// The result of parsing a source text.
+pub struct Parse {
+    /// The root green node of the syntax tree.
+    green_node: GreenNode,
+}
+
+impl Parse {
+    /// Returns a formatted string representation of the syntax tree.
+    pub fn debug_tree(&self) -> String {
+        let syntax_node = SyntaxNode::new_root(self.green_node.clone());
+        let formatted = format!("{:#?}", syntax_node);
+
+        // trims newline at the end
+        formatted[0..formatted.len() - 1].to_string()
     }
 }
 
@@ -93,27 +111,10 @@ impl<'lexeme, 'source> Parser<'lexeme, 'source> {
     }
 }
 
-/// The result of parsing a source text.
-pub struct ParserResult {
-    /// The root green node of the syntax tree.
-    green_node: GreenNode,
-}
-
-impl ParserResult {
-    /// Returns a formatted string representation of the syntax tree.
-    pub fn debug_tree(&self) -> String {
-        let syntax_node = SyntaxNode::new_root(self.green_node.clone());
-        let formatted = format!("{:#?}", syntax_node);
-
-        // trims newline at the end
-        formatted[0..formatted.len() - 1].to_string()
-    }
-}
-
 #[cfg(test)]
 fn check(input: &str, expected_tree: expect_test::Expect) {
-    let parse_result = parse(input);
-    expected_tree.assert_eq(&parse_result.debug_tree());
+    let parse = parse(input);
+    expected_tree.assert_eq(&parse.debug_tree());
 }
 
 #[cfg(test)]

@@ -123,15 +123,15 @@ mod tests {
     #[test]
     fn test_cursor_empty() {
         let mut cursor = Cursor::new("".into());
+        assert_eq!(cursor.source_len(), 0);
 
         // Peeking out-of-bounds character
-        assert_eq!(cursor.source_len(), 0);
         assert_eq!(cursor.remaining_len(), 0);
         assert_eq!(cursor.nth(0), EOF_CHAR);
 
         // Try to consume out-of-bounds character
         assert_eq!(cursor.advance(), None);
-        assert_eq!(cursor.remaining_len(), 0);
+        assert_eq!(cursor.is_at_end(), true);
         assert_eq!(cursor.pos(), 0);
     }
 
