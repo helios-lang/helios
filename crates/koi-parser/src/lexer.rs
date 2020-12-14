@@ -223,11 +223,12 @@ impl<'source> Lexer<'source> {
 }
 
 impl<'source> Lexer<'source> {
+    /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
     fn tokenize_normal(&mut self) -> Option<Lexeme<'source>> {
         self.cursor.checkpoint();
 
         let kind = match self.cursor.advance()? {
-            c if c == '-' && self.peek() == '-' => self.lex_comment(c),
+            c if c == '/' && self.peek() == '/' => self.lex_comment(c),
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
@@ -239,9 +240,25 @@ impl<'source> Lexer<'source> {
         Some(Lexeme::new(kind, text))
     }
 
+    /// Tokenizes a line comment.
+    ///
+    /// A line comment starts with two forward slashes (`//`) and ends at the
+    /// next line feed (or the end of the file, whichever comes first). This
+    /// function also distinguishes if the comment tokenized is a doc-comment
+    /// (which starts with three forward slashes (`///`) or two forward slashes
+    /// followed by an exclamation mark (`//!`)).
     fn lex_comment(&mut self, _: char) -> SyntaxKind {
-        self.consume_while(|c| c != '\n');
-        SyntaxKind::Comment
+        // Consume the second `/`
+        self.next_char();
+
+        // Check if it is a doc-comment
+        if matches!(self.peek(), '/' | '!') {
+            self.consume_while(|c| c != '\n');
+            SyntaxKind::DocComment
+        } else {
+            self.consume_while(|c| c != '\n');
+            SyntaxKind::Comment
+        }
     }
 
     /// Tokenizes a contiguous series of whitespace delimiters.
@@ -299,12 +316,13 @@ impl<'source> Lexer<'source> {
             "alias"     => SyntaxKind::Kwd_Alias,
             "and"       => SyntaxKind::Kwd_And,
             "as"        => SyntaxKind::Kwd_As,
+            "begin"     => SyntaxKind::Kwd_Begin,
             "else"      => SyntaxKind::Kwd_Else,
+            "end"       => SyntaxKind::Kwd_End,
             "export"    => SyntaxKind::Kwd_Export,
             "external"  => SyntaxKind::Kwd_External,
             "for"       => SyntaxKind::Kwd_For,
             "forall"    => SyntaxKind::Kwd_Forall,
-            "fun"       => SyntaxKind::Kwd_Fun,
             "if"        => SyntaxKind::Kwd_If,
             "import"    => SyntaxKind::Kwd_Import,
             "in"        => SyntaxKind::Kwd_In,
@@ -315,6 +333,7 @@ impl<'source> Lexer<'source> {
             "not"       => SyntaxKind::Kwd_Not,
             "of"        => SyntaxKind::Kwd_Of,
             "or"        => SyntaxKind::Kwd_Or,
+            "rec"       => SyntaxKind::Kwd_Rec,
             "ref"       => SyntaxKind::Kwd_Ref,
             "type"      => SyntaxKind::Kwd_Type,
             "val"       => SyntaxKind::Kwd_Val,
@@ -371,10 +390,23 @@ mod tests {
 
     #[test]
     fn test_lex_line_comment() {
-        check("--", SyntaxKind::Comment);
-        check("--abc", SyntaxKind::Comment);
-        check("-- abc 123", SyntaxKind::Comment);
-        check("-- This is a random line comment", SyntaxKind::Comment);
+        // Normal line comments
+        check("//", SyntaxKind::Comment);
+        check("//abc", SyntaxKind::Comment);
+        check("// abc 123", SyntaxKind::Comment);
+        check("// This is a random line comment", SyntaxKind::Comment);
+
+        // Item doc-comments
+        check("///", SyntaxKind::DocComment);
+        check("///abc", SyntaxKind::DocComment);
+        check("/// abc 123", SyntaxKind::DocComment);
+        check("/// This is a random line comment", SyntaxKind::DocComment);
+
+        // Module doc-comments
+        check("//!", SyntaxKind::DocComment);
+        check("//!abc", SyntaxKind::DocComment);
+        check("//! abc 123", SyntaxKind::DocComment);
+        check("//! This is a random line comment", SyntaxKind::DocComment);
     }
 
     #[test]
@@ -383,12 +415,13 @@ mod tests {
         check("alias", SyntaxKind::Kwd_Alias);
         check("and", SyntaxKind::Kwd_And);
         check("as", SyntaxKind::Kwd_As);
+        check("begin", SyntaxKind::Kwd_Begin);
         check("else", SyntaxKind::Kwd_Else);
+        check("end", SyntaxKind::Kwd_End);
         check("export", SyntaxKind::Kwd_Export);
         check("external", SyntaxKind::Kwd_External);
         check("for", SyntaxKind::Kwd_For);
         check("forall", SyntaxKind::Kwd_Forall);
-        check("fun", SyntaxKind::Kwd_Fun);
         check("if", SyntaxKind::Kwd_If);
         check("import", SyntaxKind::Kwd_Import);
         check("in", SyntaxKind::Kwd_In);
@@ -399,6 +432,7 @@ mod tests {
         check("not", SyntaxKind::Kwd_Not);
         check("of", SyntaxKind::Kwd_Of);
         check("or", SyntaxKind::Kwd_Or);
+        check("rec", SyntaxKind::Kwd_Rec);
         check("ref", SyntaxKind::Kwd_Ref);
         check("type", SyntaxKind::Kwd_Type);
         check("val", SyntaxKind::Kwd_Val);

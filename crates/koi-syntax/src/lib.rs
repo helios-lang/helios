@@ -60,12 +60,13 @@ pub enum SyntaxKind {
     Kwd_Alias,
     Kwd_And,
     Kwd_As,
+    Kwd_Begin,
     Kwd_Else,
+    Kwd_End,
     Kwd_Export,
     Kwd_External,
     Kwd_For,
     Kwd_Forall,
-    Kwd_Fun,
     Kwd_If,
     Kwd_Import,
     Kwd_In,
@@ -76,6 +77,7 @@ pub enum SyntaxKind {
     Kwd_Not,
     Kwd_Of,
     Kwd_Or,
+    Kwd_Rec,
     Kwd_Ref,
     Kwd_Type,
     Kwd_Unimplemented,
@@ -171,9 +173,10 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
 /// A list of all the keywords defined in the Koi grammar.
 pub fn keyword_list() -> Vec<String> {
     [
-        "alias", "and", "as", "else", "export", "external", "for", "forall",
-        "fun", "if", "import", "in", "let", "loop", "match", "module", "not",
-        "of", "or", "ref", "type", "val", "while", "with",
+        "alias", "and", "as", "begin", "else", "end", "export", "external",
+        "for", "forall", "if", "import", "in", "let", "loop", "match",
+        "module", "not", "of", "or", "rec", "ref", "type", "val", "while",
+        "with",
     ]
     .iter()
     .map(|s| String::from(*s))
