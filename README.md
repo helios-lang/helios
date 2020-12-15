@@ -2,9 +2,7 @@
   <img src="assets/logo.png" alt="logo" align="center">
 </p>
 
-# Helios
-
-[![CI](https://github.com/tahscenery/helios/workflows/CI/badge.svg)](https://github.com/tahscenery/helios/actions?query=workflow%3A%22CI%22)
+# Helios ![CI](https://github.com/tahscenery/helios/workflows/CI/badge.svg)
 
 Helios is a programming language aimed to be highly performant and easy to use.
 
