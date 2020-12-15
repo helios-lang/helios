@@ -42,12 +42,6 @@ fn is_identifier_continue(c: char) -> bool {
         || c.is_xid_continue()
 }
 
-/// Checks if the given character is a grouping delimiter.
-#[allow(dead_code)]
-fn is_grouping_delimiter(c: char) -> bool {
-    matches!(c, '{' | '}' | '[' | ']' | '(' | ')')
-}
-
 /// Checks if the given character is a recognised symbol.
 #[rustfmt::skip]
 fn is_symbol(c: char) -> bool {
@@ -342,24 +336,37 @@ impl<'source> Lexer<'source> {
     /// Tokenizes a contiguous series of characters that may be part of an
     /// integer or float literal.
     ///
-    /// _NOTE:_ the lexer does not verify if the the number literal is correctly
-    /// formatted in binary, octal, or hexadecimal.
-    fn lex_number(&mut self, _: char) -> SyntaxKind {
+    /// _NOTE:_ The lexer does not verify if the the number literal is correctly
+    /// formatted in its base.
+    fn lex_number(&mut self, c: char) -> SyntaxKind {
         fn is_digit_continue(c: char) -> bool {
             matches!(c, '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
         }
 
-        // Consume while we find underscores, digits, or letters (for base
-        // literals such as hexadecimal `0xfff` or binary `0b101`).
-        self.consume_while(is_digit_continue);
-
-        // Check if there's a decimal point.
-        if self.peek() == '.' && self.peek_at(1) != '.' {
-            self.next_char();
+        // First, we'll check if the number literal is in a non-decimal base.
+        if matches!((c, self.peek()), ('0', 'b') | ('0', 'o') | ('0', 'x')) {
+            // Number literals of non-decimal base can only be integers, so
+            // we'll consume any digit that may be part of a number (including
+            // invalid letters like 'z').
             self.consume_while(is_digit_continue);
-            SyntaxKind::Lit_Float
-        } else {
             SyntaxKind::Lit_Integer
+        } else {
+            // This number literal is in decimal base, so we'll consume the
+            // integer part first.
+            self.consume_while(is_digit_continue);
+
+            // If there is a dot after the integer part, and the next character
+            // after it does NOT start an identifier, then this must be a float
+            // literal. Otherwise, it may be a field access (e.g. `10.foo`)
+            // which isn't valid anyway, but we don't need to worry about it
+            // here in the lexer.
+            if self.peek() == '.' && !is_identifier_start(self.peek_at(1)) {
+                self.next_char();
+                self.consume_while(is_digit_continue);
+                SyntaxKind::Lit_Float
+            } else {
+                SyntaxKind::Lit_Integer
+            }
         }
     }
 }
@@ -478,7 +485,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_valid_literal_integers() {
+    fn test_lex_semantically_valid_literal_integers() {
         // Decimal integers
         check("0", SyntaxKind::Lit_Integer);
         check("0_", SyntaxKind::Lit_Integer);
@@ -511,7 +518,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_invalid_literal_integers() {
+    fn test_lex_semantically_invalid_literal_integers() {
         // Decimal integers
         check("0z", SyntaxKind::Lit_Integer);
         check("1z2y3x", SyntaxKind::Lit_Integer);
@@ -543,7 +550,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_valid_literal_floats() {
+    fn test_lex_semantically_valid_literal_floats() {
         check("0.", SyntaxKind::Lit_Float);
         check("0.0", SyntaxKind::Lit_Float);
         check("0_.", SyntaxKind::Lit_Float);
@@ -555,13 +562,13 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_invalid_literal_floats() {
-        check("0.a", SyntaxKind::Lit_Float);
-        check("0.a0", SyntaxKind::Lit_Float);
-        check("0a0b.0c0d", SyntaxKind::Lit_Float);
-        check("1.a2b3c4d5e6", SyntaxKind::Lit_Float);
-        check("1a2b3c4d5e.6", SyntaxKind::Lit_Float);
+    fn test_lex_semantically_invalid_literal_floats() {
+        check("0a0b0c.0d0e", SyntaxKind::Lit_Float);
+        check("1a.2b3c4d5e6", SyntaxKind::Lit_Float);
+        check("1a2b.3c4d5e6", SyntaxKind::Lit_Float);
         check("1a2b3c.4d5e6", SyntaxKind::Lit_Float);
+        check("1a2b3c4d.5e6", SyntaxKind::Lit_Float);
+        check("1a2b3c4d5e.6", SyntaxKind::Lit_Float);
     }
 
     #[test]
