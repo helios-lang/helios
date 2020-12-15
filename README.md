@@ -4,9 +4,7 @@
 
 # Helios
 
-[![Linux CI](https://github.com/tahscenery/helios/workflows/Linux%20CI/badge.svg)](https://github.com/tahscenery/helios/actions?query=workflow%3A%22Linux+CI%22)
-[![Windows CI](https://github.com/tahscenery/helios/workflows/Windows%20CI/badge.svg)](https://github.com/tahscenery/helios/actions?query=workflow%3A%22Windows+CI%22)
-[![macOS CI](https://github.com/tahscenery/helios/workflows/macOS%20CI/badge.svg)](https://github.com/tahscenery/helios/actions?query=workflow%3A%22macOS+CI%22)
+[![CI](https://github.com/tahscenery/helios/workflows/CI/badge.svg)](https://github.com/tahscenery/helios/actions?query=workflow%3A%22CI%22)
 
 Helios is a programming language aimed to be highly performant and easy to use.
 
