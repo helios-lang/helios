@@ -1,9 +1,12 @@
 <p align="center">
-  <img style="max-width:300px" src="assets/logo.png" alt="helios programming language logo">
+  <img
+    src="assets/logo.png"
+    alt="helios programming language logo"
+    width="300">
 </p>
 
 <br>
 
-# The Helios Programming Language
+# Helios
 
 Helios is a hobby programming language written in Rust.
