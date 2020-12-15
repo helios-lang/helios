@@ -1,4 +1,4 @@
-name: macOS CI
+name: Windows CI
 
 on: [push, pull_request]
 
@@ -8,7 +8,7 @@ env:
 jobs:
   check:
     name: Check
-    runs-on: macos-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -19,7 +19,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: macos-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
