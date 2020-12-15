@@ -14,6 +14,10 @@ Helios is a programming language aimed to be highly performant yet easy to use.
 Although it is in the early stages of development, there are some key features
 we want Helios to be defined with:
 
-- A static memory management akin to Rust's ownership system
-- Advanced static type system like Haskell's for reliability and speed
-- Seamless editor and IDE integration for developer ease-of-use
+- Static memory management to avoid needing a garbage collector
+- Advanced static type system with inference for reliability
+- Functional-style programming with ownership semantics to produce efficient
+  code that is declarative in nature
+- Platform-agnostic backend and compiler with near-native performance
+- Safe concurrency to avoid problems such as data races
+- Seamless editor integration for developer ease-of-use
