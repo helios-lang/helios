@@ -87,6 +87,6 @@ fn source_position_at_offset(
             let last_line = expected_index.checked_sub(1).unwrap_or(0);
             let column = offset.checked_sub(offsets[last_line]).unwrap_or(0);
             (last_line, column)
-        },
+        }
     }
 }
