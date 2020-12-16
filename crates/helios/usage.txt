@@ -1,10 +1,10 @@
-USAGE: helios [OPTIONS] COMMAND
+USAGE: helios [OPTIONS] [SUBCOMMAND]
 
 OPTIONS:
-  -h, --help      Print help information
-  -V, --version   Print version info
+  -h, --help      Display this message
+  -V, --version   Print version information
 
-COMMAND:
-  build <file>    Compile the given file
-  ide             Start the Helios language server for IDE support
+SUBCOMMAND:
+  build <file>    Compile the given <file>
+  ide             Start the language server for IDE support
   repl            Start a new REPL session
