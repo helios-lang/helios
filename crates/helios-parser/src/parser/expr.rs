@@ -31,25 +31,31 @@ fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
 
 /// Parse an expression.
 pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
-    let checkpoint = parser.checkpoint();
-
-    match parser.peek() {
-        Some(SyntaxKind::Lit_Integer)
-        | Some(SyntaxKind::Lit_Float)
-        | Some(SyntaxKind::Identifier) => parser.bump(),
+    let mut lhs = match parser.peek() {
+        Some(SyntaxKind::Lit_Integer) | Some(SyntaxKind::Lit_Float) => {
+            let m = parser.start();
+            parser.bump();
+            m.complete(parser, SyntaxKind::Exp_Literal)
+        }
+        Some(SyntaxKind::Identifier) => {
+            let m = parser.start();
+            parser.bump();
+            m.complete(parser, SyntaxKind::Exp_VariableRef)
+        }
         Some(op @ SyntaxKind::Sym_Minus) | Some(op @ SyntaxKind::Sym_Bang) => {
+            let m = parser.start();
+
             // Get the right binding power of the operator
             let ((), right_bp) = prefix_binding_power(op).unwrap();
 
-            // Consume the operator token
+            // Consume the operator token and the expression it holds
             parser.bump();
-
-            parser.start_node_at(checkpoint, SyntaxKind::Exp_UnaryPrefix);
             parse_expr(parser, right_bp);
-            parser.finish_node();
+
+            m.complete(parser, SyntaxKind::Exp_UnaryPrefix)
         }
         Some(SyntaxKind::Sym_LParen) => {
-            parser.start_node_at(checkpoint, SyntaxKind::Exp_Paren);
+            let m = parser.start();
 
             // Consume the opening parenthesis and the expression inside
             parser.bump();
@@ -60,36 +66,47 @@ pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
                 parser.bump();
             }
 
-            parser.finish_node();
+            m.complete(parser, SyntaxKind::Exp_Paren)
         }
-        _ => {}
-    }
+        Some(kind) => {
+            eprintln!("! Invalid start of expression: {:?}", kind);
+            return;
+        },
+        None => {
+            eprintln!("! Expected start of expression, found <EOF>");
+            return;
+        }
+    };
 
     loop {
         // Peek the next token, assuming it's an operator
         let op = match parser.peek() {
             Some(token) => token,
-            _ => break,
+            _ => {
+                eprintln!("! Expected operator, found <EOF>");
+                return;
+            }
         };
 
         // Get the left and right binding power of the assumed operator
-        if let Some((left_bp, right_bp)) = infix_binding_power(op) {
-            if left_bp < min_bp {
+        match infix_binding_power(op) {
+            Some((left_bp, right_bp)) => {
+                if left_bp < min_bp {
+                    return;
+                }
+
+                // Consume the operator token
+                parser.bump();
+
+                let m = lhs.precede(parser);
+                parse_expr(parser, right_bp);
+                lhs = m.complete(parser, SyntaxKind::Exp_Binary);
+            }
+            None => {
+                eprintln!("! Invalid infix operator: {:?}", op);
                 return;
             }
-
-            // Consume the operator token
-            parser.bump();
-
-            // Consume RHS
-            parser.start_node_at(checkpoint, SyntaxKind::Exp_Binary);
-            parse_expr(parser, right_bp);
-            parser.finish_node();
-
-            continue;
         }
-
-        break;
     }
 }
 
@@ -104,17 +121,19 @@ mod tests {
             "123",
             expect![[r#"
 Root@0..3
-  Lit_Integer@0..3 "123""#]],
+  Exp_Literal@0..3
+    Lit_Integer@0..3 "123""#]],
         );
     }
 
     #[test]
     fn test_parse_lone_identifier() {
         check(
-            "counter",
+            "hello_world",
             expect![[r#"
-Root@0..7
-  Identifier@0..7 "counter""#]],
+Root@0..11
+  Exp_VariableRef@0..11
+    Identifier@0..11 "hello_world""#]],
         );
     }
 
@@ -126,7 +145,8 @@ Root@0..7
 Root@0..3
   Exp_UnaryPrefix@0..3
     Sym_Minus@0..1 "-"
-    Lit_Integer@1..3 "10""#]],
+    Exp_Literal@1..3
+      Lit_Integer@1..3 "10""#]],
         );
     }
 
@@ -139,9 +159,11 @@ Root@0..6
   Exp_Binary@0..6
     Exp_UnaryPrefix@0..3
       Sym_Minus@0..1 "-"
-      Lit_Integer@1..3 "10"
+      Exp_Literal@1..3
+        Lit_Integer@1..3 "10"
     Sym_Plus@3..4 "+"
-    Lit_Integer@4..6 "20""#]],
+    Exp_Literal@4..6
+      Lit_Integer@4..6 "20""#]],
         );
     }
 
@@ -152,9 +174,11 @@ Root@0..6
             expect![[r#"
 Root@0..3
   Exp_Binary@0..3
-    Lit_Integer@0..1 "1"
+    Exp_Literal@0..1
+      Lit_Integer@0..1 "1"
     Sym_Plus@1..2 "+"
-    Lit_Integer@2..3 "2""#]],
+    Exp_Literal@2..3
+      Lit_Integer@2..3 "2""#]],
         );
     }
 
@@ -167,13 +191,17 @@ Root@0..7
   Exp_Binary@0..7
     Exp_Binary@0..5
       Exp_Binary@0..3
-        Lit_Integer@0..1 "1"
+        Exp_Literal@0..1
+          Lit_Integer@0..1 "1"
         Sym_Plus@1..2 "+"
-        Lit_Integer@2..3 "2"
+        Exp_Literal@2..3
+          Lit_Integer@2..3 "2"
       Sym_Plus@3..4 "+"
-      Lit_Integer@4..5 "3"
+      Exp_Literal@4..5
+        Lit_Integer@4..5 "3"
     Sym_Plus@5..6 "+"
-    Lit_Integer@6..7 "4""#]],
+    Exp_Literal@6..7
+      Lit_Integer@6..7 "4""#]],
         );
     }
 
@@ -185,14 +213,18 @@ Root@0..7
 Root@0..7
   Exp_Binary@0..7
     Exp_Binary@0..5
-      Lit_Integer@0..1 "1"
+      Exp_Literal@0..1
+        Lit_Integer@0..1 "1"
       Sym_Plus@1..2 "+"
       Exp_Binary@2..5
-        Lit_Integer@2..3 "2"
+        Exp_Literal@2..3
+          Lit_Integer@2..3 "2"
         Sym_Asterisk@3..4 "*"
-        Lit_Integer@4..5 "3"
+        Exp_Literal@4..5
+          Lit_Integer@4..5 "3"
     Sym_Minus@5..6 "-"
-    Lit_Integer@6..7 "4""#]],
+    Exp_Literal@6..7
+      Lit_Integer@6..7 "4""#]],
         );
     }
 
@@ -203,14 +235,17 @@ Root@0..7
             expect![[r#"
 Root@0..7
   Exp_Binary@0..7
-    Lit_Integer@0..1 "5"
+    Exp_Literal@0..1
+      Lit_Integer@0..1 "5"
     Sym_Asterisk@1..2 "*"
     Exp_Paren@2..7
       Sym_LParen@2..3 "("
       Exp_Binary@3..6
-        Lit_Integer@3..4 "2"
+        Exp_Literal@3..4
+          Lit_Integer@3..4 "2"
         Sym_Plus@4..5 "+"
-        Lit_Integer@5..6 "1"
+        Exp_Literal@5..6
+          Lit_Integer@5..6 "1"
       Sym_RParen@6..7 ")""#]],
         );
     }
@@ -228,25 +263,30 @@ Root@0..20
         Exp_Paren@1..14
           Sym_LParen@1..2 "("
           Exp_Binary@2..13
-            Lit_Integer@2..3 "2"
+            Exp_Literal@2..3
+              Lit_Integer@2..3 "2"
             Sym_Minus@3..4 "-"
             Exp_Paren@4..13
               Sym_LParen@4..5 "("
               Exp_Paren@5..12
                 Sym_LParen@5..6 "("
                 Exp_Binary@6..11
-                  Lit_Integer@6..8 "10"
+                  Exp_Literal@6..8
+                    Lit_Integer@6..8 "10"
                   Sym_Plus@8..9 "+"
-                  Lit_Integer@9..11 "10"
+                  Exp_Literal@9..11
+                    Lit_Integer@9..11 "10"
                 Sym_RParen@11..12 ")"
               Sym_RParen@12..13 ")"
           Sym_RParen@13..14 ")"
       Sym_Asterisk@14..15 "*"
-      Lit_Integer@15..17 "20"
+      Exp_Literal@15..17
+        Lit_Integer@15..17 "20"
     Sym_Plus@17..18 "+"
     Exp_UnaryPrefix@18..20
       Sym_Minus@18..19 "-"
-      Lit_Integer@19..20 "5""#]],
+      Exp_Literal@19..20
+        Lit_Integer@19..20 "5""#]],
         )
     }
 
@@ -257,7 +297,8 @@ Root@0..20
             expect![[r#"
 Root@0..7
   Whitespace@0..3 "   "
-  Lit_Integer@3..7 "9876""#]],
+  Exp_Literal@3..7
+    Lit_Integer@3..7 "9876""#]],
         );
     }
 
@@ -267,8 +308,9 @@ Root@0..7
             "1234   ",
             expect![[r#"
 Root@0..7
-  Lit_Integer@0..4 "1234"
-  Whitespace@4..7 "   ""#]],
+  Exp_Literal@0..7
+    Lit_Integer@0..4 "1234"
+    Whitespace@4..7 "   ""#]],
         );
     }
 
@@ -279,8 +321,9 @@ Root@0..7
             expect![[r#"
 Root@0..9
   Whitespace@0..1 " "
-  Lit_Integer@1..4 "123"
-  Whitespace@4..9 "     ""#]],
+  Exp_Literal@1..9
+    Lit_Integer@1..4 "123"
+    Whitespace@4..9 "     ""#]],
         );
     }
 
@@ -291,24 +334,27 @@ Root@0..9
 1
   + 1 // Add one
   + 10 // Add ten",
-            expect![[r##"
+            expect![[r#"
 Root@0..37
   Whitespace@0..1 "\n"
   Exp_Binary@1..37
     Exp_Binary@1..22
-      Lit_Integer@1..2 "1"
-      Whitespace@2..5 "\n  "
+      Exp_Literal@1..5
+        Lit_Integer@1..2 "1"
+        Whitespace@2..5 "\n  "
       Sym_Plus@5..6 "+"
       Whitespace@6..7 " "
-      Lit_Integer@7..8 "1"
-      Whitespace@8..9 " "
-      Comment@9..19 "// Add one"
-      Whitespace@19..22 "\n  "
+      Exp_Literal@7..22
+        Lit_Integer@7..8 "1"
+        Whitespace@8..9 " "
+        Comment@9..19 "// Add one"
+        Whitespace@19..22 "\n  "
     Sym_Plus@22..23 "+"
     Whitespace@23..24 " "
-    Lit_Integer@24..26 "10"
-    Whitespace@26..27 " "
-    Comment@27..37 "// Add ten""##]],
+    Exp_Literal@24..37
+      Lit_Integer@24..26 "10"
+      Whitespace@26..27 " "
+      Comment@27..37 "// Add ten""#]],
         );
     }
 }

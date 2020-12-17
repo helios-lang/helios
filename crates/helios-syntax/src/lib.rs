@@ -131,9 +131,11 @@ pub enum SyntaxKind {
     Lit_String,
 
     Exp_Binary,
+    Exp_Literal,
     Exp_Paren,
     Exp_UnaryPrefix,
     Exp_UnaryPostfix,
+    Exp_VariableRef,
 
     Comment,
     DocComment,

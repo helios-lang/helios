@@ -11,10 +11,12 @@
 
 mod event;
 mod expr;
+mod marker;
 mod sink;
 mod source;
 
 use self::event::Event;
+use self::marker::Marker;
 use self::sink::Sink;
 use crate::lexer::{Lexeme, Lexer};
 use helios_syntax::{SyntaxKind, SyntaxNode};
@@ -71,9 +73,9 @@ impl<'lexemes, 'source> Parser<'lexemes, 'source> {
     /// source text (no matter how invalid it is). Once done, it will return a
     /// [`ParserResult`] containing the root green node.
     pub fn parse(mut self) -> Vec<Event> {
-        self.start_node(SyntaxKind::Root.into());
+        let marker = self.start();
         expr::parse_expr(&mut self, 0);
-        self.finish_node();
+        marker.complete(&mut self, SyntaxKind::Root);
 
         self.events
     }
@@ -94,20 +96,10 @@ impl<'lexeme, 'source> Parser<'lexeme, 'source> {
         })
     }
 
-    fn start_node(&mut self, kind: SyntaxKind) {
-        self.events.push(Event::StartNode { kind });
-    }
-
-    fn start_node_at(&mut self, checkpoint: usize, kind: SyntaxKind) {
-        self.events.push(Event::StartNodeAt { kind, checkpoint });
-    }
-
-    fn finish_node(&mut self) {
-        self.events.push(Event::FinishNode);
-    }
-
-    fn checkpoint(&mut self) -> usize {
-        self.events.len()
+    fn start(&mut self) -> Marker {
+        let pos = self.events.len();
+        self.events.push(Event::Placeholder);
+        Marker::new(pos)
     }
 }
 

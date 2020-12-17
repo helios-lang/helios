@@ -24,24 +24,45 @@ impl<'lexemes, 'source> Sink<'lexemes, 'source> {
     }
 
     pub(super) fn finish(mut self) -> GreenNode {
-        let mut reordered_events = self.events.clone();
+        use std::mem;
 
-        for (idx, event) in self.events.iter().enumerate() {
-            if let Event::StartNodeAt { kind, checkpoint } = event {
-                reordered_events.remove(idx);
-                reordered_events
-                    .insert(*checkpoint, Event::StartNode { kind: *kind });
-            }
-        }
+        for i in 0..self.events.len() {
+            match mem::replace(&mut self.events[i], Event::Placeholder) {
+                Event::StartNode {
+                    kind,
+                    forward_parent,
+                } => {
+                    let mut kinds = vec![kind];
+                    let mut idx = i;
+                    let mut forward_parent = forward_parent;
 
-        for event in reordered_events {
-            match event {
-                Event::StartNode { kind } => {
-                    self.builder.start_node(HeliosLanguage::kind_to_raw(kind))
+                    // Walk through the forward parent of the forward parent,
+                    // and its forward parent, and so on until we reach a
+                    // `StartNode` event without a forward parent.
+                    while let Some(fp) = forward_parent {
+                        idx += fp;
+                        forward_parent = if let Event::StartNode {
+                            kind,
+                            forward_parent,
+                        } = mem::replace(
+                            &mut self.events[idx],
+                            Event::Placeholder,
+                        ) {
+                            kinds.push(kind);
+                            forward_parent
+                        } else {
+                            unreachable!()
+                        };
+                    }
+
+                    for kind in kinds.into_iter().rev() {
+                        self.builder
+                            .start_node(HeliosLanguage::kind_to_raw(kind));
+                    }
                 }
                 Event::AddToken { kind, text } => self.token(kind, text),
                 Event::FinishNode => self.builder.finish_node(),
-                _ => unreachable!("StartNodeAt"),
+                Event::Placeholder => {}
             }
 
             self.eat_trivia();
