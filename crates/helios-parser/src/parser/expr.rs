@@ -1,3 +1,4 @@
+use super::marker::CompletedMarker;
 use super::Parser;
 use helios_syntax::{Sym, SyntaxKind};
 
@@ -29,85 +30,106 @@ fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
     Some(power)
 }
 
-/// Parse an expression.
+/// Parses an expression.
 pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
-    let mut lhs = match parser.peek() {
-        Some(SyntaxKind::Lit_Integer) | Some(SyntaxKind::Lit_Float) => {
-            let m = parser.start();
-            parser.bump();
-            m.complete(parser, SyntaxKind::Exp_Literal)
-        }
-        Some(SyntaxKind::Identifier) => {
-            let m = parser.start();
-            parser.bump();
-            m.complete(parser, SyntaxKind::Exp_VariableRef)
-        }
-        Some(op @ SyntaxKind::Sym_Minus) | Some(op @ SyntaxKind::Sym_Bang) => {
-            let m = parser.start();
-
-            // Get the right binding power of the operator
-            let ((), right_bp) = prefix_binding_power(op).unwrap();
-
-            // Consume the operator token and the expression it holds
-            parser.bump();
-            parse_expr(parser, right_bp);
-
-            m.complete(parser, SyntaxKind::Exp_UnaryPrefix)
-        }
-        Some(SyntaxKind::Sym_LParen) => {
-            let m = parser.start();
-
-            // Consume the opening parenthesis and the expression inside
-            parser.bump();
-            parse_expr(parser, 0);
-
-            // Consume the closing parenthesis if possible
-            if let Some(SyntaxKind::Sym_RParen) = parser.peek() {
-                parser.bump();
-            }
-
-            m.complete(parser, SyntaxKind::Exp_Paren)
-        }
-        Some(kind) => {
-            eprintln!("! Invalid start of expression: {:?}", kind);
-            return;
-        },
-        None => {
-            eprintln!("! Expected start of expression, found <EOF>");
-            return;
-        }
+    let mut lhs = match lhs(parser) {
+        Some(lhs) => lhs,
+        None => return,
     };
 
     loop {
         // Peek the next token, assuming it's an operator
         let op = match parser.peek() {
             Some(token) => token,
-            _ => {
-                eprintln!("! Expected operator, found <EOF>");
-                return;
-            }
+            _ => return,
         };
 
-        // Get the left and right binding power of the assumed operator
-        match infix_binding_power(op) {
-            Some((left_bp, right_bp)) => {
-                if left_bp < min_bp {
-                    return;
-                }
-
-                // Consume the operator token
-                parser.bump();
-
-                let m = lhs.precede(parser);
-                parse_expr(parser, right_bp);
-                lhs = m.complete(parser, SyntaxKind::Exp_Binary);
-            }
-            None => {
-                eprintln!("! Invalid infix operator: {:?}", op);
+        // Get the left and right binding power of the supposed operator
+        if let Some((left_bp, right_bp)) = infix_binding_power(op) {
+            if left_bp < min_bp {
                 return;
             }
+
+            // Consume the operator token
+            parser.bump();
+
+            let m = lhs.precede(parser);
+            parse_expr(parser, right_bp);
+            lhs = m.complete(parser, SyntaxKind::Exp_Binary);
+        } else {
+            return;
         }
     }
+}
+
+/// Parses the left-hand side of an expression.
+fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
+    use SyntaxKind::*;
+    let completed_marker = match parser.peek() {
+        Some(Lit_Integer) | Some(Lit_Float) => literal(parser),
+        Some(Identifier) => variable_ref(parser),
+        Some(Sym_Minus) => unary_prefix_expr(parser),
+        Some(Sym_LParen) => paren_expr(parser),
+        _ => return None,
+    };
+
+    Some(completed_marker)
+}
+
+/// Parses a literal that may stand alone as an expression.
+fn literal(parser: &mut Parser) -> CompletedMarker {
+    use SyntaxKind::*;
+    assert!(parser.is_at(Lit_Integer) || parser.is_at(Lit_Float));
+
+    let m = parser.start();
+    parser.bump();
+    m.complete(parser, Exp_Literal)
+}
+
+/// Parses an identifier as a variable reference.
+fn variable_ref(parser: &mut Parser) -> CompletedMarker {
+    assert!(parser.is_at(SyntaxKind::Identifier));
+
+    let m = parser.start();
+    parser.bump();
+    m.complete(parser, SyntaxKind::Exp_VariableRef)
+}
+
+/// Parses a unary prefix expression.
+///
+/// Currently, only [`SyntaxKind::Sym_Minus`] is a valid prefix operator.
+fn unary_prefix_expr(parser: &mut Parser) -> CompletedMarker {
+    assert!(parser.is_at(SyntaxKind::Sym_Minus));
+
+    let m = parser.start();
+
+    // Get the right binding power of the operator
+    let op = SyntaxKind::Sym_Minus;
+    let ((), right_bp) = prefix_binding_power(op).unwrap();
+
+    // Consume the operator token and the expression it holds
+    parser.bump();
+    parse_expr(parser, right_bp);
+
+    m.complete(parser, SyntaxKind::Exp_UnaryPrefix)
+}
+
+/// Parses an expression surrounded by parenthesis.
+fn paren_expr(parser: &mut Parser) -> CompletedMarker {
+    assert!(parser.is_at(SyntaxKind::Sym_LParen));
+
+    let m = parser.start();
+
+    // Consume the opening parenthesis and the expression inside
+    parser.bump();
+    parse_expr(parser, 0);
+
+    // Consume the closing parenthesis if possible
+    if let Some(SyntaxKind::Sym_RParen) = parser.peek() {
+        parser.bump();
+    }
+
+    m.complete(parser, SyntaxKind::Exp_Paren)
 }
 
 #[cfg(test)]

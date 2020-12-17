@@ -82,6 +82,10 @@ impl<'lexemes, 'source> Parser<'lexemes, 'source> {
 }
 
 impl<'lexeme, 'source> Parser<'lexeme, 'source> {
+    fn is_at(&mut self, kind: SyntaxKind) -> bool {
+        self.peek() == Some(kind)
+    }
+
     /// Peeks the next [`SyntaxKind`] token without consuming it.
     fn peek(&mut self) -> Option<SyntaxKind> {
         self.source.peek_kind()

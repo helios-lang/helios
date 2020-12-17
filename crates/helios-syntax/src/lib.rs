@@ -54,7 +54,7 @@ macro_rules! Sym {
 
 /// All the possible nodes and tokens defined in the Helios grammar.
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum SyntaxKind {
     Kwd_Alias,
@@ -156,13 +156,17 @@ impl SyntaxKind {
     /// (eight bytes on 64-bit systems), which would have required an unneeded
     /// allocation of memory. Note that [`SyntaxKind`] is `Copy`, so any other
     /// references to the instance is not consumed.
+    #[inline]
     pub fn is_trivia(self) -> bool {
-        matches!(
-            self,
-            SyntaxKind::Comment
-                | SyntaxKind::DocComment
-                | SyntaxKind::Whitespace
-        )
+        use SyntaxKind::*;
+        matches!(self, Comment | DocComment | Whitespace)
+    }
+
+    /// Determines if the [`SyntaxKind`] is a symbol.
+    #[inline]
+    pub fn is_symbol(self) -> bool {
+        use SyntaxKind::*;
+        self >= Sym_Ampersand && self <= Sym_RParen
     }
 }
 
@@ -316,5 +320,30 @@ mod tests {
         check!(['<', '-'] => Sym_LThinArrow);
         check!(['-', '>'] => Sym_RThinArrow);
         check!(['=', '>'] => Sym_ThickArrow);
+    }
+
+    #[test]
+    fn test_is_trivia() {
+        assert!(SyntaxKind::Comment.is_trivia());
+        assert!(SyntaxKind::DocComment.is_trivia());
+        assert!(SyntaxKind::Whitespace.is_trivia());
+
+        assert!(!SyntaxKind::Kwd_Alias.is_trivia());
+        assert!(!SyntaxKind::Sym_Ampersand.is_trivia());
+        assert!(!SyntaxKind::Lit_Character.is_trivia());
+        assert!(!SyntaxKind::Root.is_trivia());
+    }
+
+    #[test]
+    fn test_is_symbol() {
+        assert!(SyntaxKind::Sym_Ampersand.is_symbol());
+        assert!(SyntaxKind::Sym_Asterisk.is_symbol());
+        assert!(SyntaxKind::Sym_Tilde.is_symbol());
+        assert!(SyntaxKind::Sym_LParen.is_symbol());
+        assert!(SyntaxKind::Sym_RParen.is_symbol());
+
+        assert!(!SyntaxKind::Kwd_Alias.is_symbol());
+        assert!(!SyntaxKind::Lit_Character.is_symbol());
+        assert!(!SyntaxKind::Root.is_symbol());
     }
 }
