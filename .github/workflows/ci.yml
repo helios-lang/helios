@@ -8,6 +8,7 @@ env:
 jobs:
   check:
     name: Check
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
         platform:
@@ -25,6 +26,7 @@ jobs:
 
   test:
     name: Test
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     strategy:
       matrix:
         platform:
@@ -42,6 +44,7 @@ jobs:
 
   formatting:
     name: Formatting
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
