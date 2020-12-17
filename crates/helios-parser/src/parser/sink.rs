@@ -1,7 +1,7 @@
 use super::event::Event;
 use crate::lexer::Token;
-use helios_syntax::{Language as HeliosLanguage, SyntaxKind};
-use rowan::{GreenNode, GreenNodeBuilder, Language, SmolStr};
+use helios_syntax::Language as HeliosLanguage;
+use rowan::{GreenNode, GreenNodeBuilder, Language};
 
 pub(super) struct Sink<'tokens, 'source> {
     builder: GreenNodeBuilder<'static>,
@@ -60,7 +60,7 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
                             .start_node(HeliosLanguage::kind_to_raw(kind));
                     }
                 }
-                Event::AddToken { kind, text } => self.token(kind, text),
+                Event::AddToken => self.token(),
                 Event::FinishNode => self.builder.finish_node(),
                 Event::Placeholder => {}
             }
@@ -71,18 +71,20 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
         self.builder.finish()
     }
 
-    fn token(&mut self, kind: SyntaxKind, text: SmolStr) {
-        self.builder.token(HeliosLanguage::kind_to_raw(kind), text);
-        self.cursor += 1;
-    }
-
     fn eat_trivia(&mut self) {
         while let Some(token) = self.tokens.get(self.cursor) {
             if !token.kind.is_trivia() {
                 break;
             }
 
-            self.token(token.kind, token.text.into());
+            self.token();
         }
+    }
+
+    fn token(&mut self) {
+        let Token { kind, text } = self.tokens[self.cursor];
+        self.builder
+            .token(HeliosLanguage::kind_to_raw(kind), text.into());
+        self.cursor += 1;
     }
 }

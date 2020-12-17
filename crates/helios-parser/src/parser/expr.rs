@@ -95,7 +95,7 @@ fn variable_ref(parser: &mut Parser) -> CompletedMarker {
     m.complete(parser, SyntaxKind::Exp_VariableRef)
 }
 
-/// Parses a unary prefix expression.
+/// Parses a unary expression with a prefixed operator.
 ///
 /// Currently, only [`SyntaxKind::Sym_Minus`] is a valid prefix operator.
 fn unary_prefix_expr(parser: &mut Parser) -> CompletedMarker {

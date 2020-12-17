@@ -91,11 +91,8 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
 
     /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     fn bump(&mut self) {
-        let Token { kind, text } = self.source.next_token().unwrap();
-        self.events.push(Event::AddToken {
-            kind: *kind,
-            text: (*text).into(),
-        })
+        self.source.next_token().unwrap();
+        self.events.push(Event::AddToken)
     }
 
     /// Starts a new node, returning a [`Marker`].
