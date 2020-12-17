@@ -1,19 +1,18 @@
 //! Tokenizing Helios source files.
 //!
 //! The showrunner of this module is the [`Lexer`] type. It essentially takes
-//! an input as a `String` and provides a vector of [`Lexeme`]s. Although this
-//! may not be useful on its own, it is heavily dependent by the [`Parser`] to
-//! parse a Helios source file. Refer to it's documentation for more information.
+//! a given input, representing a Helios source, and provides an [`Iterator`] of
+//! [`Token`]s.
 //!
 //! The lexer aims to be as error-tolerant and UTF-8 friendly as possible (the
-//! latter of which is enforced by Rust's `String` and `char` types). It is also
-//! lossless, meaning that it represents the original text exactly as it is
-//! (including whitespace and comments).
+//! latter of which is enforced by Rust's `char` types). It is also lossless,
+//! meaning that it represents the original text exactly as it is (including
+//! whitespace and comments).
 //!
-//! Refer to `Lexer`'s and `Lexeme`'s documentation for more information on how
-//! tokenization is done.
+//! Refer to [`Lexer`]'s and [`Token`]'s documentation for more information on
+//! how tokenization is done.
 //!
-//! [`Parser`]: crate::parser::Parser
+// ! [`parse`]: crate::parse
 
 use crate::cursor::Cursor;
 use helios_syntax::{self, SyntaxKind};
@@ -65,16 +64,16 @@ fn is_whitespace(c: char) -> bool {
 
 /// The unit of a tokenized Helios source file.
 ///
-/// This structure holds the [`SyntaxKind`] of a lexeme, as well as the text
+/// This structure holds the [`SyntaxKind`] of a token, as well as the text
 /// that formed it. It is also the `Item` type of the [`Lexer`] iterator.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Lexeme<'text> {
+pub struct Token<'text> {
     pub(crate) kind: SyntaxKind,
     pub(crate) text: &'text str,
 }
 
-impl<'text> Lexeme<'text> {
-    /// Constructs a new [`Lexeme`] with the kind and text (its representation
+impl<'text> Token<'text> {
+    /// Constructs a new [`Token`] with the kind and text (its representation
     /// in the source text).
     pub fn new(kind: SyntaxKind, text: &'text str) -> Self {
         Self { kind, text }
@@ -108,10 +107,10 @@ impl Default for LexerMode {
 /// required.
 ///
 /// This structure shouldn't need to be manipulated manually. It is instead
-/// recommended to use the [`Parser`] structure or any of the public top-level
-/// functions of this crate to properly tokenize and parse a Helios source file.
+/// strongly recommended to call the [`parse`] function to properly tokenize and
+/// parse a Helios source file.
 ///
-/// [`Parser`]: crate::parser::Parser
+/// [`parse`]: crate::parse
 pub struct Lexer<'source> {
     cursor: Cursor<'source>,
     mode_stack: Vec<LexerMode>,
@@ -130,7 +129,7 @@ impl<'source> Lexer<'source> {
     }
 
     /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
-    fn tokenize_normal(&mut self) -> Option<Lexeme<'source>> {
+    fn tokenize_normal(&mut self) -> Option<Token<'source>> {
         self.cursor.checkpoint();
 
         let kind = match self.cursor.advance()? {
@@ -143,7 +142,7 @@ impl<'source> Lexer<'source> {
         };
 
         let text = self.cursor.slice();
-        Some(Lexeme::new(kind, text))
+        Some(Token::new(kind, text))
     }
 }
 
@@ -372,7 +371,7 @@ impl<'source> Lexer<'source> {
 }
 
 impl<'source> Iterator for Lexer<'source> {
-    type Item = Lexeme<'source>;
+    type Item = Token<'source>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_mode() {
@@ -387,7 +386,7 @@ mod tests {
 
     fn check(input: &str, kind: SyntaxKind) {
         let mut lexer = Lexer::new(input);
-        assert_eq!(lexer.next(), Some(Lexeme::new(kind, input)));
+        assert_eq!(lexer.next(), Some(Token::new(kind, input)));
     }
 
     #[test]

@@ -1,23 +1,23 @@
 use super::event::Event;
-use crate::lexer::Lexeme;
+use crate::lexer::Token;
 use helios_syntax::{Language as HeliosLanguage, SyntaxKind};
 use rowan::{GreenNode, GreenNodeBuilder, Language, SmolStr};
 
-pub(super) struct Sink<'lexemes, 'source> {
+pub(super) struct Sink<'tokens, 'source> {
     builder: GreenNodeBuilder<'static>,
-    lexemes: &'lexemes [Lexeme<'source>],
+    tokens: &'tokens [Token<'source>],
     cursor: usize,
     events: Vec<Event>,
 }
 
-impl<'lexemes, 'source> Sink<'lexemes, 'source> {
+impl<'tokens, 'source> Sink<'tokens, 'source> {
     pub(super) fn new(
-        lexemes: &'lexemes [Lexeme<'source>],
+        tokens: &'tokens [Token<'source>],
         events: Vec<Event>,
     ) -> Self {
         Self {
             builder: GreenNodeBuilder::new(),
-            lexemes,
+            tokens,
             cursor: 0,
             events,
         }
@@ -77,12 +77,12 @@ impl<'lexemes, 'source> Sink<'lexemes, 'source> {
     }
 
     fn eat_trivia(&mut self) {
-        while let Some(lexeme) = self.lexemes.get(self.cursor) {
-            if !lexeme.kind.is_trivia() {
+        while let Some(token) = self.tokens.get(self.cursor) {
+            if !token.kind.is_trivia() {
                 break;
             }
 
-            self.token(lexeme.kind, lexeme.text.into());
+            self.token(token.kind, token.text.into());
         }
     }
 }

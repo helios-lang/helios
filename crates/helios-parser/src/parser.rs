@@ -1,11 +1,8 @@
 //! Parsing Helios source files.
 //!
-//! The showrunner of this module is the [`Parser`] type. It is responsible for
-//! parsing an input (a `String`) and returning a concrete syntax tree (CST)
-//! using the [`rowan`] library.
-//!
-//! Refer to [`Parser`] and [`ParserResult`] for more information on how parsing
-//! is done.
+//! The showrunner of this module is the [`parse`] function. It is responsible
+//! for parsing a given input and returning a concrete syntax tree (CST) with
+//! the [`rowan`] library.
 //!
 //! [`rowan`]: https://docs.rs/rowan/0.10.0/rowan
 
@@ -18,17 +15,17 @@ mod source;
 use self::event::Event;
 use self::marker::Marker;
 use self::sink::Sink;
-use crate::lexer::{Lexeme, Lexer};
+use crate::lexer::{Lexer, Token};
 use helios_syntax::{SyntaxKind, SyntaxNode};
 use rowan::GreenNode;
 use source::Source;
 
 /// Parse the given source text into a [`Parse`].
 pub fn parse(source: &str) -> Parse {
-    let lexemes = Lexer::new(source).collect::<Vec<_>>();
-    let parser = Parser::new(&lexemes);
+    let tokens = Lexer::new(source).collect::<Vec<_>>();
+    let parser = Parser::new(&tokens);
     let events = parser.parse();
-    let sink = Sink::new(&lexemes, events);
+    let sink = Sink::new(&tokens, events);
 
     Parse {
         green_node: sink.finish(),
@@ -53,16 +50,16 @@ impl Parse {
 }
 
 /// A lazy, lossless, error-tolerant parser for the Helios programming language.
-struct Parser<'lexemes, 'source> {
-    source: Source<'lexemes, 'source>,
+struct Parser<'tokens, 'source> {
+    source: Source<'tokens, 'source>,
     events: Vec<Event>,
 }
 
-impl<'lexemes, 'source> Parser<'lexemes, 'source> {
-    /// Construct a new [`Parser`] with a given slice of [`Lexeme`]s.
-    pub fn new(lexemes: &'lexemes [Lexeme<'source>]) -> Self {
+impl<'tokens, 'source> Parser<'tokens, 'source> {
+    /// Construct a new [`Parser`] with a given slice of [`Token`]s.
+    pub fn new(tokens: &'tokens [Token<'source>]) -> Self {
         Self {
-            source: Source::new(lexemes),
+            source: Source::new(tokens),
             events: Vec::new(),
         }
     }
@@ -81,7 +78,8 @@ impl<'lexemes, 'source> Parser<'lexemes, 'source> {
     }
 }
 
-impl<'lexeme, 'source> Parser<'lexeme, 'source> {
+impl<'tokens, 'source> Parser<'tokens, 'source> {
+    /// Determines if the next [`SyntaxKind`] is the given `kind`.
     fn is_at(&mut self, kind: SyntaxKind) -> bool {
         self.peek() == Some(kind)
     }
@@ -93,13 +91,14 @@ impl<'lexeme, 'source> Parser<'lexeme, 'source> {
 
     /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     fn bump(&mut self) {
-        let Lexeme { kind, text } = self.source.next_lexeme().unwrap();
+        let Token { kind, text } = self.source.next_token().unwrap();
         self.events.push(Event::AddToken {
             kind: *kind,
             text: (*text).into(),
         })
     }
 
+    /// Starts a new node, returning a [`Marker`].
     fn start(&mut self) -> Marker {
         let pos = self.events.len();
         self.events.push(Event::Placeholder);

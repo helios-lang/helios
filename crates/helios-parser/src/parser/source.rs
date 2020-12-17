@@ -1,24 +1,24 @@
 use helios_syntax::SyntaxKind;
 
-use crate::lexer::Lexeme;
+use crate::lexer::Token;
 
-pub(super) struct Source<'lexemes, 'source> {
-    lexemes: &'lexemes [Lexeme<'source>],
+pub(super) struct Source<'tokens, 'source> {
+    tokens: &'tokens [Token<'source>],
     cursor: usize,
 }
 
-impl<'lexemes, 'source> Source<'lexemes, 'source> {
-    pub(super) fn new(lexemes: &'lexemes [Lexeme<'source>]) -> Self {
-        Self { lexemes, cursor: 0 }
+impl<'tokens, 'source> Source<'tokens, 'source> {
+    pub(super) fn new(tokens: &'tokens [Token<'source>]) -> Self {
+        Self { tokens, cursor: 0 }
     }
 
-    pub(super) fn next_lexeme(&mut self) -> Option<&'lexemes Lexeme<'source>> {
+    pub(super) fn next_token(&mut self) -> Option<&'tokens Token<'source>> {
         self.eat_trivia();
 
-        let lexeme = self.lexemes.get(self.cursor)?;
+        let token = self.tokens.get(self.cursor)?;
         self.cursor += 1;
 
-        Some(lexeme)
+        Some(token)
     }
 
     pub(super) fn peek_kind(&mut self) -> Option<SyntaxKind> {
@@ -37,8 +37,6 @@ impl<'lexemes, 'source> Source<'lexemes, 'source> {
     }
 
     fn peek_kind_raw(&self) -> Option<SyntaxKind> {
-        self.lexemes
-            .get(self.cursor)
-            .map(|Lexeme { kind, .. }| *kind)
+        self.tokens.get(self.cursor).map(|Token { kind, .. }| *kind)
     }
 }
