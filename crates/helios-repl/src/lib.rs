@@ -2,12 +2,28 @@
 
 use std::io::{self, Write};
 
+const LOGO_BANNER: &[&str] = &[
+    r"          __   __     __              ",
+    r"         / /  / /__  / /_)__  ___     ",
+    r"        / /__/ / _ \/ / / _ \(_ /_    ",
+    r"       / ,__, / ,__/ / / _/ /__) /    ",
+    r"      /_/  /_/\___/_/_/\___/____/     ",
+    r"",
+];
+
 fn start_main_loop() -> io::Result<()> {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     let mut input = String::new();
 
-    println!("Welcome to the REPL. Type :exit to quit.\n");
+    for (i, line) in LOGO_BANNER.iter().enumerate() {
+        match i {
+            2 => println!("{}Version {}", line, env!("CARGO_PKG_VERSION")),
+            3 => println!("{}{}", line, env!("CARGO_PKG_REPOSITORY")),
+            4 => println!("{}Type #exit to exit, #help for help", line),
+            _ => println!("{}", line.trim_end()),
+        }
+    }
 
     loop {
         write!(stdout, "> ")?;
@@ -15,12 +31,21 @@ fn start_main_loop() -> io::Result<()> {
 
         stdin.read_line(&mut input)?;
 
-        if input.trim() == ":exit" {
-            break;
+        if input.trim().is_empty() {
+            continue;
         }
 
-        let parse_result = helios_parser::parse(&input);
-        println!("{}", parse_result.debug_tree());
+        if input.trim().starts_with("#") {
+            let input = input[1..].trim();
+            match input {
+                "exit" => break,
+                "help" => println!("Help is not available at the moment"),
+                command => eprintln!("! Unknown command `{}`", command),
+            }
+        } else {
+            let parse_result = helios_parser::parse(&input);
+            println!("{}", parse_result.debug_tree());
+        }
 
         input.clear();
     }
