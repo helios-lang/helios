@@ -35,7 +35,7 @@ The Helios logo (the "hand-drawn" sun) is licensed under a [Creative Commons
 Attribution 4.0 International License][cc-license].
 
 [apache-license]: http://www.apache.org/licenses/LICENSE-2.0
-[badge]: https://github.com/tahscenery/helios/workflows/CI/badge.svg
-[ci]: https://github.com/tahscenery/helios/actions?query=workflow%3A%22CI%22
+[badge]: https://github.com/helios-lang/helios/workflows/CI/badge.svg
+[ci]: https://github.com/helios-lang/helios/actions?query=workflow:%22CI%22
 [cc-license]: http://creativecommons.org/licenses/by/4.0/
 [email]: mailto:taseen00.islam@gmail.com
