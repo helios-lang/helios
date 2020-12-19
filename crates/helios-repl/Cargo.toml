@@ -4,6 +4,7 @@ version = "0.2.0"
 license = "Apache-2.0"
 authors = ["Ta-Seen Islam <taseen00.islam@gmail.com>"]
 edition = "2018"
+publish = false
 repository = "http://github.com/helios-lang/helios"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

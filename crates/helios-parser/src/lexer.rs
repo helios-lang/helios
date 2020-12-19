@@ -128,6 +128,18 @@ impl<'source> Lexer<'source> {
         }
     }
 
+    /// Pushes a new [`LexerMode`] to the mode stack.
+    #[allow(dead_code)]
+    pub fn push_mode(&mut self, mode: LexerMode) {
+        self.mode_stack.push(mode);
+    }
+
+    /// Pops off the last [`LexerMode`] from the mode stack.
+    #[allow(dead_code)]
+    pub fn pop_mode(&mut self) -> Option<LexerMode> {
+        self.mode_stack.pop()
+    }
+
     /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
     fn tokenize_normal(&mut self) -> Option<Token<'source>> {
         self.cursor.checkpoint();
@@ -147,18 +159,6 @@ impl<'source> Lexer<'source> {
 }
 
 impl<'source> Lexer<'source> {
-    /// Pushes a new [`LexerMode`] to the mode stack.
-    #[allow(dead_code)]
-    pub(crate) fn push_mode(&mut self, mode: LexerMode) {
-        self.mode_stack.push(mode);
-    }
-
-    /// Pops off the last [`LexerMode`] from the mode stack.
-    #[allow(dead_code)]
-    pub(crate) fn pop_mode(&mut self) -> Option<LexerMode> {
-        self.mode_stack.pop()
-    }
-
     /// The current mode of the lexer.
     fn current_mode(&self) -> LexerMode {
         self.mode_stack.last().cloned().unwrap_or_default()

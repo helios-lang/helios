@@ -3,27 +3,27 @@ use crate::lexer::Token;
 use helios_syntax::Language as HeliosLanguage;
 use rowan::{GreenNode, GreenNodeBuilder, Language};
 
-pub(super) struct Sink<'tokens, 'source> {
-    builder: GreenNodeBuilder<'static>,
+pub struct Sink<'tokens, 'source> {
     tokens: &'tokens [Token<'source>],
-    cursor: usize,
     events: Vec<Event>,
+    builder: GreenNodeBuilder<'static>,
+    cursor: usize,
 }
 
 impl<'tokens, 'source> Sink<'tokens, 'source> {
-    pub(super) fn new(
+    pub fn new(
         tokens: &'tokens [Token<'source>],
         events: Vec<Event>,
     ) -> Self {
         Self {
-            builder: GreenNodeBuilder::new(),
             tokens,
-            cursor: 0,
             events,
+            builder: GreenNodeBuilder::new(),
+            cursor: 0,
         }
     }
 
-    pub(super) fn finish(mut self) -> GreenNode {
+    pub fn finish(mut self) -> GreenNode {
         use std::mem;
 
         for i in 0..self.events.len() {

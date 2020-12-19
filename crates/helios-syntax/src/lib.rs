@@ -4,7 +4,7 @@ pub use lang::Language;
 
 pub type SyntaxNode = rowan::SyntaxNode<Language>;
 
-/// A convenient way to construct a new `SyntaxNode`.
+/// A convenient way to construct new `SyntaxNode` symbols.
 ///
 /// # Examples
 /// ```rust

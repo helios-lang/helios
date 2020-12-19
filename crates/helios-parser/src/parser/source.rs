@@ -2,17 +2,33 @@ use helios_syntax::SyntaxKind;
 
 use crate::lexer::Token;
 
-pub(super) struct Source<'tokens, 'source> {
+/// An abstraction over traversing a slice of [`Token`]s.
+///
+/// This structure is responsible for providing [`Parser`] tokens. It consumes
+/// irrelevant tokens (called *trivia*) such as line comments and whitespace.
+/// This makes it easier to use [`Parser`] without having to handle such tokens.
+///
+/// Note that trivia tokens are not completely discarded. The [`Sink`]
+/// structure, in short, is able to create a syntax tree with the [`Event`]s
+/// produced by the [`Parser`]. As it does this, it knows when trivia tokens
+/// have been skipped and "glues" or "inserts" them into the final syntax tree.
+/// Refer to [`Sink`]'s documentation for more information on how it does this.
+///
+/// [`Event`]: crate::parser::event::Parser
+/// [`Parser`]: crate::parser::Parser
+/// [`Sink`]: crate::parser::sink::Sink
+pub struct Source<'tokens, 'source> {
     tokens: &'tokens [Token<'source>],
     cursor: usize,
 }
 
 impl<'tokens, 'source> Source<'tokens, 'source> {
-    pub(super) fn new(tokens: &'tokens [Token<'source>]) -> Self {
+    /// Construct a new [`Source`] with a given slice of [`Token`]s.
+    pub fn new(tokens: &'tokens [Token<'source>]) -> Self {
         Self { tokens, cursor: 0 }
     }
 
-    pub(super) fn next_token(&mut self) -> Option<&'tokens Token<'source>> {
+    pub fn next_token(&mut self) -> Option<&'tokens Token<'source>> {
         self.eat_trivia();
 
         let token = self.tokens.get(self.cursor)?;
@@ -21,7 +37,7 @@ impl<'tokens, 'source> Source<'tokens, 'source> {
         Some(token)
     }
 
-    pub(super) fn peek_kind(&mut self) -> Option<SyntaxKind> {
+    pub fn peek_kind(&mut self) -> Option<SyntaxKind> {
         self.eat_trivia();
         self.peek_kind_raw()
     }

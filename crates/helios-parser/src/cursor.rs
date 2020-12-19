@@ -8,7 +8,7 @@ use std::ops::Range;
 use std::str::Chars;
 
 /// End-of-file character.
-pub const EOF_CHAR: char = '\0';
+const EOF_CHAR: char = '\0';
 
 /// A structure representing the current position in a Helios source text.
 ///
@@ -92,6 +92,7 @@ impl<'source> Cursor<'source> {
     }
 
     /// The remaining length of the unprocessed input.
+    #[allow(dead_code)]
     #[inline]
     pub fn remaining_len(&self) -> usize {
         self.source_len() - self.pos()

@@ -3,20 +3,20 @@ use super::Parser;
 use drop_bomb::DropBomb;
 use helios_syntax::SyntaxKind;
 
-pub(super) struct Marker {
+pub(crate) struct Marker {
     pos: usize,
     bomb: DropBomb,
 }
 
 impl Marker {
-    pub(super) fn new(pos: usize) -> Self {
+    pub(crate) fn new(pos: usize) -> Self {
         Self {
             pos,
             bomb: DropBomb::new("Marker is not completed before being dropped"),
         }
     }
 
-    pub(super) fn complete(
+    pub(crate) fn complete(
         mut self,
         parser: &mut Parser,
         kind: SyntaxKind,
@@ -37,12 +37,12 @@ impl Marker {
     }
 }
 
-pub(super) struct CompletedMarker {
+pub(crate) struct CompletedMarker {
     pos: usize,
 }
 
 impl CompletedMarker {
-    pub(super) fn precede(self, parser: &mut Parser) -> Marker {
+    pub(crate) fn precede(self, parser: &mut Parser) -> Marker {
         let new_m = parser.start();
 
         if let Event::StartNode {

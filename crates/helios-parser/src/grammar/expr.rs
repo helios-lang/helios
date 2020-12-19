@@ -1,5 +1,5 @@
-use super::marker::CompletedMarker;
-use super::Parser;
+use crate::parser::marker::CompletedMarker;
+use crate::parser::Parser;
 use helios_syntax::{Sym, SyntaxKind};
 
 /// Determines the prefix binding power of the given token. Currently, the only
@@ -31,23 +31,20 @@ fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
 }
 
 /// Parses an expression.
-pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
-    let mut lhs = match lhs(parser) {
-        Some(lhs) => lhs,
-        None => return,
-    };
+pub(super) fn parse_expr(
+    parser: &mut Parser,
+    min_bp: u8,
+) -> Option<CompletedMarker> {
+    let mut lhs = lhs(parser)?; // We'll handle errors later
 
     loop {
         // Peek the next token, assuming it's an operator
-        let op = match parser.peek() {
-            Some(token) => token,
-            _ => return,
-        };
+        let op = parser.peek()?; // We'll handle errors later
 
         // Get the left and right binding power of the supposed operator
         if let Some((left_bp, right_bp)) = infix_binding_power(op) {
             if left_bp < min_bp {
-                return;
+                break;
             }
 
             // Consume the operator token
@@ -57,9 +54,11 @@ pub(super) fn parse_expr(parser: &mut Parser, min_bp: u8) {
             parse_expr(parser, right_bp);
             lhs = m.complete(parser, SyntaxKind::Exp_Binary);
         } else {
-            return;
+            break;
         }
     }
+
+    Some(lhs)
 }
 
 /// Parses the left-hand side of an expression.
@@ -134,7 +133,7 @@ fn paren_expr(parser: &mut Parser) -> CompletedMarker {
 
 #[cfg(test)]
 mod tests {
-    use super::super::check;
+    use crate::check;
     use expect_test::expect;
 
     #[test]

@@ -1,7 +1,7 @@
 use helios_syntax::SyntaxKind;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(super) enum Event {
+pub enum Event {
     StartNode {
         kind: SyntaxKind,
         forward_parent: Option<usize>,
