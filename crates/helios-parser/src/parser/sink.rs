@@ -11,10 +11,7 @@ pub struct Sink<'tokens, 'source> {
 }
 
 impl<'tokens, 'source> Sink<'tokens, 'source> {
-    pub fn new(
-        tokens: &'tokens [Token<'source>],
-        events: Vec<Event>,
-    ) -> Self {
+    pub fn new(tokens: &'tokens [Token<'source>], events: Vec<Event>) -> Self {
         Self {
             tokens,
             events,
