@@ -1,8 +1,3 @@
-/// Prints a formatted error message to standard error.
-fn print_error(message: impl Into<String>) {
-    eprintln!("ERROR: {}\n", message.into())
-}
-
 /// Prints the usage information of the Helios executable.
 fn print_usage() {
     println!("{}", include_str!("../usage.txt"));
@@ -14,7 +9,7 @@ fn print_usage() {
 /// file of this package.
 fn print_version() {
     if let Some(version) = option_env!("CARGO_PKG_VERSION") {
-        println!("helios {}", version);
+        println!("helios-ls {}", version);
     } else {
         eprintln!("ERROR: Failed to get version.");
     }
@@ -31,25 +26,14 @@ fn main() {
         (Some(arg), param) => match (&*arg, param) {
             ("-h", _) | ("--help", _) => print_usage(),
             ("-V", _) | ("--version", _) => print_version(),
-            ("build", None) => {
-                print_error("Missing argument for subcommand `build`");
-                print_usage();
-            }
-            ("build", Some(ref file_name)) => {
-                log::trace!("Starting build process...");
-                helios_build::build(file_name)
-            }
-            ("repl", _) => {
-                log::trace!("Starting REPL...");
-                helios_repl::start()
-            }
             _ => {
-                let message =
-                    format!("Unrecognised option or subcommand `{}`", arg);
-                print_error(message);
+                eprintln!("ERROR: Unrecognised option `{}`", arg);
                 print_usage()
             }
         },
-        _ => print_usage(),
+        _ => {
+            log::trace!("Starting Helios language server...");
+            helios_ls::start()
+        }
     }
 }

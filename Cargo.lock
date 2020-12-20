@@ -297,7 +297,6 @@ version = "0.2.0"
 dependencies = [
  "env_logger",
  "helios-build",
- "helios-ide",
  "helios-repl",
  "log",
 ]
@@ -311,9 +310,10 @@ name = "helios-diagnostics"
 version = "0.1.0"
 
 [[package]]
-name = "helios-ide"
-version = "0.2.0"
+name = "helios-ls"
+version = "0.1.0"
 dependencies = [
+ "env_logger",
  "helios-syntax",
  "log",
  "tokio",

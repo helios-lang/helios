@@ -6,5 +6,4 @@ OPTIONS:
 
 SUBCOMMAND:
   build <file>    Compile the given <file>
-  ide             Start the language server for IDE support
   repl            Start a new REPL session
