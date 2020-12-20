@@ -324,6 +324,7 @@ impl<'source> Lexer<'source> {
             "or"        => SyntaxKind::Kwd_Or,
             "rec"       => SyntaxKind::Kwd_Rec,
             "ref"       => SyntaxKind::Kwd_Ref,
+            "then"      => SyntaxKind::Kwd_Then,
             "type"      => SyntaxKind::Kwd_Type,
             "val"       => SyntaxKind::Kwd_Val,
             "while"     => SyntaxKind::Kwd_While,
@@ -435,6 +436,7 @@ mod tests {
         check("or", SyntaxKind::Kwd_Or);
         check("rec", SyntaxKind::Kwd_Rec);
         check("ref", SyntaxKind::Kwd_Ref);
+        check("then", SyntaxKind::Kwd_Then);
         check("type", SyntaxKind::Kwd_Type);
         check("val", SyntaxKind::Kwd_Val);
         check("while", SyntaxKind::Kwd_While);

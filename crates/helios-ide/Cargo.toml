@@ -10,5 +10,5 @@ edition = "2018"
 [dependencies]
 helios-syntax = { version = "0.2.0", path = "../helios-syntax" }
 log = "0.4.11"
-tokio = { version = "0.2.22", features = ["io-std"] }
-tower-lsp = "0.13.2"
+tokio = { version = "0.2.24", features = ["io-std"] }
+tower-lsp = "0.13.3"

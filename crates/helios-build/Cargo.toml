@@ -8,5 +8,3 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-helios-driver = { version = "0.2.0", path = "../helios-driver" }
-helios-syntax = { version = "0.2.0", path = "../helios-syntax" }

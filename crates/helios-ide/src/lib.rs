@@ -70,39 +70,19 @@ impl LanguageServer for HeliosLanguageServer {
             .log_message(MessageType::Info, format!("{:?}", params))
             .await;
 
-        let keywords = helios_syntax::keyword_list()
-            .into_iter()
-            .map(|keyword| CompletionItem {
-                label: keyword.clone(),
-                kind: Some(CompletionItemKind::Keyword),
-                insert_text: Some(keyword + " "),
-                detail: Some("Helios keyword".to_string()),
-                ..CompletionItem::default()
+        let keywords = helios_syntax::KEYWORDS
+            .iter()
+            .map(|keyword| {
+                let keyword = keyword.to_string();
+                CompletionItem {
+                    label: keyword.clone(),
+                    kind: Some(CompletionItemKind::Keyword),
+                    insert_text: Some(keyword + " "),
+                    detail: Some("Helios keyword".to_string()),
+                    ..CompletionItem::default()
+                }
             })
             .collect::<Vec<_>>();
-
-        // let primitive_types: Vec<CompletionItem> = vec![
-        //     "Bool", "Char", "String", "Float", "Float32", "Float64", "Int",
-        //     "Int8", "Int16", "Int32", "Int64", "UInt", "UInt8", "UInt16",
-        //     "UInt32", "UInt64", "Optional", "Result",
-        // ]
-        // .into_iter()
-        // .map(|r#type| CompletionItem {
-        //     label: r#type.to_string(),
-        //     kind: Some(CompletionItemKind::Struct),
-        //     insert_text: match r#type {
-        //         "Optional" => Some("Optional(of ${1:???})".to_string()),
-        //         "Result" => Some("Result(of ${1:???}, ${2:???})".to_string()),
-        //         _ => None,
-        //     },
-        //     insert_text_format: match r#type {
-        //         "Optional" => Some(InsertTextFormat::Snippet),
-        //         "Result" => Some(InsertTextFormat::Snippet),
-        //         _ => None,
-        //     },
-        //     ..CompletionItem::default()
-        // })
-        // .collect();
 
         let special_identifiers: Vec<CompletionItem> =
             vec!["True", "False", "Some", "None", "Ok", "Err"]
@@ -128,12 +108,7 @@ impl LanguageServer for HeliosLanguageServer {
 
         Ok(params.context.map(|context| match context.trigger_kind {
             CompletionTriggerKind::Invoked => CompletionResponse::Array(
-                [
-                    &keywords[..],
-                    // &primitive_types[..],
-                    &special_identifiers[..],
-                ]
-                .concat(),
+                [&keywords[..], &special_identifiers[..]].concat(),
             ),
             _ => CompletionResponse::Array(special_identifiers),
         }))
@@ -171,8 +146,10 @@ async fn __start() {
 /// Starts the connection between the client and server via the Language Server
 /// Protocol.
 ///
-/// This function initializes and starts a `tokio` runtime, panicking if it has
-/// failed to initialize.
+/// This function initializes and starts a [`tokio`] runtime, panicking if it
+/// has failed to initialize.
+///
+/// [`tokio`]: https://docs.rs/tokio/0.2.24/tokio
 pub fn start() {
     let mut runtime = Runtime::new().expect("Failed to start tokio runtime");
     runtime.block_on(__start());

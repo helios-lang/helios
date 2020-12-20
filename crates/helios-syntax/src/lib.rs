@@ -79,6 +79,7 @@ pub enum SyntaxKind {
     Kwd_Or,
     Kwd_Rec,
     Kwd_Ref,
+    Kwd_Then,
     Kwd_Type,
     Kwd_Unimplemented,
     Kwd_Val,
@@ -176,18 +177,12 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
     }
 }
 
-/// A list of all the keywords defined in the Helios grammar.
-pub fn keyword_list() -> Vec<String> {
-    [
-        "alias", "and", "as", "begin", "else", "end", "export", "external",
-        "for", "forall", "if", "import", "in", "let", "loop", "match",
-        "module", "not", "of", "or", "rec", "ref", "type", "val", "while",
-        "with",
-    ]
-    .iter()
-    .map(|s| String::from(*s))
-    .collect()
-}
+/// An array of all the keywords defined in the Helios grammar.
+pub const KEYWORDS: &[&str] = &[
+    "alias", "and", "as", "begin", "else", "end", "export", "external", "for",
+    "forall", "if", "import", "in", "let", "loop", "match", "module", "not",
+    "of", "or", "rec", "ref", "then", "type", "val", "while", "with",
+];
 
 /// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
 /// character.
