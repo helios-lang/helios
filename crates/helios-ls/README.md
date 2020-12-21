@@ -44,7 +44,7 @@ mentioned.
 
 ## License
 
-Unless explicitly stated otherwise, all files in this repository are licensed
+Unless explicitly stated otherwise, all files in this directory are licensed
 under the [Apache License, Version 2.0][apache-license].
 
 [apache-license]: http://www.apache.org/licenses/LICENSE-2.0
