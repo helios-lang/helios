@@ -1,4 +1,4 @@
-# Helios Language Server (HeliosLS)
+# Helios Language Server (Helios-LS)
 
 The Helios Language Server is an intermediary between an editor or IDE and the
 Helios compiler. It implements the [Language Server Protocol][language-server-protocol],

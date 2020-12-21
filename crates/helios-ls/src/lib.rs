@@ -15,8 +15,8 @@ impl LanguageServer for HeliosLanguageServer {
     ) -> Result<InitializeResult> {
         Ok(InitializeResult {
             server_info: Some(ServerInfo {
-                name: "HLS".to_string(),
-                version: Some("0.2.0".to_string()),
+                name: "Helios-LS".to_string(),
+                version: Some(env!("CARGO_PKG_VERSION").to_string()),
             }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
