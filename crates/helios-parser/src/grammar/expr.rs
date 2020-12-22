@@ -166,9 +166,10 @@ mod tests {
         check(
             "123",
             expect![[r#"
-Root@0..3
-  Exp_Literal@0..3
-    Lit_Integer@0..3 "123""#]],
+                Root@0..3
+                  Exp_Literal@0..3
+                    Lit_Integer@0..3 "123"
+            "#]],
         );
     }
 
@@ -177,9 +178,10 @@ Root@0..3
         check(
             "hello_world",
             expect![[r#"
-Root@0..11
-  Exp_VariableRef@0..11
-    Identifier@0..11 "hello_world""#]],
+                Root@0..11
+                  Exp_VariableRef@0..11
+                    Identifier@0..11 "hello_world"
+            "#]],
         );
     }
 
@@ -188,11 +190,12 @@ Root@0..11
         check(
             "-10",
             expect![[r#"
-Root@0..3
-  Exp_UnaryPrefix@0..3
-    Sym_Minus@0..1 "-"
-    Exp_Literal@1..3
-      Lit_Integer@1..3 "10""#]],
+                Root@0..3
+                  Exp_UnaryPrefix@0..3
+                    Sym_Minus@0..1 "-"
+                    Exp_Literal@1..3
+                      Lit_Integer@1..3 "10"
+            "#]],
         );
     }
 
@@ -201,15 +204,16 @@ Root@0..3
         check(
             "-10+20",
             expect![[r#"
-Root@0..6
-  Exp_Binary@0..6
-    Exp_UnaryPrefix@0..3
-      Sym_Minus@0..1 "-"
-      Exp_Literal@1..3
-        Lit_Integer@1..3 "10"
-    Sym_Plus@3..4 "+"
-    Exp_Literal@4..6
-      Lit_Integer@4..6 "20""#]],
+                Root@0..6
+                  Exp_Binary@0..6
+                    Exp_UnaryPrefix@0..3
+                      Sym_Minus@0..1 "-"
+                      Exp_Literal@1..3
+                        Lit_Integer@1..3 "10"
+                    Sym_Plus@3..4 "+"
+                    Exp_Literal@4..6
+                      Lit_Integer@4..6 "20"
+            "#]],
         );
     }
 
@@ -218,13 +222,14 @@ Root@0..6
         check(
             "1+2",
             expect![[r#"
-Root@0..3
-  Exp_Binary@0..3
-    Exp_Literal@0..1
-      Lit_Integer@0..1 "1"
-    Sym_Plus@1..2 "+"
-    Exp_Literal@2..3
-      Lit_Integer@2..3 "2""#]],
+                Root@0..3
+                  Exp_Binary@0..3
+                    Exp_Literal@0..1
+                      Lit_Integer@0..1 "1"
+                    Sym_Plus@1..2 "+"
+                    Exp_Literal@2..3
+                      Lit_Integer@2..3 "2"
+            "#]],
         );
     }
 
@@ -233,21 +238,22 @@ Root@0..3
         check(
             "1+2+3+4",
             expect![[r#"
-Root@0..7
-  Exp_Binary@0..7
-    Exp_Binary@0..5
-      Exp_Binary@0..3
-        Exp_Literal@0..1
-          Lit_Integer@0..1 "1"
-        Sym_Plus@1..2 "+"
-        Exp_Literal@2..3
-          Lit_Integer@2..3 "2"
-      Sym_Plus@3..4 "+"
-      Exp_Literal@4..5
-        Lit_Integer@4..5 "3"
-    Sym_Plus@5..6 "+"
-    Exp_Literal@6..7
-      Lit_Integer@6..7 "4""#]],
+                Root@0..7
+                  Exp_Binary@0..7
+                    Exp_Binary@0..5
+                      Exp_Binary@0..3
+                        Exp_Literal@0..1
+                          Lit_Integer@0..1 "1"
+                        Sym_Plus@1..2 "+"
+                        Exp_Literal@2..3
+                          Lit_Integer@2..3 "2"
+                      Sym_Plus@3..4 "+"
+                      Exp_Literal@4..5
+                        Lit_Integer@4..5 "3"
+                    Sym_Plus@5..6 "+"
+                    Exp_Literal@6..7
+                      Lit_Integer@6..7 "4"
+            "#]],
         );
     }
 
@@ -256,21 +262,22 @@ Root@0..7
         check(
             "1+2*3-4",
             expect![[r#"
-Root@0..7
-  Exp_Binary@0..7
-    Exp_Binary@0..5
-      Exp_Literal@0..1
-        Lit_Integer@0..1 "1"
-      Sym_Plus@1..2 "+"
-      Exp_Binary@2..5
-        Exp_Literal@2..3
-          Lit_Integer@2..3 "2"
-        Sym_Asterisk@3..4 "*"
-        Exp_Literal@4..5
-          Lit_Integer@4..5 "3"
-    Sym_Minus@5..6 "-"
-    Exp_Literal@6..7
-      Lit_Integer@6..7 "4""#]],
+                Root@0..7
+                  Exp_Binary@0..7
+                    Exp_Binary@0..5
+                      Exp_Literal@0..1
+                        Lit_Integer@0..1 "1"
+                      Sym_Plus@1..2 "+"
+                      Exp_Binary@2..5
+                        Exp_Literal@2..3
+                          Lit_Integer@2..3 "2"
+                        Sym_Asterisk@3..4 "*"
+                        Exp_Literal@4..5
+                          Lit_Integer@4..5 "3"
+                    Sym_Minus@5..6 "-"
+                    Exp_Literal@6..7
+                      Lit_Integer@6..7 "4"
+            "#]],
         );
     }
 
@@ -279,20 +286,21 @@ Root@0..7
         check(
             "5*(2+1)",
             expect![[r#"
-Root@0..7
-  Exp_Binary@0..7
-    Exp_Literal@0..1
-      Lit_Integer@0..1 "5"
-    Sym_Asterisk@1..2 "*"
-    Exp_Paren@2..7
-      Sym_LParen@2..3 "("
-      Exp_Binary@3..6
-        Exp_Literal@3..4
-          Lit_Integer@3..4 "2"
-        Sym_Plus@4..5 "+"
-        Exp_Literal@5..6
-          Lit_Integer@5..6 "1"
-      Sym_RParen@6..7 ")""#]],
+                Root@0..7
+                  Exp_Binary@0..7
+                    Exp_Literal@0..1
+                      Lit_Integer@0..1 "5"
+                    Sym_Asterisk@1..2 "*"
+                    Exp_Paren@2..7
+                      Sym_LParen@2..3 "("
+                      Exp_Binary@3..6
+                        Exp_Literal@3..4
+                          Lit_Integer@3..4 "2"
+                        Sym_Plus@4..5 "+"
+                        Exp_Literal@5..6
+                          Lit_Integer@5..6 "1"
+                      Sym_RParen@6..7 ")"
+            "#]],
         );
     }
 
@@ -301,38 +309,39 @@ Root@0..7
         check(
             "-(2-((10+10)))*20+-5",
             expect![[r#"
-Root@0..20
-  Exp_Binary@0..20
-    Exp_Binary@0..17
-      Exp_UnaryPrefix@0..14
-        Sym_Minus@0..1 "-"
-        Exp_Paren@1..14
-          Sym_LParen@1..2 "("
-          Exp_Binary@2..13
-            Exp_Literal@2..3
-              Lit_Integer@2..3 "2"
-            Sym_Minus@3..4 "-"
-            Exp_Paren@4..13
-              Sym_LParen@4..5 "("
-              Exp_Paren@5..12
-                Sym_LParen@5..6 "("
-                Exp_Binary@6..11
-                  Exp_Literal@6..8
-                    Lit_Integer@6..8 "10"
-                  Sym_Plus@8..9 "+"
-                  Exp_Literal@9..11
-                    Lit_Integer@9..11 "10"
-                Sym_RParen@11..12 ")"
-              Sym_RParen@12..13 ")"
-          Sym_RParen@13..14 ")"
-      Sym_Asterisk@14..15 "*"
-      Exp_Literal@15..17
-        Lit_Integer@15..17 "20"
-    Sym_Plus@17..18 "+"
-    Exp_UnaryPrefix@18..20
-      Sym_Minus@18..19 "-"
-      Exp_Literal@19..20
-        Lit_Integer@19..20 "5""#]],
+                Root@0..20
+                  Exp_Binary@0..20
+                    Exp_Binary@0..17
+                      Exp_UnaryPrefix@0..14
+                        Sym_Minus@0..1 "-"
+                        Exp_Paren@1..14
+                          Sym_LParen@1..2 "("
+                          Exp_Binary@2..13
+                            Exp_Literal@2..3
+                              Lit_Integer@2..3 "2"
+                            Sym_Minus@3..4 "-"
+                            Exp_Paren@4..13
+                              Sym_LParen@4..5 "("
+                              Exp_Paren@5..12
+                                Sym_LParen@5..6 "("
+                                Exp_Binary@6..11
+                                  Exp_Literal@6..8
+                                    Lit_Integer@6..8 "10"
+                                  Sym_Plus@8..9 "+"
+                                  Exp_Literal@9..11
+                                    Lit_Integer@9..11 "10"
+                                Sym_RParen@11..12 ")"
+                              Sym_RParen@12..13 ")"
+                          Sym_RParen@13..14 ")"
+                      Sym_Asterisk@14..15 "*"
+                      Exp_Literal@15..17
+                        Lit_Integer@15..17 "20"
+                    Sym_Plus@17..18 "+"
+                    Exp_UnaryPrefix@18..20
+                      Sym_Minus@18..19 "-"
+                      Exp_Literal@19..20
+                        Lit_Integer@19..20 "5"
+            "#]],
         )
     }
 
@@ -374,10 +383,11 @@ Root@0..20
         check(
             "   9876",
             expect![[r#"
-Root@0..7
-  Whitespace@0..3 "   "
-  Exp_Literal@3..7
-    Lit_Integer@3..7 "9876""#]],
+                Root@0..7
+                  Whitespace@0..3 "   "
+                  Exp_Literal@3..7
+                    Lit_Integer@3..7 "9876"
+            "#]],
         );
     }
 
@@ -386,10 +396,11 @@ Root@0..7
         check(
             "1234   ",
             expect![[r#"
-Root@0..7
-  Exp_Literal@0..7
-    Lit_Integer@0..4 "1234"
-    Whitespace@4..7 "   ""#]],
+                Root@0..7
+                  Exp_Literal@0..7
+                    Lit_Integer@0..4 "1234"
+                    Whitespace@4..7 "   "
+            "#]],
         );
     }
 
@@ -398,11 +409,12 @@ Root@0..7
         check(
             " 123     ",
             expect![[r#"
-Root@0..9
-  Whitespace@0..1 " "
-  Exp_Literal@1..9
-    Lit_Integer@1..4 "123"
-    Whitespace@4..9 "     ""#]],
+                Root@0..9
+                  Whitespace@0..1 " "
+                  Exp_Literal@1..9
+                    Lit_Integer@1..4 "123"
+                    Whitespace@4..9 "     "
+            "#]],
         );
     }
 
@@ -414,26 +426,27 @@ Root@0..9
   + 1 // Add one
   + 10 // Add ten",
             expect![[r#"
-Root@0..37
-  Whitespace@0..1 "\n"
-  Exp_Binary@1..37
-    Exp_Binary@1..22
-      Exp_Literal@1..5
-        Lit_Integer@1..2 "1"
-        Whitespace@2..5 "\n  "
-      Sym_Plus@5..6 "+"
-      Whitespace@6..7 " "
-      Exp_Literal@7..22
-        Lit_Integer@7..8 "1"
-        Whitespace@8..9 " "
-        Comment@9..19 "// Add one"
-        Whitespace@19..22 "\n  "
-    Sym_Plus@22..23 "+"
-    Whitespace@23..24 " "
-    Exp_Literal@24..37
-      Lit_Integer@24..26 "10"
-      Whitespace@26..27 " "
-      Comment@27..37 "// Add ten""#]],
+                Root@0..37
+                  Whitespace@0..1 "\n"
+                  Exp_Binary@1..37
+                    Exp_Binary@1..22
+                      Exp_Literal@1..5
+                        Lit_Integer@1..2 "1"
+                        Whitespace@2..5 "\n  "
+                      Sym_Plus@5..6 "+"
+                      Whitespace@6..7 " "
+                      Exp_Literal@7..22
+                        Lit_Integer@7..8 "1"
+                        Whitespace@8..9 " "
+                        Comment@9..19 "// Add one"
+                        Whitespace@19..22 "\n  "
+                    Sym_Plus@22..23 "+"
+                    Whitespace@23..24 " "
+                    Exp_Literal@24..37
+                      Lit_Integer@24..26 "10"
+                      Whitespace@26..27 " "
+                      Comment@27..37 "// Add ten"
+            "#]],
         );
     }
 }

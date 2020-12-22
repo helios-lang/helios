@@ -154,7 +154,9 @@ mod tests {
 
     #[test]
     fn test_parse_nothing() {
-        check("", expect![[r#"Root@0..0"#]]);
+        check("", expect![[r#"
+            Root@0..0
+        "#]]);
     }
 
     #[test]
@@ -162,8 +164,9 @@ mod tests {
         check(
             "   ",
             expect![[r#"
-Root@0..3
-  Whitespace@0..3 "   ""#]],
+                Root@0..3
+                  Whitespace@0..3 "   "
+            "#]],
         );
     }
 
@@ -172,8 +175,9 @@ Root@0..3
         check(
             "// hello, world!",
             expect![[r#"
-Root@0..16
-  Comment@0..16 "// hello, world!""#]],
+                Root@0..16
+                  Comment@0..16 "// hello, world!"
+            "#]],
         );
     }
 
@@ -182,9 +186,10 @@ Root@0..16
         check(
             "// hello, world!\n",
             expect![[r#"
-Root@0..17
-  Comment@0..16 "// hello, world!"
-  Whitespace@16..17 "\n""#]],
+                Root@0..17
+                  Comment@0..16 "// hello, world!"
+                  Whitespace@16..17 "\n"
+            "#]],
         );
     }
 
@@ -196,12 +201,13 @@ Root@0..17
 // this is another line
 ",
             expect![[r#"
-Root@0..42
-  Whitespace@0..1 "\n"
-  Comment@1..17 "// hello, world!"
-  Whitespace@17..18 "\n"
-  Comment@18..41 "// this is another line"
-  Whitespace@41..42 "\n""#]],
+                Root@0..42
+                  Whitespace@0..1 "\n"
+                  Comment@1..17 "// hello, world!"
+                  Whitespace@17..18 "\n"
+                  Comment@18..41 "// this is another line"
+                  Whitespace@41..42 "\n"
+            "#]],
         );
     }
 }

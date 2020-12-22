@@ -31,16 +31,17 @@ mod tests {
         check(
             "let foo = bar",
             expect![[r#"
-Root@0..13
-  Dec_GlobalBinding@0..13
-    Kwd_Let@0..3 "let"
-    Whitespace@3..4 " "
-    Identifier@4..7 "foo"
-    Whitespace@7..8 " "
-    Sym_Eq@8..9 "="
-    Whitespace@9..10 " "
-    Exp_VariableRef@10..13
-      Identifier@10..13 "bar""#]],
+                Root@0..13
+                  Dec_GlobalBinding@0..13
+                    Kwd_Let@0..3 "let"
+                    Whitespace@3..4 " "
+                    Identifier@4..7 "foo"
+                    Whitespace@7..8 " "
+                    Sym_Eq@8..9 "="
+                    Whitespace@9..10 " "
+                    Exp_VariableRef@10..13
+                      Identifier@10..13 "bar"
+            "#]],
         );
     }
 
