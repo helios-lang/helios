@@ -13,4 +13,5 @@ expect-test = "1.0.1"
 helios-diagnostics = { version = "0.1.0", path = "../helios-diagnostics" }
 helios-syntax = { version = "0.2.0", path = "../helios-syntax" }
 rowan = "0.10.0"
+text-size = "1.0.0"
 unicode-xid = "0.2.1"

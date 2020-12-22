@@ -12,6 +12,7 @@ mod lexer;
 mod parser;
 
 use self::lexer::Lexer;
+use self::parser::error::ParseError;
 use self::parser::sink::Sink;
 use self::parser::source::Source;
 use self::parser::Parser;
@@ -30,28 +31,41 @@ pub fn parse(source: &str) -> Parse {
     let events = parser.parse();
     let sink = Sink::new(&tokens, events);
 
-    Parse::new(sink.finish())
+    sink.finish()
 }
 
 /// The result of parsing a source text.
 pub struct Parse {
     /// The root green node of the syntax tree.
     green_node: GreenNode,
+    errors: Vec<ParseError>,
 }
 
 impl Parse {
     /// Construct a [`Parse`] with the given [`GreenNode`].
-    pub fn new(green_node: GreenNode) -> Self {
-        Self { green_node }
+    pub fn new(green_node: GreenNode, errors: Vec<ParseError>) -> Self {
+        Self { green_node, errors }
     }
 
     /// Returns a formatted string representation of the syntax tree.
     pub fn debug_tree(&self) -> String {
-        let syntax_node = SyntaxNode::new_root(self.green_node.clone());
-        let formatted = format!("{:#?}", syntax_node);
+        let mut s = String::new();
 
-        // trims newline at the end
-        formatted[0..formatted.len() - 1].to_string()
+        let syntax_node = SyntaxNode::new_root(self.green_node.clone());
+        let tree = format!("{:#?}", syntax_node);
+
+        // Trim newline at the end
+        s.push_str(&tree[0..tree.len() - 1]);
+
+        if !self.errors.is_empty() {
+            s.push_str("\n---");
+        }
+
+        for error in &self.errors {
+            s.push_str(&format!("\n{}", error));
+        }
+
+        s
     }
 }
 

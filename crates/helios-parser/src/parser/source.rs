@@ -1,6 +1,7 @@
 use helios_syntax::SyntaxKind;
 
 use crate::lexer::Token;
+use text_size::TextRange;
 
 /// An abstraction over traversing a slice of [`Token`]s.
 ///
@@ -37,9 +38,18 @@ impl<'tokens, 'source> Source<'tokens, 'source> {
         Some(token)
     }
 
+    pub(crate) fn last_token_range(&self) -> Option<TextRange> {
+        self.tokens.last().map(|Token { range, .. }| *range)
+    }
+
     pub fn peek_kind(&mut self) -> Option<SyntaxKind> {
         self.eat_trivia();
         self.peek_kind_raw()
+    }
+
+    pub fn peek_token(&mut self) -> Option<&Token> {
+        self.eat_trivia();
+        self.peek_token_raw()
     }
 
     fn eat_trivia(&mut self) {
@@ -53,6 +63,10 @@ impl<'tokens, 'source> Source<'tokens, 'source> {
     }
 
     fn peek_kind_raw(&self) -> Option<SyntaxKind> {
-        self.tokens.get(self.cursor).map(|Token { kind, .. }| *kind)
+        self.peek_token_raw().map(|Token { kind, .. }| *kind)
+    }
+
+    fn peek_token_raw(&self) -> Option<&Token> {
+        self.tokens.get(self.cursor)
     }
 }

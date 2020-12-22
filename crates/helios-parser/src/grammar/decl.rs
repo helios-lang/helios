@@ -65,7 +65,9 @@ Root@0..17
     Sym_Eq@14..15 "="
     Whitespace@15..16 " "
     Exp_VariableRef@16..17
-      Identifier@16..17 "a""#]],
+      Identifier@16..17 "a"
+---
+error at 8..11: expected integer literal, float literal, identifier, `(`, `-` or `!`, found `let`"#]],
         );
     }
 }

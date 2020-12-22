@@ -329,6 +329,7 @@ dependencies = [
  "helios-diagnostics",
  "helios-syntax",
  "rowan",
+ "text-size",
  "unicode-xid",
 ]
 

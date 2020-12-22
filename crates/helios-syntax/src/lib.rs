@@ -1,6 +1,7 @@
 mod lang;
 
 pub use lang::Language;
+use std::fmt;
 
 pub type SyntaxNode = rowan::SyntaxNode<Language>;
 
@@ -176,6 +177,93 @@ impl SyntaxKind {
 impl From<SyntaxKind> for rowan::SyntaxKind {
     fn from(kind: SyntaxKind) -> Self {
         Self(kind as u16)
+    }
+}
+
+impl fmt::Display for SyntaxKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            // Keywords
+            SyntaxKind::Kwd_Alias => "`alias`",
+            SyntaxKind::Kwd_And => "`and`",
+            SyntaxKind::Kwd_As => "`as`",
+            SyntaxKind::Kwd_Begin => "`begin`",
+            SyntaxKind::Kwd_Else => "`else`",
+            SyntaxKind::Kwd_End => "`end`",
+            SyntaxKind::Kwd_Export => "`export`",
+            SyntaxKind::Kwd_External => "`external`",
+            SyntaxKind::Kwd_For => "`for`",
+            SyntaxKind::Kwd_Forall => "`forall`",
+            SyntaxKind::Kwd_If => "`if`",
+            SyntaxKind::Kwd_Import => "`import`",
+            SyntaxKind::Kwd_In => "`in`",
+            SyntaxKind::Kwd_Let => "`let`",
+            SyntaxKind::Kwd_Loop => "`loop`",
+            SyntaxKind::Kwd_Match => "`match`",
+            SyntaxKind::Kwd_Module => "`module`",
+            SyntaxKind::Kwd_Not => "`not`",
+            SyntaxKind::Kwd_Of => "`of`",
+            SyntaxKind::Kwd_Or => "`or`",
+            SyntaxKind::Kwd_Rec => "`rec`",
+            SyntaxKind::Kwd_Ref => "`ref`",
+            SyntaxKind::Kwd_Then => "`then`",
+            SyntaxKind::Kwd_Type => "`type`",
+            SyntaxKind::Kwd_Val => "`val`",
+            SyntaxKind::Kwd_While => "`while`",
+            SyntaxKind::Kwd_With => "`with`",
+
+            // Symbols
+            SyntaxKind::Sym_Ampersand => "`&`",
+            SyntaxKind::Sym_Asterisk => "`*`",
+            SyntaxKind::Sym_At => "`@`",
+            SyntaxKind::Sym_BackSlash => "`\\`",
+            SyntaxKind::Sym_Bang => "`!`",
+            SyntaxKind::Sym_BangEq => "`!=`",
+            SyntaxKind::Sym_Caret => "`^`",
+            SyntaxKind::Sym_Colon => "`:`",
+            SyntaxKind::Sym_Comma => "`,`",
+            SyntaxKind::Sym_Dollar => "`$`",
+            SyntaxKind::Sym_Dot => "`.`",
+            SyntaxKind::Sym_EmDash => "`—`",
+            SyntaxKind::Sym_EnDash => "`–`",
+            SyntaxKind::Sym_Eq => "`=`",
+            SyntaxKind::Sym_ForwardSlash => "`/`",
+            SyntaxKind::Sym_Minus => "`-`",
+            SyntaxKind::Sym_Percent => "`%`",
+            SyntaxKind::Sym_Pipe => "`|`",
+            SyntaxKind::Sym_Plus => "`+`",
+            SyntaxKind::Sym_Pound => "`#`",
+            SyntaxKind::Sym_Question => "`?`",
+            SyntaxKind::Sym_Semicolon => "`;`",
+            SyntaxKind::Sym_Sterling => "`£`",
+            SyntaxKind::Sym_Tilde => "`~`",
+            SyntaxKind::Sym_Lt => "`<`",
+            SyntaxKind::Sym_LtEq => "`<=`",
+            SyntaxKind::Sym_Gt => "`>`",
+            SyntaxKind::Sym_GtEq => "`>=`",
+            SyntaxKind::Sym_LThinArrow => "`<-`",
+            SyntaxKind::Sym_RThinArrow => "`->`",
+            SyntaxKind::Sym_ThickArrow => "`=>`",
+            SyntaxKind::Sym_LBrace => "`{`",
+            SyntaxKind::Sym_RBrace => "`}`",
+            SyntaxKind::Sym_LBracket => "`[`",
+            SyntaxKind::Sym_RBracket => "`]`",
+            SyntaxKind::Sym_LParen => "`(`",
+            SyntaxKind::Sym_RParen => "`)`",
+
+            // Literals
+            SyntaxKind::Identifier => "identifier",
+            SyntaxKind::Lit_Character => "character literal",
+            SyntaxKind::Lit_Integer => "integer literal",
+            SyntaxKind::Lit_Float => "float literal",
+            SyntaxKind::Lit_String => "string literal",
+
+            // Trivia
+            SyntaxKind::Comment => "comment",
+            SyntaxKind::DocComment => "documentation comment",
+            SyntaxKind::Whitespace => "whitespace",
+            _ => unreachable!("Unexpected {:?}", self),
+        })
     }
 }
 

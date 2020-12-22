@@ -1,13 +1,15 @@
+use super::error::ParseError;
 use super::event::Event;
-use crate::lexer::Token;
+use crate::{lexer::Token, Parse};
 use helios_syntax::Language as HeliosLanguage;
-use rowan::{GreenNode, GreenNodeBuilder, Language};
+use rowan::{GreenNodeBuilder, Language};
 
 pub struct Sink<'tokens, 'source> {
     tokens: &'tokens [Token<'source>],
     events: Vec<Event>,
     builder: GreenNodeBuilder<'static>,
     cursor: usize,
+    errors: Vec<ParseError>,
 }
 
 impl<'tokens, 'source> Sink<'tokens, 'source> {
@@ -17,10 +19,11 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
             events,
             builder: GreenNodeBuilder::new(),
             cursor: 0,
+            errors: Vec::new(),
         }
     }
 
-    pub fn finish(mut self) -> GreenNode {
+    pub fn finish(mut self) -> Parse {
         use std::mem;
 
         for i in 0..self.events.len() {
@@ -59,13 +62,17 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
                 }
                 Event::AddToken => self.token(),
                 Event::FinishNode => self.builder.finish_node(),
+                Event::Error(error) => self.errors.push(error),
                 Event::Placeholder => {}
             }
 
             self.eat_trivia();
         }
 
-        self.builder.finish()
+        Parse {
+            green_node: self.builder.finish(),
+            errors: self.errors,
+        }
     }
 
     fn eat_trivia(&mut self) {
@@ -79,7 +86,7 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
     }
 
     fn token(&mut self) {
-        let Token { kind, text } = self.tokens[self.cursor];
+        let Token { kind, text, .. } = self.tokens[self.cursor];
         self.builder
             .token(HeliosLanguage::kind_to_raw(kind), text.into());
         self.cursor += 1;

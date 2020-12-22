@@ -1,13 +1,16 @@
 //! Module responsible for parsing Helios source files.
 
+pub(crate) mod error;
 pub(crate) mod event;
 pub(crate) mod marker;
 pub(crate) mod sink;
 pub(crate) mod source;
 
+use self::error::ParseError;
 use self::event::Event;
 use self::marker::Marker;
 use self::source::Source;
+use crate::lexer::Token;
 use helios_syntax::SyntaxKind;
 
 const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
@@ -49,9 +52,13 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
         self.peek() == Some(kind)
     }
 
-    pub(crate) fn is_at_either<'a>(&mut self, kinds: &'a [SyntaxKind]) -> Option<&'a SyntaxKind> {
+    pub(crate) fn is_at_either<'a>(
+        &mut self,
+        kinds: &'a [SyntaxKind],
+    ) -> Option<&'a SyntaxKind> {
         self.expected_kinds.extend(kinds);
-        self.peek().map_or(None, |kind| kinds.iter().find(|&&it| kind == it))
+        self.peek()
+            .map_or(None, |kind| kinds.iter().find(|&&it| kind == it))
     }
 
     /// Peeks the next [`SyntaxKind`] token without consuming it.
@@ -82,6 +89,26 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     }
 
     pub(crate) fn error(&mut self) {
+        let current_token = self.source.peek_token();
+
+        // let (found, range) = current_token.map_or_else(
+        //     || (None, self.source.last_token_range().unwrap()),
+        //     |Token { kind, range, .. }| (Some(*kind), *range),
+        // );
+
+        let (found, range) =
+            if let Some(Token { kind, range, .. }) = current_token {
+                (Some(*kind), *range)
+            } else {
+                (None, self.source.last_token_range().unwrap())
+            };
+
+        self.events.push(Event::Error(ParseError {
+            expected: std::mem::take(&mut self.expected_kinds),
+            found,
+            range,
+        }));
+
         if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
             let m = self.start();
             self.bump();

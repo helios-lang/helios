@@ -16,6 +16,7 @@
 
 use crate::cursor::Cursor;
 use helios_syntax::{self, SyntaxKind};
+use text_size::{TextRange, TextSize};
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -64,19 +65,20 @@ fn is_whitespace(c: char) -> bool {
 
 /// The unit of a tokenized Helios source file.
 ///
-/// This structure holds the [`SyntaxKind`] of a token, as well as the text
-/// that formed it. It is also the `Item` type of the [`Lexer`] iterator.
+/// This structure holds the [`SyntaxKind`] of a token, the text that formed it,
+/// and the range of the token (using `text_size::TextRange`). It is also the
+/// `Item` type of the [`Lexer`] iterator.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Token<'text> {
-    pub(crate) kind: SyntaxKind,
-    pub(crate) text: &'text str,
+    pub kind: SyntaxKind,
+    pub text: &'text str,
+    pub range: TextRange,
 }
 
 impl<'text> Token<'text> {
-    /// Constructs a new [`Token`] with the kind and text (its representation
-    /// in the source text).
-    pub fn new(kind: SyntaxKind, text: &'text str) -> Self {
-        Self { kind, text }
+    /// Constructs a new [`Token`] with the given kind, text and range.
+    pub fn new(kind: SyntaxKind, text: &'text str, range: TextRange) -> Self {
+        Self { kind, text, range }
     }
 }
 
@@ -143,6 +145,7 @@ impl<'source> Lexer<'source> {
     /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
     fn tokenize_normal(&mut self) -> Option<Token<'source>> {
         self.cursor.checkpoint();
+        let start = self.current_pos();
 
         let kind = match self.cursor.advance()? {
             c if c == '/' && self.peek() == '/' => self.lex_comment(c),
@@ -153,8 +156,20 @@ impl<'source> Lexer<'source> {
             c => todo!("Lexer::tokenize_normal({:?})", c),
         };
 
+        let end = self.current_pos();
         let text = self.cursor.slice();
-        Some(Token::new(kind, text))
+
+        let range = {
+            use std::convert::TryFrom;
+
+            let std_range = start..end;
+            let start = TextSize::try_from(std_range.start).unwrap();
+            let end = TextSize::try_from(std_range.end).unwrap();
+
+            TextRange::new(start, end)
+        };
+
+        Some(Token::new(kind, text, range))
     }
 }
 
@@ -387,7 +402,10 @@ mod tests {
 
     fn check(input: &str, kind: SyntaxKind) {
         let mut lexer = Lexer::new(input);
-        assert_eq!(lexer.next(), Some(Token::new(kind, input)));
+
+        let token = lexer.next().unwrap();
+        assert_eq!(token.kind, kind);
+        assert_eq!(token.text, input);
     }
 
     #[test]
