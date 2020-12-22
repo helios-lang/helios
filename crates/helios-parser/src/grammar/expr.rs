@@ -365,7 +365,7 @@ Root@0..3
       Sym_Plus@2..3 "+"
 ---
 error at 2..3: expected integer literal, float literal, identifier, `(`, `-` or `!`
-error at 2..3: expected `)`"#]]
+error at 2..3: expected `)`"#]],
         )
     }
 
