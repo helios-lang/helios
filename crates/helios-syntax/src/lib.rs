@@ -138,6 +138,8 @@ pub enum SyntaxKind {
     Exp_UnaryPostfix,
     Exp_VariableRef,
 
+    Dec_GlobalBinding,
+
     Comment,
     DocComment,
     Whitespace,

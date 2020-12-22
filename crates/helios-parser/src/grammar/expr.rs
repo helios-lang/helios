@@ -1,48 +1,58 @@
-use crate::parser::marker::CompletedMarker;
-use crate::parser::Parser;
-use helios_syntax::{Sym, SyntaxKind};
+use super::*;
+use helios_syntax::Sym;
+
+const PREFIX_OPS: &[SyntaxKind] =
+    &[SyntaxKind::Sym_Minus, SyntaxKind::Sym_Bang];
 
 /// Determines the prefix binding power of the given token. Currently, the only
 /// legal prefix symbols are `SyntaxKind::Sym_Minus` and `SyntaxKind::Sym_Bang`.
-fn prefix_binding_power(token: SyntaxKind) -> Option<((), u8)> {
-    let power = match token {
+fn prefix_binding_power(kind: SyntaxKind) -> ((), u8) {
+    match kind {
         Sym!["-"] | Sym!["!"] => ((), 11),
-        _ => return None,
-    };
-
-    Some(power)
+        _ => unreachable!("Invalid symbol as prefix operator: {:?}", kind),
+    }
 }
+
+const INFIX_OPS: &[SyntaxKind] = &[
+    SyntaxKind::Sym_Asterisk,
+    SyntaxKind::Sym_BangEq,
+    SyntaxKind::Sym_Eq,
+    SyntaxKind::Sym_ForwardSlash,
+    SyntaxKind::Sym_Gt,
+    SyntaxKind::Sym_GtEq,
+    SyntaxKind::Sym_Lt,
+    SyntaxKind::Sym_LtEq,
+    SyntaxKind::Sym_LThinArrow,
+    SyntaxKind::Sym_Minus,
+    SyntaxKind::Sym_Plus,
+    SyntaxKind::Sym_Semicolon,
+];
 
 /// Determines the infix binding power of the given token. A higher binding
 /// power means higher precedence, meaning that it is more likely to hold onto
 /// its adjacent operands.
-fn infix_binding_power(token: SyntaxKind) -> Option<(u8, u8)> {
-    let power = match token {
+fn infix_binding_power(kind: SyntaxKind) -> (u8, u8) {
+    match kind {
         Sym![";"] => (1, 2),
         Sym!["<-"] => (3, 2),
         Sym!["="] | Sym!["!="] => (4, 3),
         Sym!["<"] | Sym![">"] | Sym!["<="] | Sym![">="] => (5, 6),
         Sym!["+"] | Sym!["-"] => (7, 8),
         Sym!["*"] | Sym!["/"] => (9, 10),
-        _ => return None,
-    };
-
-    Some(power)
+        _ => unreachable!("Invalid symbol as infix operator: {:?}", kind),
+    }
 }
 
 /// Parses an expression.
-pub(super) fn parse_expr(
-    parser: &mut Parser,
-    min_bp: u8,
-) -> Option<CompletedMarker> {
-    let mut lhs = lhs(parser)?; // We'll handle errors later
+pub(super) fn expr(parser: &mut Parser, min_bp: u8) -> Option<CompletedMarker> {
+    let mut lhs = lhs(parser)?;
 
     loop {
-        // Peek the next token, assuming it's an operator
-        let op = parser.peek()?; // We'll handle errors later
+        // Peek the next `SyntaxKind`, assuming it's an operator
+        if let Some(operator) = parser.is_at_either(INFIX_OPS) {
+            // Get the left and right binding power of the operator
+            let (left_bp, right_bp) = infix_binding_power(*operator);
 
-        // Get the left and right binding power of the supposed operator
-        if let Some((left_bp, right_bp)) = infix_binding_power(op) {
             if left_bp < min_bp {
                 break;
             }
@@ -51,9 +61,11 @@ pub(super) fn parse_expr(
             parser.bump();
 
             let m = lhs.precede(parser);
-            parse_expr(parser, right_bp);
+            expr(parser, right_bp);
             lhs = m.complete(parser, SyntaxKind::Exp_Binary);
         } else {
+            // What we consumed wasn't an operator; we don't know what to do
+            // next, so we'll return and let the caller decide
             break;
         }
     }
@@ -61,18 +73,33 @@ pub(super) fn parse_expr(
     Some(lhs)
 }
 
+const LHS_KINDS: &[SyntaxKind] = &[
+    SyntaxKind::Lit_Integer,
+    SyntaxKind::Lit_Float,
+    SyntaxKind::Identifier,
+    SyntaxKind::Sym_LParen,
+];
+
 /// Parses the left-hand side of an expression.
 fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
-    use SyntaxKind::*;
-    let completed_marker = match parser.peek() {
-        Some(Lit_Integer) | Some(Lit_Float) => literal(parser),
-        Some(Identifier) => variable_ref(parser),
-        Some(Sym_Minus) => unary_prefix_expr(parser),
-        Some(Sym_LParen) => paren_expr(parser),
-        _ => return None,
+    let lhs_kinds_or_prefix_ops = &[LHS_KINDS, PREFIX_OPS].concat();
+
+    // We'll check if the next `SyntaxKind` can start a LHS expression (either
+    // any of `LHS_KINDS` or `PREFIX_OPS`)
+    let cm = if let Some(kind) = parser.is_at_either(lhs_kinds_or_prefix_ops) {
+        match kind {
+            SyntaxKind::Lit_Integer | SyntaxKind::Lit_Float => literal(parser),
+            SyntaxKind::Identifier => variable_ref(parser),
+            SyntaxKind::Sym_LParen => paren_expr(parser),
+            kind if PREFIX_OPS.contains(kind) => unary_prefix_expr(parser),
+            _ => unreachable!("Got unexpected kind for LHS: {:?}", kind),
+        }
+    } else {
+        parser.error();
+        return None;
     };
 
-    Some(completed_marker)
+    Some(cm)
 }
 
 /// Parses a literal that may stand alone as an expression.
@@ -95,20 +122,16 @@ fn variable_ref(parser: &mut Parser) -> CompletedMarker {
 }
 
 /// Parses a unary expression with a prefixed operator.
-///
-/// Currently, only [`SyntaxKind::Sym_Minus`] is a valid prefix operator.
 fn unary_prefix_expr(parser: &mut Parser) -> CompletedMarker {
-    assert!(parser.is_at(SyntaxKind::Sym_Minus));
-
     let m = parser.start();
 
     // Get the right binding power of the operator
-    let op = SyntaxKind::Sym_Minus;
-    let ((), right_bp) = prefix_binding_power(op).unwrap();
+    let operator = SyntaxKind::Sym_Minus;
+    let ((), right_bp) = prefix_binding_power(operator);
 
     // Consume the operator token and the expression it holds
     parser.bump();
-    parse_expr(parser, right_bp);
+    expr(parser, right_bp);
 
     m.complete(parser, SyntaxKind::Exp_UnaryPrefix)
 }
@@ -121,12 +144,10 @@ fn paren_expr(parser: &mut Parser) -> CompletedMarker {
 
     // Consume the opening parenthesis and the expression inside
     parser.bump();
-    parse_expr(parser, 0);
+    expr(parser, 0);
 
     // Consume the closing parenthesis if possible
-    if let Some(SyntaxKind::Sym_RParen) = parser.peek() {
-        parser.bump();
-    }
+    parser.expect(SyntaxKind::Sym_RParen);
 
     m.complete(parser, SyntaxKind::Exp_Paren)
 }
@@ -309,6 +330,19 @@ Root@0..20
       Exp_Literal@19..20
         Lit_Integer@19..20 "5""#]],
         )
+    }
+
+    #[test]
+    fn test_parse_unclosed_parenthesized_expression() {
+        check(
+            "(foo",
+            expect![[r#"
+Root@0..4
+  Exp_Paren@0..4
+    Sym_LParen@0..1 "("
+    Exp_VariableRef@1..4
+      Identifier@1..4 "foo""#]],
+        );
     }
 
     #[test]

@@ -10,10 +10,13 @@ use self::marker::Marker;
 use self::source::Source;
 use helios_syntax::SyntaxKind;
 
+const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
+
 /// A lazy, lossless, error-tolerant parser for the Helios programming language.
 pub struct Parser<'tokens, 'source> {
     source: Source<'tokens, 'source>,
     events: Vec<Event>,
+    expected_kinds: Vec<SyntaxKind>,
 }
 
 impl<'tokens, 'source> Parser<'tokens, 'source> {
@@ -22,6 +25,7 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
         Self {
             source,
             events: Vec::new(),
+            expected_kinds: Vec::new(),
         }
     }
 
@@ -41,16 +45,23 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
 impl<'tokens, 'source> Parser<'tokens, 'source> {
     /// Determines if the next [`SyntaxKind`] is the given `kind`.
     pub(crate) fn is_at(&mut self, kind: SyntaxKind) -> bool {
+        self.expected_kinds.push(kind);
         self.peek() == Some(kind)
     }
 
+    pub(crate) fn is_at_either<'a>(&mut self, kinds: &'a [SyntaxKind]) -> Option<&'a SyntaxKind> {
+        self.expected_kinds.extend(kinds);
+        self.peek().map_or(None, |kind| kinds.iter().find(|&&it| kind == it))
+    }
+
     /// Peeks the next [`SyntaxKind`] token without consuming it.
-    pub(crate) fn peek(&mut self) -> Option<SyntaxKind> {
+    fn peek(&mut self) -> Option<SyntaxKind> {
         self.source.peek_kind()
     }
 
     /// Adds the next token to the syntax tree (via the [`GreenNodeBuilder`]).
     pub(crate) fn bump(&mut self) {
+        self.expected_kinds.clear();
         self.source.next_token().unwrap();
         self.events.push(Event::AddToken)
     }
@@ -60,6 +71,30 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
         let pos = self.events.len();
         self.events.push(Event::Placeholder);
         Marker::new(pos)
+    }
+
+    pub(crate) fn expect(&mut self, kind: SyntaxKind) {
+        if self.is_at(kind) {
+            self.bump();
+        } else {
+            self.error();
+        }
+    }
+
+    pub(crate) fn error(&mut self) {
+        if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
+            let m = self.start();
+            self.bump();
+            m.complete(self, SyntaxKind::Error);
+        }
+    }
+
+    fn is_at_set(&mut self, set: &[SyntaxKind]) -> bool {
+        self.peek().map_or(false, |kind| set.contains(&kind))
+    }
+
+    pub(crate) fn is_at_end(&mut self) -> bool {
+        self.peek().is_none()
     }
 }
 

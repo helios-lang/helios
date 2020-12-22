@@ -4,10 +4,42 @@ use crate::parser::marker::CompletedMarker;
 use crate::parser::Parser;
 use helios_syntax::SyntaxKind;
 
+mod decl;
 mod expr;
 
 pub(crate) fn root(parser: &mut Parser) -> CompletedMarker {
     let m = parser.start();
-    expr::parse_expr(parser, 0);
+
+    while !parser.is_at_end() {
+        decl::decl(parser);
+    }
+
     m.complete(parser, SyntaxKind::Root)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::check;
+    use expect_test::expect;
+
+    #[test]
+    fn test_parse_multiple_declarations() {
+        check(
+            "let a = 1\na",
+            expect![[r#"
+Root@0..11
+  Dec_GlobalBinding@0..10
+    Kwd_Let@0..3 "let"
+    Whitespace@3..4 " "
+    Identifier@4..5 "a"
+    Whitespace@5..6 " "
+    Sym_Eq@6..7 "="
+    Whitespace@7..8 " "
+    Exp_Literal@8..10
+      Lit_Integer@8..9 "1"
+      Whitespace@9..10 "\n"
+  Exp_VariableRef@10..11
+    Identifier@10..11 "a""#]],
+        );
+    }
 }
