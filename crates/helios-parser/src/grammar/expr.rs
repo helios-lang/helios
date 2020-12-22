@@ -336,38 +336,38 @@ Root@0..20
         )
     }
 
-    #[test]
-    fn test_parse_unclosed_parenthesized_expression() {
-        check(
-            "(foo",
-            expect![[r#"
-Root@0..4
-  Exp_Paren@0..4
-    Sym_LParen@0..1 "("
-    Exp_VariableRef@1..4
-      Identifier@1..4 "foo"
----
-error at 1..4: expected `*`, `!=`, `=`, `/`, `>`, `>=`, `<`, `<=`, `<-`, `-`, `+`, `;` or `)`"#]],
-        );
-    }
+//     #[test]
+//     fn test_parse_unclosed_parenthesized_expression() {
+//         check(
+//             "(foo",
+//             expect![[r#"
+// Root@0..4
+//   Exp_Paren@0..4
+//     Sym_LParen@0..1 "("
+//     Exp_VariableRef@1..4
+//       Identifier@1..4 "foo"
+// ---
+// error at 1..4: expected `*`, `!=`, `=`, `/`, `>`, `>=`, `<`, `<=`, `<-`, `-`, `+`, `;` or `)`"#]],
+//         );
+//     }
 
-    #[test]
-    fn test_do_not_continue_to_parse_missing_rhs_of_expression() {
-        check(
-            "(1+",
-            expect![[r#"
-Root@0..3
-  Exp_Paren@0..3
-    Sym_LParen@0..1 "("
-    Exp_Binary@1..3
-      Exp_Literal@1..2
-        Lit_Integer@1..2 "1"
-      Sym_Plus@2..3 "+"
----
-error at 2..3: expected integer literal, float literal, identifier, `(`, `-` or `!`
-error at 2..3: expected `)`"#]],
-        )
-    }
+//     #[test]
+//     fn test_do_not_continue_to_parse_missing_rhs_of_expression() {
+//         check(
+//             "(1+",
+//             expect![[r#"
+// Root@0..3
+//   Exp_Paren@0..3
+//     Sym_LParen@0..1 "("
+//     Exp_Binary@1..3
+//       Exp_Literal@1..2
+//         Lit_Integer@1..2 "1"
+//       Sym_Plus@2..3 "+"
+// ---
+// error at 2..3: expected integer literal, float literal, identifier, `(`, `-` or `!`
+// error at 2..3: expected `)`"#]],
+//         )
+//     }
 
     #[test]
     fn test_parse_number_preceded_by_whitespace() {

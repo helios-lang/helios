@@ -15,6 +15,8 @@
 // ! [`parse`]: crate::parse
 
 use crate::cursor::Cursor;
+use flume::Sender;
+use helios_diagnostics::Diagnostic;
 use helios_syntax::{self, SyntaxKind};
 use text_size::{TextRange, TextSize};
 use unicode_xid::UnicodeXID;
@@ -116,6 +118,8 @@ impl Default for LexerMode {
 pub struct Lexer<'source> {
     cursor: Cursor<'source>,
     mode_stack: Vec<LexerMode>,
+    #[allow(dead_code)]
+    diagnostics_tx: Option<Sender<Diagnostic>>,
 }
 
 impl<'source> Lexer<'source> {
@@ -123,10 +127,14 @@ impl<'source> Lexer<'source> {
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
     /// cursor position to the start.
-    pub fn new(source: &'source str) -> Self {
+    pub fn new(
+        source: &'source str,
+        diagnostics_tx: impl Into<Option<Sender<Diagnostic>>>,
+    ) -> Self {
         Self {
             cursor: Cursor::new(source),
             mode_stack: vec![LexerMode::Normal],
+            diagnostics_tx: diagnostics_tx.into(),
         }
     }
 
@@ -401,7 +409,7 @@ mod tests {
     use super::*;
 
     fn check(input: &str, kind: SyntaxKind) {
-        let mut lexer = Lexer::new(input);
+        let mut lexer = Lexer::new(input, None);
 
         let token = lexer.next().unwrap();
         assert_eq!(token.kind, kind);

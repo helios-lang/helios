@@ -1,16 +1,16 @@
 //! Module responsible for parsing Helios source files.
 
-pub(crate) mod error;
 pub(crate) mod event;
 pub(crate) mod marker;
 pub(crate) mod sink;
 pub(crate) mod source;
 
-use self::error::ParseError;
 use self::event::Event;
 use self::marker::Marker;
 use self::source::Source;
 use crate::lexer::Token;
+use flume::Sender;
+use helios_diagnostics::Diagnostic;
 use helios_syntax::SyntaxKind;
 
 const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
@@ -20,15 +20,20 @@ pub struct Parser<'tokens, 'source> {
     source: Source<'tokens, 'source>,
     events: Vec<Event>,
     expected_kinds: Vec<SyntaxKind>,
+    diagnostics_tx: Option<Sender<Diagnostic>>,
 }
 
 impl<'tokens, 'source> Parser<'tokens, 'source> {
     /// Construct a new [`Parser`] with a [`Source`].
-    pub fn new(source: Source<'tokens, 'source>) -> Self {
+    pub fn new(
+        source: Source<'tokens, 'source>,
+        diagnostics_tx: impl Into<Option<Sender<Diagnostic>>>,
+    ) -> Self {
         Self {
             source,
             events: Vec::new(),
             expected_kinds: Vec::new(),
+            diagnostics_tx: diagnostics_tx.into(),
         }
     }
 
@@ -91,11 +96,6 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     pub(crate) fn error(&mut self) {
         let current_token = self.source.peek_token();
 
-        // let (found, range) = current_token.map_or_else(
-        //     || (None, self.source.last_token_range().unwrap()),
-        //     |Token { kind, range, .. }| (Some(*kind), *range),
-        // );
-
         let (found, range) =
             if let Some(Token { kind, range, .. }) = current_token {
                 (Some(*kind), *range)
@@ -103,11 +103,33 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
                 (None, self.source.last_token_range().unwrap())
             };
 
-        self.events.push(Event::Error(ParseError {
-            expected: std::mem::take(&mut self.expected_kinds),
-            found,
-            range,
-        }));
+        let expected = std::mem::take(&mut self.expected_kinds);
+
+        if let Some(tx) = &self.diagnostics_tx {
+            let mut expected_string = String::new();
+            for (i, kind) in expected.iter().enumerate() {
+                if i == 0 {
+                    expected_string.push_str(&format!("{}", kind));
+                } else if i == (expected.len() - 1) {
+                    expected_string.push_str(&format!(" or {}", kind));
+                } else {
+                    expected_string.push_str(&format!(", {}", kind));
+                }
+            }
+            
+            tx.send(Diagnostic::error("syntax error").detail(
+                format!(
+                    "expected {}{}",
+                    expected_string,
+                    found.map_or("".to_string(), |kind| format!(
+                        ", found {}",
+                        kind
+                    ))
+                ),
+                range.into(),
+            ))
+            .unwrap();
+        }
 
         if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
             let m = self.start();

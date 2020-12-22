@@ -12,10 +12,11 @@ mod lexer;
 mod parser;
 
 use self::lexer::Lexer;
-use self::parser::error::ParseError;
 use self::parser::sink::Sink;
 use self::parser::source::Source;
 use self::parser::Parser;
+use flume::Sender;
+use helios_diagnostics::Diagnostic;
 use helios_syntax::SyntaxNode;
 use rowan::GreenNode;
 
@@ -24,10 +25,10 @@ use rowan::GreenNode;
 /// This function parses the given source text (a `&str`) and returns a
 /// [`Parse`], which holds a [`GreenNode`] tree describing the structure of a
 /// Helios program.
-pub fn parse(source: &str) -> Parse {
-    let tokens = Lexer::new(source).collect::<Vec<_>>();
+pub fn parse(source: &str, diagnostic_tx: Sender<Diagnostic>) -> Parse {
+    let tokens = Lexer::new(source, diagnostic_tx.clone()).collect::<Vec<_>>();
     let source = Source::new(&tokens);
-    let parser = Parser::new(source);
+    let parser = Parser::new(source, diagnostic_tx.clone());
     let events = parser.parse();
     let sink = Sink::new(&tokens, events);
 
@@ -38,39 +39,24 @@ pub fn parse(source: &str) -> Parse {
 pub struct Parse {
     /// The root green node of the syntax tree.
     green_node: GreenNode,
-    errors: Vec<ParseError>,
 }
 
 impl Parse {
     /// Construct a [`Parse`] with the given [`GreenNode`].
-    pub fn new(green_node: GreenNode, errors: Vec<ParseError>) -> Self {
-        Self { green_node, errors }
+    pub fn new(green_node: GreenNode) -> Self {
+        Self { green_node }
     }
 
     /// Returns a formatted string representation of the syntax tree.
     pub fn debug_tree(&self) -> String {
-        let mut s = String::new();
-
         let syntax_node = SyntaxNode::new_root(self.green_node.clone());
-        let tree = format!("{:#?}", syntax_node);
-
-        // Trim newline at the end
-        s.push_str(&tree[0..tree.len() - 1]);
-
-        if !self.errors.is_empty() {
-            s.push_str("\n---");
-        }
-
-        for error in &self.errors {
-            s.push_str(&format!("\n{}", error));
-        }
-
-        s
+        format!("{:#?}", syntax_node)
     }
 }
 
 #[cfg(test)]
 fn check(input: &str, expected_tree: expect_test::Expect) {
-    let parse = parse(input);
+    let (diagnostics_tx, _) = flume::unbounded();
+    let parse = parse(input, diagnostics_tx.clone());
     expected_tree.assert_eq(&parse.debug_tree());
 }

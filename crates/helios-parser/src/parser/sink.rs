@@ -1,4 +1,3 @@
-use super::error::ParseError;
 use super::event::Event;
 use crate::{lexer::Token, Parse};
 use helios_syntax::Language as HeliosLanguage;
@@ -9,7 +8,6 @@ pub struct Sink<'tokens, 'source> {
     events: Vec<Event>,
     builder: GreenNodeBuilder<'static>,
     cursor: usize,
-    errors: Vec<ParseError>,
 }
 
 impl<'tokens, 'source> Sink<'tokens, 'source> {
@@ -19,7 +17,6 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
             events,
             builder: GreenNodeBuilder::new(),
             cursor: 0,
-            errors: Vec::new(),
         }
     }
 
@@ -62,17 +59,13 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
                 }
                 Event::AddToken => self.token(),
                 Event::FinishNode => self.builder.finish_node(),
-                Event::Error(error) => self.errors.push(error),
                 Event::Placeholder => {}
             }
 
             self.eat_trivia();
         }
 
-        Parse {
-            green_node: self.builder.finish(),
-            errors: self.errors,
-        }
+        Parse::new(self.builder.finish())
     }
 
     fn eat_trivia(&mut self) {

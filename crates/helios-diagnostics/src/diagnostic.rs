@@ -1,10 +1,12 @@
 use std::ops::Range;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[repr(u8)]
 pub enum Severity {
-    Error,
-    Warning,
-    Note,
+    Bug = 3,
+    Error = 2,
+    Warning = 1,
+    Note = 0,
 }
 
 /// A diagnostic that provides information about a found problem in a Helios
@@ -101,6 +103,28 @@ pub type Suggestion = String;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_compare_severity_ok() {
+        let mut is_ok = true;
+
+        for severity in &[Severity::Note, Severity::Note, Severity::Warning] {
+            is_ok &= *severity < Severity::Error;
+        }
+
+        assert!(is_ok);
+    }
+
+    #[test]
+    fn test_compare_severity_not_ok() {
+        let mut is_ok = true;
+
+        for severity in &[Severity::Note, Severity::Error, Severity::Warning] {
+            is_ok &= *severity < Severity::Error;
+        }
+
+        assert!(!is_ok);
+    }
 
     #[test]
     fn test_error_diagnostic_with_details_and_suggestions() {

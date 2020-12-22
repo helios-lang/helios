@@ -10,5 +10,6 @@ repository = "http://github.com/helios-lang/helios"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+flume = "0.10.0"
 helios-diagnostics = { version = "0.1.0", path = "../helios-diagnostics" }
 helios-parser = { version = "0.2.0", path = "../helios-parser" }

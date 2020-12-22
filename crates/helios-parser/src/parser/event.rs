@@ -1,4 +1,3 @@
-use crate::parser::error::ParseError;
 use helios_syntax::SyntaxKind;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -9,6 +8,5 @@ pub enum Event {
     },
     AddToken,
     FinishNode,
-    Error(ParseError),
     Placeholder,
 }
