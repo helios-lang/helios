@@ -35,11 +35,19 @@ pub trait Input: salsa::Database {
     // fn ast(&self, path: String) -> Arc<Ast>;
 }
 
+/// Returns the length of the given file's source text.
 fn source_length(db: &impl Input, path: String) -> usize {
     let contents = db.source_text(path);
     contents.len()
 }
 
+/// Calculates the offsets of a file that start a new line.
+///
+/// This function handles both LF and CRLF end-of-line sequences. It can also
+/// handle the case where the given file contains both of these sequences mixed.
+///
+/// LF is counted as one character offset and CRLF is counted as two character
+/// offsets. The first element in the vector returned will always be `0`.
 fn source_line_offsets(db: &impl Input, path: String) -> Vec<usize> {
     let mut accumulator = 0;
     let contents = &db.source_text(path)[..];
@@ -62,6 +70,8 @@ fn source_line_offsets(db: &impl Input, path: String) -> Vec<usize> {
         .collect()
 }
 
+/// Calculates a zero-indexed offset from a given line and column position (both
+/// of which are presumed to be zero-indexed).
 fn source_offset_at_position(
     db: &impl Input,
     path: String,
@@ -72,6 +82,8 @@ fn source_offset_at_position(
     line_offsets[line] + column
 }
 
+/// Calculates a zero-indexed line and column position from a given offset
+/// (which is presumed to be zero-indexed).
 fn source_position_at_offset(
     db: &impl Input,
     path: String,
