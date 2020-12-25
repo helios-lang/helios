@@ -1,5 +1,4 @@
 pub mod diagnostic;
-pub mod reporter;
+pub mod span;
 
 pub use diagnostic::*;
-pub use reporter::*;

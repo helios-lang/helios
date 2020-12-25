@@ -16,7 +16,7 @@ fn start_main_loop() -> io::Result<()> {
     let mut stdout = io::stdout();
     let mut input = String::new();
 
-    let (diagnostics_tx, diagnostics_rx) = flume::unbounded();
+    let (diagnostics_tx, _diagnostics_rx) = flume::unbounded();
 
     for (i, line) in LOGO_BANNER.iter().enumerate() {
         match i {
@@ -50,12 +50,12 @@ fn start_main_loop() -> io::Result<()> {
             println!("{}", parse_result.debug_tree());
         }
 
-        for diagnostic in diagnostics_rx.try_iter() {
-            println!("{:?}: {}", diagnostic.severity, diagnostic.title);
-            for detail in diagnostic.details {
-                println!("  {:?}: {}", detail.range, detail.message);
-            }
-        }
+        // for diagnostic in diagnostics_rx.try_iter() {
+        //     println!("{:?}: {}", diagnostic.severity, diagnostic.title);
+        //     for detail in diagnostic.details {
+        //         println!("  {:?}: {}", detail.range, detail.message);
+        //     }
+        // }
 
         println!();
         input.clear();

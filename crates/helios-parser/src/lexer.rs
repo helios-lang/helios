@@ -119,7 +119,7 @@ pub struct Lexer<'source> {
     cursor: Cursor<'source>,
     mode_stack: Vec<LexerMode>,
     #[allow(dead_code)]
-    diagnostics_tx: Option<Sender<Diagnostic>>,
+    diagnostics_tx: Sender<Diagnostic>,
 }
 
 impl<'source> Lexer<'source> {
@@ -129,12 +129,12 @@ impl<'source> Lexer<'source> {
     /// cursor position to the start.
     pub fn new(
         source: &'source str,
-        diagnostics_tx: impl Into<Option<Sender<Diagnostic>>>,
+        diagnostics_tx: Sender<Diagnostic>,
     ) -> Self {
         Self {
             cursor: Cursor::new(source),
             mode_stack: vec![LexerMode::Normal],
-            diagnostics_tx: diagnostics_tx.into(),
+            diagnostics_tx,
         }
     }
 
@@ -409,7 +409,8 @@ mod tests {
     use super::*;
 
     fn check(input: &str, kind: SyntaxKind) {
-        let mut lexer = Lexer::new(input, None);
+        let (diagnostics_tx, _) = flume::unbounded();
+        let mut lexer = Lexer::new(input, diagnostics_tx);
 
         let token = lexer.next().unwrap();
         assert_eq!(token.kind, kind);

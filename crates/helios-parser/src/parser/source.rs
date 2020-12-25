@@ -38,6 +38,7 @@ impl<'tokens, 'source> Source<'tokens, 'source> {
         Some(token)
     }
 
+    #[allow(dead_code)]
     pub(crate) fn last_token_range(&self) -> Option<TextRange> {
         self.tokens.last().map(|Token { range, .. }| *range)
     }
@@ -47,6 +48,7 @@ impl<'tokens, 'source> Source<'tokens, 'source> {
         self.peek_kind_raw()
     }
 
+    #[allow(dead_code)]
     pub fn peek_token(&mut self) -> Option<&Token> {
         self.eat_trivia();
         self.peek_token_raw()

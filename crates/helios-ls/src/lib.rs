@@ -92,7 +92,7 @@ impl LanguageServer for HeliosLanguageServer {
                     kind: Some(CompletionItemKind::Struct),
                     insert_text: match ident {
                         "Some" | "Ok" | "Err" => {
-                            Some(format!("{}(${{1:???}})", ident))
+                            Some(format!("{} ${{1:???}}", ident))
                         }
                         _ => None,
                     },

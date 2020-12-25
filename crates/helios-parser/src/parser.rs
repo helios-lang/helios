@@ -8,7 +8,6 @@ pub(crate) mod source;
 use self::event::Event;
 use self::marker::Marker;
 use self::source::Source;
-use crate::lexer::Token;
 use flume::Sender;
 use helios_diagnostics::Diagnostic;
 use helios_syntax::SyntaxKind;
@@ -20,20 +19,22 @@ pub struct Parser<'tokens, 'source> {
     source: Source<'tokens, 'source>,
     events: Vec<Event>,
     expected_kinds: Vec<SyntaxKind>,
-    diagnostics_tx: Option<Sender<Diagnostic>>,
+    #[allow(dead_code)]
+    diagnostics_tx: Sender<Diagnostic>,
 }
 
 impl<'tokens, 'source> Parser<'tokens, 'source> {
-    /// Construct a new [`Parser`] with a [`Source`].
+    /// Constructs a new [`Parser`] with a [`Source`] and a channel that sends
+    /// [`Diagnostic`]s.
     pub fn new(
         source: Source<'tokens, 'source>,
-        diagnostics_tx: impl Into<Option<Sender<Diagnostic>>>,
+        diagnostics_tx: Sender<Diagnostic>,
     ) -> Self {
         Self {
             source,
             events: Vec::new(),
             expected_kinds: Vec::new(),
-            diagnostics_tx: diagnostics_tx.into(),
+            diagnostics_tx,
         }
     }
 
@@ -94,42 +95,41 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     }
 
     pub(crate) fn error(&mut self) {
-        let current_token = self.source.peek_token();
-
-        let (found, range) =
-            if let Some(Token { kind, range, .. }) = current_token {
-                (Some(*kind), *range)
-            } else {
-                (None, self.source.last_token_range().unwrap())
-            };
-
-        let expected = std::mem::take(&mut self.expected_kinds);
-
-        if let Some(tx) = &self.diagnostics_tx {
-            let mut expected_string = String::new();
-            for (i, kind) in expected.iter().enumerate() {
-                if i == 0 {
-                    expected_string.push_str(&format!("{}", kind));
-                } else if i == (expected.len() - 1) {
-                    expected_string.push_str(&format!(" or {}", kind));
-                } else {
-                    expected_string.push_str(&format!(", {}", kind));
-                }
-            }
-            
-            tx.send(Diagnostic::error("syntax error").detail(
-                format!(
-                    "expected {}{}",
-                    expected_string,
-                    found.map_or("".to_string(), |kind| format!(
-                        ", found {}",
-                        kind
-                    ))
-                ),
-                range.into(),
-            ))
-            .unwrap();
-        }
+        // let current_token = self.source.peek_token();
+        //
+        // let (found, range) =
+        //     if let Some(Token { kind, range, .. }) = current_token {
+        //         (Some(*kind), *range)
+        //     } else {
+        //         (None, self.source.last_token_range().unwrap())
+        //     };
+        //
+        // let expected = std::mem::take(&mut self.expected_kinds);
+        //
+        // let mut expected_string = String::new();
+        // for (i, kind) in expected.iter().enumerate() {
+        //     if i == 0 {
+        //         expected_string.push_str(&format!("{}", kind));
+        //     } else if i == (expected.len() - 1) {
+        //         expected_string.push_str(&format!(" or {}", kind));
+        //     } else {
+        //         expected_string.push_str(&format!(", {}", kind));
+        //     }
+        // }
+        //
+        // self.diagnostics_tx
+        //     .send(Diagnostic::error("syntax error").detail(
+        //         format!(
+        //             "expected {}{}",
+        //             expected_string,
+        //             found.map_or("".to_string(), |kind| format!(
+        //                 ", found {}",
+        //                 kind
+        //             ))
+        //         ),
+        //         range.into(),
+        //     ))
+        //     .unwrap();
 
         if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
             let m = self.start();
@@ -154,9 +154,12 @@ mod tests {
 
     #[test]
     fn test_parse_nothing() {
-        check("", expect![[r#"
-            Root@0..0
-        "#]]);
+        check(
+            "",
+            expect![[r#"
+                Root@0..0
+            "#]],
+        );
     }
 
     #[test]

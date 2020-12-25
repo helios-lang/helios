@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Range;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -9,96 +10,223 @@ pub enum Severity {
     Note = 0,
 }
 
-/// A diagnostic that provides information about a found problem in a Helios
-/// source file like errors or warnings.
+impl Default for Severity {
+    fn default() -> Self {
+        Self::Note
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Diagnostic {
-    /// The severity of the diagnostic.
-    pub severity: Severity,
-    /// A short summary of the diagnostic found.
-    pub title: String,
-    /// A collection of [`SubDiagnostic`]s that describe the problem in detail.
-    pub details: Vec<SubDiagnostic>,
-    /// A collection of possible suggestions to fix the problem.
-    pub suggestions: Vec<Suggestion>,
+pub enum MessageSegment {
+    Text(String),
+    CodeSnippet(String),
+    InlineCodeSnippet(String),
 }
 
-impl Diagnostic {
-    /// Constructs a new [`Diagnostic`] with the given severity, title, details
-    /// and suggestions.
-    pub fn new(
-        severity: Severity,
-        title: impl Into<String>,
-        details: impl Into<Option<Vec<SubDiagnostic>>>,
-        suggestions: impl Into<Option<Vec<Suggestion>>>,
-    ) -> Self {
-        Self {
-            severity,
-            title: title.into(),
-            details: details.into().unwrap_or_default(),
-            suggestions: suggestions.into().unwrap_or_default(),
+impl MessageSegment {
+    pub fn text(string: impl Into<String>) -> Self {
+        Self::Text(string.into())
+    }
+
+    pub fn code_snippet(string: impl Into<String>) -> Self {
+        Self::CodeSnippet(string.into())
+    }
+
+    pub fn inline_code_snippet(string: impl Into<String>) -> Self {
+        Self::InlineCodeSnippet(string.into())
+    }
+}
+
+impl fmt::Display for MessageSegment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::Text(s) => s,
+            Self::CodeSnippet(s) => s,
+            Self::InlineCodeSnippet(s) => s,
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Message {
+    segments: Vec<MessageSegment>,
+}
+
+impl Message {
+    pub fn string_with_inline_code_snippets(s: impl Into<String>) -> Self {
+        let string: String = s.into();
+        let mut segments = Vec::new();
+        let mut in_code_snippet = string.starts_with("`");
+
+        for s in string.split("`").filter(|s| !s.is_empty()) {
+            if in_code_snippet {
+                segments.push(MessageSegment::inline_code_snippet(s))
+            } else {
+                segments.push(MessageSegment::text(s))
+            }
+
+            in_code_snippet = !in_code_snippet;
         }
-    }
 
-    /// Constructs a new [`Diagnostic`] with the [`Error`] severity.
-    ///
-    /// [`Error`]: crate::Severity::Error
-    pub fn error(title: impl Into<String>) -> Self {
-        Self::new(Severity::Error, title, None, None)
-    }
-
-    /// Constructs a new [`Diagnostic`] with the [`Warning`] severity.
-    ///
-    /// [`Warning`]: crate::Severity::Warning
-    pub fn warning(title: impl Into<String>) -> Self {
-        Self::new(Severity::Warning, title, None, None)
-    }
-
-    /// Constructs a new [`Diagnostic`] with the [`Note`] severity.
-    ///
-    /// [`Note`]: crate::Severity::Note
-    pub fn note(title: impl Into<String>) -> Self {
-        Self::new(Severity::Note, title, None, None)
-    }
-
-    /// Attaches an additional detail describing the diagnostic.
-    pub fn detail(
-        mut self,
-        message: impl Into<String>,
-        range: Range<usize>,
-    ) -> Self {
-        self.details.push(SubDiagnostic::new(message, range));
-        self
-    }
-
-    /// Attaches an additional suggestion for the diagnostic.
-    pub fn suggestion(mut self, suggestion: impl Into<String>) -> Self {
-        self.suggestions.push(suggestion.into());
-        self
+        Self { segments }
     }
 }
 
-/// Additional information that may be added to a [`Diagnostic`].
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SubDiagnostic {
-    pub message: String,
-    pub range: Range<usize>,
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.segments
+                .iter()
+                .map(|s| format!("{}", s))
+                .collect::<Vec<_>>()
+                .join("`")
+        )?;
+
+        Ok(())
+    }
 }
 
-impl SubDiagnostic {
-    /// Constructs a new [`SubDiagnostic`] with the given message and range.
-    pub fn new(message: impl Into<String>, range: Range<usize>) -> Self {
-        Self {
-            message: message.into(),
-            range,
-        }
+impl From<String> for Message {
+    fn from(string: String) -> Self {
+        Self::string_with_inline_code_snippets(string)
+    }
+}
+
+impl From<&str> for Message {
+    fn from(string: &str) -> Self {
+        Self::string_with_inline_code_snippets(string)
     }
 }
 
 /// A suggestion that may be added to a [`Diagnostic`].
 ///
 /// For now, this type is merely an alias to [`String`].
-pub type Suggestion = String;
+pub type Hint = String;
+
+/// A diagnostic that provides information about a found problem in a Helios
+/// source file like errors or warnings.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Diagnostic {
+    /// The severity of the diagnostic.
+    severity: Severity,
+    title: String,
+    description: Option<String>,
+    message: Message,
+    range: Range<usize>,
+    hint: Option<Hint>,
+}
+
+impl Diagnostic {
+    pub fn new(
+        severity: Severity,
+        title: impl Into<String>,
+        description: impl Into<Option<String>>,
+        message: impl Into<Message>,
+        range: Range<usize>,
+        hint: impl Into<Option<Hint>>,
+    ) -> Self {
+        Self {
+            severity,
+            title: title.into(),
+            description: description.into(),
+            message: message.into(),
+            range,
+            hint: hint.into(),
+        }
+    }
+
+    pub fn bug(title: impl Into<String>) -> Self {
+        Self {
+            severity: Severity::Bug,
+            title: title.into(),
+            ..Self::default()
+        }
+    }
+
+    pub fn error(title: impl Into<String>) -> Self {
+        Self {
+            severity: Severity::Error,
+            title: title.into(),
+            ..Self::default()
+        }
+    }
+
+    pub fn warning(title: impl Into<String>) -> Self {
+        Self {
+            severity: Severity::Warning,
+            title: title.into(),
+            ..Self::default()
+        }
+    }
+
+    pub fn note(title: impl Into<String>) -> Self {
+        Self {
+            severity: Severity::Note,
+            title: title.into(),
+            ..Self::default()
+        }
+    }
+
+    pub fn severity(mut self, severity: Severity) -> Self {
+        self.severity = severity;
+        self
+    }
+
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
+        self
+    }
+
+    pub fn description(
+        mut self,
+        description: impl Into<Option<String>>,
+    ) -> Self {
+        self.description = description.into();
+        self
+    }
+
+    pub fn message(mut self, message: impl Into<Message>) -> Self {
+        self.message = message.into();
+        self
+    }
+
+    pub fn range(mut self, range: Range<usize>) -> Self {
+        self.range = range.into();
+        self
+    }
+
+    pub fn hint(mut self, hint: impl Into<Option<Hint>>) -> Self {
+        self.hint = hint.into();
+        self
+    }
+}
+
+impl fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.severity {
+            Severity::Error => writeln!(f, "-- Error: {}", self.title)?,
+            _ => todo!(),
+        }
+
+        writeln!(f, "-> src/Errors.he:NN:NN")?;
+
+        if let Some(description) = &self.description {
+            writeln!(f, "\n{}", description)?;
+        }
+
+        writeln!(f, "\n{}", self.message)?;
+
+        if let Some(hint) = &self.hint {
+            writeln!(f, "\n{}", hint)?;
+        }
+
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -127,30 +255,48 @@ mod tests {
     }
 
     #[test]
-    fn test_error_diagnostic_with_details_and_suggestions() {
-        let diagnostic = Diagnostic::error("An error message")
-            .detail("... which is caused by this section of code", 0..3)
-            .detail("... and also this section of code", 6..10)
-            .suggestion("try doing XYZ");
+    fn test_message_string_with_line_code_snippets() {
+        assert_eq!(
+            Message::string_with_inline_code_snippets(
+                "I expected a colon (`:`) or an equal symbol (`=`) here"
+            ),
+            Message {
+                segments: vec![
+                    MessageSegment::text("I expected a colon ("),
+                    MessageSegment::inline_code_snippet(":"),
+                    MessageSegment::text(") or an equal symbol ("),
+                    MessageSegment::inline_code_snippet("="),
+                    MessageSegment::text(") here"),
+                ]
+            }
+        );
 
         assert_eq!(
-            diagnostic,
-            Diagnostic {
-                severity: Severity::Error,
-                title: "An error message".to_string(),
-                details: vec![
-                    SubDiagnostic {
-                        message: "... which is caused by this section of code"
-                            .to_string(),
-                        range: 0..3
-                    },
-                    SubDiagnostic {
-                        message: "... and also this section of code"
-                            .to_string(),
-                        range: 6..10
-                    }
-                ],
-                suggestions: vec!["try doing XYZ".to_string()],
+            Message::string_with_inline_code_snippets(
+                "`external` is `not` a `valid` identifier `here`"
+            ),
+            Message {
+                segments: vec![
+                    MessageSegment::inline_code_snippet("external"),
+                    MessageSegment::text(" is "),
+                    MessageSegment::inline_code_snippet("not"),
+                    MessageSegment::text(" a "),
+                    MessageSegment::inline_code_snippet("valid"),
+                    MessageSegment::text(" identifier "),
+                    MessageSegment::inline_code_snippet("here"),
+                ]
+            }
+        );
+
+        assert_eq!(
+            Message::string_with_inline_code_snippets(
+                "this string doesn't terminate `properly"
+            ),
+            Message {
+                segments: vec![
+                    MessageSegment::text("this string doesn't terminate "),
+                    MessageSegment::inline_code_snippet("properly"),
+                ]
             }
         );
     }
