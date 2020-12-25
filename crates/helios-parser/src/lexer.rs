@@ -15,8 +15,8 @@
 // ! [`parse`]: crate::parse
 
 use crate::cursor::Cursor;
+use crate::message::Message;
 use flume::Sender;
-use helios_diagnostics::Diagnostic;
 use helios_syntax::{self, SyntaxKind};
 use text_size::{TextRange, TextSize};
 use unicode_xid::UnicodeXID;
@@ -119,7 +119,7 @@ pub struct Lexer<'source> {
     cursor: Cursor<'source>,
     mode_stack: Vec<LexerMode>,
     #[allow(dead_code)]
-    diagnostics_tx: Sender<Diagnostic>,
+    messages_tx: Sender<Message>,
 }
 
 impl<'source> Lexer<'source> {
@@ -127,14 +127,11 @@ impl<'source> Lexer<'source> {
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
     /// cursor position to the start.
-    pub fn new(
-        source: &'source str,
-        diagnostics_tx: Sender<Diagnostic>,
-    ) -> Self {
+    pub fn new(source: &'source str, messages_tx: Sender<Message>) -> Self {
         Self {
             cursor: Cursor::new(source),
             mode_stack: vec![LexerMode::Normal],
-            diagnostics_tx,
+            messages_tx,
         }
     }
 
@@ -169,10 +166,8 @@ impl<'source> Lexer<'source> {
 
         let range = {
             use std::convert::TryFrom;
-
-            let std_range = start..end;
-            let start = TextSize::try_from(std_range.start).unwrap();
-            let end = TextSize::try_from(std_range.end).unwrap();
+            let start = TextSize::try_from(start).unwrap();
+            let end = TextSize::try_from(end).unwrap();
 
             TextRange::new(start, end)
         };

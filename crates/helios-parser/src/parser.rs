@@ -8,8 +8,9 @@ pub(crate) mod source;
 use self::event::Event;
 use self::marker::Marker;
 use self::source::Source;
+use crate::lexer::Token;
+use crate::message::{Message, ParserMessage};
 use flume::Sender;
-use helios_diagnostics::Diagnostic;
 use helios_syntax::SyntaxKind;
 
 const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
@@ -20,7 +21,7 @@ pub struct Parser<'tokens, 'source> {
     events: Vec<Event>,
     expected_kinds: Vec<SyntaxKind>,
     #[allow(dead_code)]
-    diagnostics_tx: Sender<Diagnostic>,
+    messages_tx: Sender<Message>,
 }
 
 impl<'tokens, 'source> Parser<'tokens, 'source> {
@@ -28,13 +29,13 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     /// [`Diagnostic`]s.
     pub fn new(
         source: Source<'tokens, 'source>,
-        diagnostics_tx: Sender<Diagnostic>,
+        messages_tx: Sender<Message>,
     ) -> Self {
         Self {
             source,
             events: Vec::new(),
             expected_kinds: Vec::new(),
-            diagnostics_tx,
+            messages_tx,
         }
     }
 
@@ -95,41 +96,27 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     }
 
     pub(crate) fn error(&mut self) {
-        // let current_token = self.source.peek_token();
-        //
-        // let (found, range) =
-        //     if let Some(Token { kind, range, .. }) = current_token {
-        //         (Some(*kind), *range)
-        //     } else {
-        //         (None, self.source.last_token_range().unwrap())
-        //     };
-        //
-        // let expected = std::mem::take(&mut self.expected_kinds);
-        //
-        // let mut expected_string = String::new();
-        // for (i, kind) in expected.iter().enumerate() {
-        //     if i == 0 {
-        //         expected_string.push_str(&format!("{}", kind));
-        //     } else if i == (expected.len() - 1) {
-        //         expected_string.push_str(&format!(" or {}", kind));
-        //     } else {
-        //         expected_string.push_str(&format!(", {}", kind));
-        //     }
-        // }
-        //
-        // self.diagnostics_tx
-        //     .send(Diagnostic::error("syntax error").detail(
-        //         format!(
-        //             "expected {}{}",
-        //             expected_string,
-        //             found.map_or("".to_string(), |kind| format!(
-        //                 ", found {}",
-        //                 kind
-        //             ))
-        //         ),
-        //         range.into(),
-        //     ))
-        //     .unwrap();
+        let current_token = self.source.peek_token();
+
+        let (found, range) =
+            if let Some(Token { kind, range, .. }) = current_token {
+                (Some(*kind), *range)
+            } else {
+                (None, self.source.last_token_range().unwrap())
+            };
+
+        let expected = std::mem::take(&mut self.expected_kinds);
+
+        self.messages_tx
+            .send(
+                ParserMessage::UnexpectedToken {
+                    found,
+                    expected,
+                    range,
+                }
+                .into(),
+            )
+            .unwrap();
 
         if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
             let m = self.start();

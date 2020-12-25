@@ -1,5 +1,6 @@
-use std::fmt;
-use std::ops::Range;
+use colored::*;
+use std::fmt::{self, Display};
+use text_size::TextRange;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u8)]
@@ -37,15 +38,13 @@ impl MessageSegment {
     }
 }
 
-impl fmt::Display for MessageSegment {
+impl Display for MessageSegment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::Text(s) => s,
-            Self::CodeSnippet(s) => s,
-            Self::InlineCodeSnippet(s) => s,
-        };
-
-        write!(f, "{}", s)
+        match self {
+            Self::Text(s) => write!(f, "{}", s),
+            Self::CodeSnippet(s) => write!(f, "{}", s.yellow()),
+            Self::InlineCodeSnippet(s) => write!(f, "{}", s.yellow()),
+        }
     }
 }
 
@@ -74,7 +73,7 @@ impl Message {
     }
 }
 
-impl fmt::Display for Message {
+impl Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -83,7 +82,7 @@ impl fmt::Display for Message {
                 .iter()
                 .map(|s| format!("{}", s))
                 .collect::<Vec<_>>()
-                .join("`")
+                .join("")
         )?;
 
         Ok(())
@@ -116,7 +115,7 @@ pub struct Diagnostic {
     title: String,
     description: Option<String>,
     message: Message,
-    range: Range<usize>,
+    range: TextRange,
     hint: Option<Hint>,
 }
 
@@ -126,7 +125,7 @@ impl Diagnostic {
         title: impl Into<String>,
         description: impl Into<Option<String>>,
         message: impl Into<Message>,
-        range: Range<usize>,
+        range: impl Into<TextRange>,
         hint: impl Into<Option<Hint>>,
     ) -> Self {
         Self {
@@ -134,7 +133,7 @@ impl Diagnostic {
             title: title.into(),
             description: description.into(),
             message: message.into(),
-            range,
+            range: range.into(),
             hint: hint.into(),
         }
     }
@@ -181,11 +180,8 @@ impl Diagnostic {
         self
     }
 
-    pub fn description(
-        mut self,
-        description: impl Into<Option<String>>,
-    ) -> Self {
-        self.description = description.into();
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
         self
     }
 
@@ -194,25 +190,27 @@ impl Diagnostic {
         self
     }
 
-    pub fn range(mut self, range: Range<usize>) -> Self {
+    pub fn range(mut self, range: impl Into<TextRange>) -> Self {
         self.range = range.into();
         self
     }
 
-    pub fn hint(mut self, hint: impl Into<Option<Hint>>) -> Self {
-        self.hint = hint.into();
+    pub fn hint(mut self, hint: impl Into<Hint>) -> Self {
+        self.hint = Some(hint.into());
         self
     }
 }
 
-impl fmt::Display for Diagnostic {
+impl Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.severity {
-            Severity::Error => writeln!(f, "-- Error: {}", self.title)?,
+            Severity::Error => {
+                writeln!(f, "{}", format!("-- Error: {}", self.title).red())?
+            }
             _ => todo!(),
         }
 
-        writeln!(f, "-> src/Errors.he:NN:NN")?;
+        writeln!(f, "{}", "-> src/Errors.he:##:##".dimmed())?;
 
         if let Some(description) = &self.description {
             writeln!(f, "\n{}", description)?;

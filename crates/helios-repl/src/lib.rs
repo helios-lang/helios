@@ -1,5 +1,6 @@
 //! REPL support for the Helios programming language.
 
+use helios_diagnostics::Diagnostic;
 use std::io::{self, Write};
 
 const LOGO_BANNER: &[&str] = &[
@@ -16,7 +17,7 @@ fn start_main_loop() -> io::Result<()> {
     let mut stdout = io::stdout();
     let mut input = String::new();
 
-    let (diagnostics_tx, _diagnostics_rx) = flume::unbounded();
+    let (messages_tx, messages_rx) = flume::unbounded();
 
     for (i, line) in LOGO_BANNER.iter().enumerate() {
         match i {
@@ -46,16 +47,13 @@ fn start_main_loop() -> io::Result<()> {
             }
         } else {
             let parse_result =
-                helios_parser::parse(&input, diagnostics_tx.clone());
+                helios_parser::parse(&input, messages_tx.clone());
             println!("{}", parse_result.debug_tree());
         }
 
-        // for diagnostic in diagnostics_rx.try_iter() {
-        //     println!("{:?}: {}", diagnostic.severity, diagnostic.title);
-        //     for detail in diagnostic.details {
-        //         println!("  {:?}: {}", detail.range, detail.message);
-        //     }
-        // }
+        for message in messages_rx.try_iter() {
+            eprintln!("{}", Diagnostic::from(message));
+        }
 
         println!();
         input.clear();

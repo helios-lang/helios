@@ -1,7 +1,7 @@
 mod lang;
 
 pub use lang::Language;
-use std::fmt;
+use std::fmt::{self, Display};
 
 pub type SyntaxNode = rowan::SyntaxNode<Language>;
 
@@ -172,17 +172,9 @@ impl SyntaxKind {
         use SyntaxKind::*;
         self >= Sym_Ampersand && self <= Sym_RParen
     }
-}
 
-impl From<SyntaxKind> for rowan::SyntaxKind {
-    fn from(kind: SyntaxKind) -> Self {
-        Self(kind as u16)
-    }
-}
-
-impl fmt::Display for SyntaxKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
+    pub fn human_readable_short_name(self) -> &'static str {
+        match self {
             // Keywords
             SyntaxKind::Kwd_Alias => "`alias`",
             SyntaxKind::Kwd_And => "`and`",
@@ -262,8 +254,69 @@ impl fmt::Display for SyntaxKind {
             SyntaxKind::Comment => "comment",
             SyntaxKind::DocComment => "documentation comment",
             SyntaxKind::Whitespace => "whitespace",
-            _ => unreachable!("Unexpected {:?}", self),
-        })
+            _ => unreachable!("Unreachable {:?}", self),
+        }
+    }
+
+    pub fn human_readable_full_name(self, show_code_form: bool) -> String {
+        let s = match self {
+            SyntaxKind::Sym_Ampersand => "ampersand",
+            SyntaxKind::Sym_Asterisk => "asterisk",
+            SyntaxKind::Sym_At => "at",
+            SyntaxKind::Sym_BackSlash => "backslash",
+            SyntaxKind::Sym_Bang => "bang",
+            SyntaxKind::Sym_BangEq => "equal",
+            SyntaxKind::Sym_Caret => "caret",
+            SyntaxKind::Sym_Colon => "colon",
+            SyntaxKind::Sym_Comma => "comma",
+            SyntaxKind::Sym_Dollar => "dollar",
+            SyntaxKind::Sym_Dot => "dot",
+            SyntaxKind::Sym_EmDash => "em-dash",
+            SyntaxKind::Sym_EnDash => "en-dash",
+            SyntaxKind::Sym_Eq => "equal",
+            SyntaxKind::Sym_ForwardSlash => "forward slash",
+            SyntaxKind::Sym_Minus => "minus",
+            SyntaxKind::Sym_Percent => "percent",
+            SyntaxKind::Sym_Pipe => "pipe",
+            SyntaxKind::Sym_Plus => "plus",
+            SyntaxKind::Sym_Pound => "pound",
+            SyntaxKind::Sym_Question => "question mark",
+            SyntaxKind::Sym_Semicolon => "semicolon",
+            SyntaxKind::Sym_Sterling => "sterling",
+            SyntaxKind::Sym_Tilde => "tilde",
+            SyntaxKind::Sym_Lt => "less than",
+            SyntaxKind::Sym_LtEq => "less than equal to",
+            SyntaxKind::Sym_Gt => "greater than",
+            SyntaxKind::Sym_GtEq => "greater than equal to",
+            SyntaxKind::Sym_LThinArrow => "leftwards thin arrow",
+            SyntaxKind::Sym_RThinArrow => "rightwards thin arrow",
+            SyntaxKind::Sym_ThickArrow => "thick arrow",
+            SyntaxKind::Sym_LBrace => "opening brace",
+            SyntaxKind::Sym_RBrace => "closing brace",
+            SyntaxKind::Sym_LBracket => "opening bracket",
+            SyntaxKind::Sym_RBracket => "closing bracket",
+            SyntaxKind::Sym_LParen => "opening parenthesis",
+            SyntaxKind::Sym_RParen => "closing parenthesis",
+            _ => return self.human_readable_short_name().to_string(),
+        };
+
+        if show_code_form {
+            format!("{} symbol ('{}')", s, self.human_readable_short_name())
+        } else {
+            format!("{} symbol", s)
+        }
+    }
+}
+
+impl From<SyntaxKind> for rowan::SyntaxKind {
+    fn from(kind: SyntaxKind) -> Self {
+        Self(kind as u16)
+    }
+}
+
+impl Display for SyntaxKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.human_readable_full_name(true))
     }
 }
 
