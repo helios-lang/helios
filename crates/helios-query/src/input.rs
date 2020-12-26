@@ -1,12 +1,15 @@
-use std::sync::Arc;
+use flume::unbounded;
+use helios_parser::{Message, Parse};
+
+pub type FileId = usize;
 
 #[salsa::query_group(InputStorage)]
 pub trait Input: salsa::Database {
     #[salsa::input]
-    fn source_text(&self, path: String) -> Arc<String>;
+    fn source_text(&'a self, file_id: FileId) -> String;
 
     /// The length of the source's text.
-    fn source_length(&self, path: String) -> usize;
+    fn source_length(&self, file_id: FileId) -> usize;
 
     /// Calculates the offsets of a file that start a new line.
     ///
@@ -16,14 +19,14 @@ pub trait Input: salsa::Database {
     /// a CRLF sequence is counted as two character offsets.
     ///
     /// The first element in the returned vector will always be `0`.
-    fn source_line_offsets(&self, path: String) -> Vec<usize>;
+    fn source_line_offsets(&self, file_id: FileId) -> Vec<usize>;
 
     /// Calculates a zero-indexed source offset from a given zero-indexed line
     /// and column editor position. Suitable for mapping the source index of a
     /// character to its editor location.
     fn source_offset_at_position(
         &self,
-        path: String,
+        file_id: FileId,
         line: usize,
         column: usize,
     ) -> usize;
@@ -33,22 +36,22 @@ pub trait Input: salsa::Database {
     /// a character to its text index.
     fn source_position_at_offset(
         &self,
-        path: String,
+        file_id: FileId,
         offset: usize,
     ) -> (usize, usize);
 
-    // /// Returns a parsed syntax tree of the given file.
-    // fn ast(&self, path: String) -> Arc<Ast>;
+    /// Returns a parsed syntax tree of the given file.
+    fn parse(&self, file_id: FileId) -> (Parse, Vec<Message>);
 }
 
-fn source_length(db: &impl Input, path: String) -> usize {
-    let contents = db.source_text(path);
+fn source_length(db: &impl Input, file_id: FileId) -> usize {
+    let contents = db.source_text(file_id);
     contents.len()
 }
 
-fn source_line_offsets(db: &impl Input, path: String) -> Vec<usize> {
+fn source_line_offsets(db: &impl Input, file_id: FileId) -> Vec<usize> {
     let mut accumulator = 0;
-    let contents = &db.source_text(path)[..];
+    let contents = &db.source_text(file_id)[..];
 
     contents
         .lines()
@@ -70,20 +73,20 @@ fn source_line_offsets(db: &impl Input, path: String) -> Vec<usize> {
 
 fn source_offset_at_position(
     db: &impl Input,
-    path: String,
+    file_id: FileId,
     line: usize,
     column: usize,
 ) -> usize {
-    let line_offsets = db.source_line_offsets(path);
+    let line_offsets = db.source_line_offsets(file_id);
     line_offsets[line] + column
 }
 
 fn source_position_at_offset(
     db: &impl Input,
-    path: String,
+    file_id: FileId,
     offset: usize,
 ) -> (usize, usize) {
-    let offsets = &db.source_line_offsets(path)[..];
+    let offsets = &db.source_line_offsets(file_id)[..];
     match offsets.binary_search(&offset) {
         // The offset was a line-offset position
         Ok(line) => (line, 0),
@@ -95,4 +98,13 @@ fn source_position_at_offset(
             (last_line, column)
         }
     }
+}
+
+fn parse(db: &impl Input, file_id: FileId) -> (Parse, Vec<Message>) {
+    let (messages_tx, messages_rx) = unbounded();
+    let source = db.source_text(file_id);
+    (
+        helios_parser::parse(&source, messages_tx),
+        messages_rx.iter().collect::<Vec<_>>(),
+    )
 }
