@@ -1,7 +1,7 @@
 //! REPL support for the Helios programming language.
 
 use colored::*;
-use helios_diagnostics::files::{Files, SimpleFiles};
+use helios_diagnostics::files::SimpleFiles;
 use helios_diagnostics::Diagnostic;
 use std::io::{self, Write};
 
@@ -101,31 +101,8 @@ fn start_main_loop() -> io::Result<()> {
             let diagnostic = Diagnostic::from(message);
             if !(emitted_ranges.contains(&diagnostic.location)) {
                 emitted_ranges.push(diagnostic.location.clone());
-                eprintln!("{}", diagnostic);
-
-                let location = diagnostic.location;
-
-                let line_index = files
-                    .line_index(location.file_id, location.range.start)
-                    .unwrap();
-
-                let line_range =
-                    files.line_range(location.file_id, line_index).unwrap();
-
-                let error_start = location.range.start - line_index;
-                let error_span = location.range.len();
-
-                println!(
-                    "{}{}",
-                    format!("{:>4} | ", line_index + 1).dimmed(),
-                    &input[line_range].trim()
-                );
-                println!(
-                    "{}{}",
-                    " ".repeat(7 + error_start),
-                    "^".repeat(error_span).red()
-                );
-                println!();
+                helios_diagnostics::emit(&mut stdout, &files, &diagnostic)
+                    .expect("Failed to print diagnostic");
             }
         }
 

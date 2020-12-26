@@ -216,51 +216,6 @@ where
     }
 }
 
-impl<FileId> Display for Diagnostic<FileId> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let location = format!("-> src/Foo.he:0:0 ({:?})", self.location.range);
-        let make_header = |msg: String| {
-            let remaining_len = 80 - msg.len();
-            format!("{}{}", msg, "-".repeat(remaining_len))
-        };
-
-        match self.severity {
-            Severity::Bug => {
-                let msg = format!("-- Bug: {} ", self.title);
-                writeln!(f, "{}", make_header(msg).magenta())?;
-                writeln!(f, "{}", location.magenta())?;
-            }
-            Severity::Error => {
-                let msg = format!("-- Error: {} ", self.title);
-                writeln!(f, "{}", make_header(msg).red())?;
-                writeln!(f, "{}", location.red())?;
-            }
-            Severity::Warning => {
-                let msg = format!("-- Warning: {} ", self.title);
-                writeln!(f, "{}", make_header(msg).yellow())?;
-                writeln!(f, "{}", location.yellow())?;
-            }
-            Severity::Note => {
-                let msg = format!("-- Note: {} ", self.title);
-                writeln!(f, "{}", make_header(msg).blue())?;
-                writeln!(f, "{}", location.blue())?;
-            }
-        }
-
-        if let Some(description) = &self.description {
-            writeln!(f, "\n{}", description)?;
-        }
-
-        writeln!(f, "\n{}", self.message)?;
-
-        if let Some(hint) = &self.hint {
-            writeln!(f, "\n{}", hint)?;
-        }
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

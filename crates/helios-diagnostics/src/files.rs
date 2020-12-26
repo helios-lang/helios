@@ -1,13 +1,6 @@
+use crate::{Error, Result};
 use std::fmt::Display;
 use std::ops::Range;
-
-pub type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Error {
-    MissingFile,
-    OutOfBounds { given: usize, max: usize },
-}
 
 fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
