@@ -65,12 +65,10 @@ impl From<ParserMessage> for Diagnostic {
                         );
 
                         for kind in expected.iter() {
-                            expected_string.push_str(
-                                &format!(
-                                    "\n    {}",
-                                    kind.human_readable_repr()
-                                )
-                            );
+                            expected_string.push_str(&format!(
+                                "\n    {}",
+                                kind.human_readable_repr()
+                            ));
                         }
 
                         expected_string
