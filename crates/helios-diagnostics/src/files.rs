@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::fmt::Display;
 use std::ops::Range;
 
@@ -15,6 +13,7 @@ fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Location {
     line: usize,
     column: usize,
@@ -56,6 +55,7 @@ where
 {
     pub fn new(name: Name, source: Source) -> Self {
         let line_indexes = line_indexes(source.as_ref()).collect();
+
         Self {
             name,
             source,
@@ -180,12 +180,10 @@ where
 mod tests {
     use super::*;
 
-    const FILE_NAME: &str = "Foo.he";
-    const SOURCE: &str = "let a = 0\nlet b = 1\r\nlet c = 3\r\n\nfoo";
-
     #[test]
     fn test_simple_file() {
-        let file = SimpleFile::new(FILE_NAME, SOURCE);
+        let source = "let a = 0\nlet b = 1\r\nlet c = 3\r\n\nfoo";
+        let file = SimpleFile::new("Foo.he", source);
 
         assert_eq!(
             file.line_indexes,
@@ -198,10 +196,10 @@ mod tests {
             ]
         );
 
-        assert_eq!(file.line_index((), 00), Ok(0));
-        assert_eq!(file.line_index((), 01), Ok(0));
-        assert_eq!(file.line_index((), 05), Ok(0));
-        assert_eq!(file.line_index((), 09), Ok(0));
+        assert_eq!(file.line_index((), 0), Ok(0));
+        assert_eq!(file.line_index((), 1), Ok(0));
+        assert_eq!(file.line_index((), 5), Ok(0));
+        assert_eq!(file.line_index((), 9), Ok(0));
         assert_eq!(file.line_index((), 10), Ok(1));
         assert_eq!(file.line_index((), 11), Ok(1));
         assert_eq!(file.line_index((), 14), Ok(1));
@@ -215,10 +213,23 @@ mod tests {
         assert_eq!(file.line_index((), 34), Ok(4));
         assert_eq!(file.line_index((), 36), Ok(4));
 
-        assert_eq!(file.line_range((), 0), Ok(00..10));
+        assert_eq!(file.line_range((), 0), Ok(0..10));
         assert_eq!(file.line_range((), 1), Ok(10..21));
         assert_eq!(file.line_range((), 2), Ok(21..32));
         assert_eq!(file.line_range((), 3), Ok(32..33));
         assert_eq!(file.line_range((), 4), Ok(33..36));
+    }
+
+    #[test]
+    fn test_simple_files() {
+        let mut files = SimpleFiles::new();
+        let foo = files.add("Foo.he", "Hello\nworld!\n\rthis is foo\n\n");
+        let bar = files.add("Bar.he", "Hallo\n\rWelt!\nDas ist bar\r\nabc");
+
+        assert_eq!(files.line_index(foo, 10), Ok(1));
+        assert_eq!(files.line_index(bar, 10), Ok(1));
+
+        assert_eq!(files.line_range(foo, 2), Ok(13..26));
+        assert_eq!(files.line_range(bar, 2), Ok(13..26));
     }
 }
