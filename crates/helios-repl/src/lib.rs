@@ -1,5 +1,6 @@
 //! REPL support for the Helios programming language.
 
+use colored::*;
 use helios_diagnostics::Diagnostic;
 use std::io::{self, Write};
 
@@ -21,15 +22,37 @@ fn start_main_loop() -> io::Result<()> {
 
     for (i, line) in LOGO_BANNER.iter().enumerate() {
         match i {
-            2 => println!("{}Version {}", line, env!("CARGO_PKG_VERSION")),
-            3 => println!("{}{}", line, env!("CARGO_PKG_REPOSITORY")),
-            4 => println!("{}Type #exit to exit, #help for help", line),
-            _ => println!("{}", line.trim_end()),
+            2 => println!(
+                "{}{}",
+                line.yellow().bold(),
+                format!(
+                    "Version {} ({})",
+                    env!("CARGO_PKG_VERSION"),
+                    env!("GIT_HASH")
+                )
+                .italic(),
+            ),
+            3 => println!(
+                "{}{}",
+                line.yellow().bold(),
+                env!("CARGO_PKG_REPOSITORY").italic()
+            ),
+            4 => println!(
+                "{}{}",
+                line.yellow().bold(),
+                format!(
+                    "Type {} to exit, {} for help",
+                    "#exit".blue(),
+                    "#help".blue()
+                )
+                .italic()
+            ),
+            _ => println!("{}", line.trim_end().yellow().bold()),
         }
     }
 
     loop {
-        write!(stdout, "> ")?;
+        write!(stdout, "{}", "> ".blue())?;
         stdout.flush()?;
 
         stdin.read_line(&mut input)?;
@@ -42,13 +65,20 @@ fn start_main_loop() -> io::Result<()> {
             let input = input[1..].trim();
             match input {
                 "exit" => break,
-                "help" => println!("Help is not available at the moment"),
-                command => eprintln!("! Unknown command `{}`", command),
+                "help" => {
+                    println!("{}", "Help is not available at the moment".blue())
+                }
+                command => {
+                    let msg = format!("Unknown command: `{}`", command).red();
+                    eprintln!("{}", msg)
+                }
             }
+
+            println!()
         } else {
             let parse_result =
                 helios_parser::parse(&input, messages_tx.clone());
-            println!("{}", parse_result.debug_tree());
+            println!("{}", parse_result.debug_tree().cyan());
         }
 
         let mut emitted_ranges = Vec::new();
@@ -60,7 +90,6 @@ fn start_main_loop() -> io::Result<()> {
             }
         }
 
-        println!();
         input.clear();
     }
 
@@ -70,7 +99,7 @@ fn start_main_loop() -> io::Result<()> {
 /// Starts a new REPL session.
 pub fn start() {
     match start_main_loop() {
-        Ok(_) => println!("Goodbye"),
+        Ok(_) => println!("{}", "Goodbye...".blue()),
         Err(error) => eprintln!("An error occurred: {}", error),
     }
 }
