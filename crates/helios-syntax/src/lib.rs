@@ -1,5 +1,7 @@
+mod human;
 mod lang;
 
+use human::{Article, HumanReadableRepr};
 pub use lang::Language;
 use std::fmt::{self, Display};
 
@@ -10,7 +12,10 @@ pub type SyntaxNode = rowan::SyntaxNode<Language>;
 /// # Examples
 /// ```rust
 /// use helios_syntax::Sym;
+/// assert_eq!(Sym!["@"], helios_syntax::SyntaxKind::Sym_At);
 /// assert_eq!(Sym!["$"], helios_syntax::SyntaxKind::Sym_Dollar);
+/// assert_eq!(Sym![">="], helios_syntax::SyntaxKind::Sym_GtEq);
+/// assert_eq!(Sym!["<-"], helios_syntax::SyntaxKind::Sym_LThinArrow);
 /// ```
 #[macro_export]
 macro_rules! Sym {
@@ -146,6 +151,7 @@ pub enum SyntaxKind {
     Whitespace,
 
     Identifier,
+    ReservedIdentifier,
     Error,
     Root, // this should be last
 }
@@ -166,106 +172,103 @@ impl SyntaxKind {
         matches!(self, Comment | DocComment | Whitespace)
     }
 
+    /// Determines if the [`SyntaxKind`] is a keyword.
+    #[inline]
+    pub fn is_keyword(self) -> bool {
+        self >= SyntaxKind::Kwd_Alias && self <= SyntaxKind::Kwd_With
+    }
+
     /// Determines if the [`SyntaxKind`] is a symbol.
     #[inline]
     pub fn is_symbol(self) -> bool {
-        use SyntaxKind::*;
-        self >= Sym_Ampersand && self <= Sym_RParen
+        self >= SyntaxKind::Sym_Ampersand && self <= SyntaxKind::Sym_RParen
     }
 
-    pub fn human_readable_short_name(self) -> &'static str {
-        match self {
-            // Keywords
-            SyntaxKind::Kwd_Alias => "`alias`",
-            SyntaxKind::Kwd_And => "`and`",
-            SyntaxKind::Kwd_As => "`as`",
-            SyntaxKind::Kwd_Begin => "`begin`",
-            SyntaxKind::Kwd_Else => "`else`",
-            SyntaxKind::Kwd_End => "`end`",
-            SyntaxKind::Kwd_Export => "`export`",
-            SyntaxKind::Kwd_External => "`external`",
-            SyntaxKind::Kwd_For => "`for`",
-            SyntaxKind::Kwd_Forall => "`forall`",
-            SyntaxKind::Kwd_If => "`if`",
-            SyntaxKind::Kwd_Import => "`import`",
-            SyntaxKind::Kwd_In => "`in`",
-            SyntaxKind::Kwd_Let => "`let`",
-            SyntaxKind::Kwd_Loop => "`loop`",
-            SyntaxKind::Kwd_Match => "`match`",
-            SyntaxKind::Kwd_Module => "`module`",
-            SyntaxKind::Kwd_Not => "`not`",
-            SyntaxKind::Kwd_Of => "`of`",
-            SyntaxKind::Kwd_Or => "`or`",
-            SyntaxKind::Kwd_Rec => "`rec`",
-            SyntaxKind::Kwd_Ref => "`ref`",
-            SyntaxKind::Kwd_Then => "`then`",
-            SyntaxKind::Kwd_Type => "`type`",
-            SyntaxKind::Kwd_Val => "`val`",
-            SyntaxKind::Kwd_While => "`while`",
-            SyntaxKind::Kwd_With => "`with`",
+    #[inline]
+    pub fn is_literal(self) -> bool {
+        self >= SyntaxKind::Lit_Character && self <= SyntaxKind::Lit_String
+    }
 
-            // Symbols
-            SyntaxKind::Sym_Ampersand => "`&`",
-            SyntaxKind::Sym_Asterisk => "`*`",
-            SyntaxKind::Sym_At => "`@`",
-            SyntaxKind::Sym_BackSlash => "`\\`",
-            SyntaxKind::Sym_Bang => "`!`",
-            SyntaxKind::Sym_BangEq => "`!=`",
-            SyntaxKind::Sym_Caret => "`^`",
-            SyntaxKind::Sym_Colon => "`:`",
-            SyntaxKind::Sym_Comma => "`,`",
-            SyntaxKind::Sym_Dollar => "`$`",
-            SyntaxKind::Sym_Dot => "`.`",
-            SyntaxKind::Sym_EmDash => "`—`",
-            SyntaxKind::Sym_EnDash => "`–`",
-            SyntaxKind::Sym_Eq => "`=`",
-            SyntaxKind::Sym_ForwardSlash => "`/`",
-            SyntaxKind::Sym_Minus => "`-`",
-            SyntaxKind::Sym_Percent => "`%`",
-            SyntaxKind::Sym_Pipe => "`|`",
-            SyntaxKind::Sym_Plus => "`+`",
-            SyntaxKind::Sym_Pound => "`#`",
-            SyntaxKind::Sym_Question => "`?`",
-            SyntaxKind::Sym_Semicolon => "`;`",
-            SyntaxKind::Sym_Sterling => "`£`",
-            SyntaxKind::Sym_Tilde => "`~`",
-            SyntaxKind::Sym_Lt => "`<`",
-            SyntaxKind::Sym_LtEq => "`<=`",
-            SyntaxKind::Sym_Gt => "`>`",
-            SyntaxKind::Sym_GtEq => "`>=`",
-            SyntaxKind::Sym_LThinArrow => "`<-`",
-            SyntaxKind::Sym_RThinArrow => "`->`",
-            SyntaxKind::Sym_ThickArrow => "`=>`",
-            SyntaxKind::Sym_LBrace => "`{`",
-            SyntaxKind::Sym_RBrace => "`}`",
-            SyntaxKind::Sym_LBracket => "`[`",
-            SyntaxKind::Sym_RBracket => "`]`",
-            SyntaxKind::Sym_LParen => "`(`",
-            SyntaxKind::Sym_RParen => "`)`",
+    #[inline]
+    pub fn is_expression(self) -> bool {
+        self >= SyntaxKind::Exp_Binary && self <= SyntaxKind::Exp_VariableRef
+    }
 
-            // Literals
-            SyntaxKind::Identifier => "identifier",
-            SyntaxKind::Lit_Character => "character literal",
-            SyntaxKind::Lit_Integer => "integer literal",
-            SyntaxKind::Lit_Float => "float literal",
-            SyntaxKind::Lit_String => "string literal",
+    #[inline]
+    pub fn is_declaration(self) -> bool {
+        self == SyntaxKind::Dec_GlobalBinding
+    }
 
-            // Trivia
-            SyntaxKind::Comment => "comment",
-            SyntaxKind::DocComment => "documentation comment",
-            SyntaxKind::Whitespace => "whitespace",
-            _ => unreachable!("Unreachable {:?}", self),
+    #[inline]
+    pub fn is_comment(self) -> bool {
+        self == SyntaxKind::Comment || self == SyntaxKind::DocComment
+    }
+
+    #[inline]
+    pub fn is_identifier(self) -> bool {
+        self == SyntaxKind::Identifier || self == SyntaxKind::ReservedIdentifier
+    }
+
+    pub fn human_readable_repr(self) -> HumanReadableRepr {
+        HumanReadableRepr {
+            article: self.article(),
+            qualifier: self.qualifier(),
+            description: self.description(),
+            kind: self.kind(),
+            code_repr: self.code_repr(),
+            example: self.example(),
         }
     }
 
-    pub fn human_readable_full_name(self, show_code_form: bool) -> String {
+    fn article(self) -> Article {
+        match self {
+            kind if kind.is_keyword() => Article::The,
+            SyntaxKind::Sym_Ampersand
+            | SyntaxKind::Sym_Asterisk
+            | SyntaxKind::Sym_At
+            | SyntaxKind::Sym_EmDash
+            | SyntaxKind::Sym_EnDash
+            | SyntaxKind::Sym_Eq
+            | SyntaxKind::Sym_LBrace
+            | SyntaxKind::Sym_LBracket
+            | SyntaxKind::Sym_LParen
+            | SyntaxKind::Lit_Integer
+            | SyntaxKind::Identifier
+            | SyntaxKind::Error => Article::An,
+            _ => Article::A,
+        }
+    }
+
+    fn qualifier(self) -> Option<String> {
+        let s = match self {
+            SyntaxKind::Sym_LBrace => "closing curly",
+            SyntaxKind::Sym_RBrace => "opening curly",
+            SyntaxKind::Sym_LBracket => "opening square",
+            SyntaxKind::Sym_RBracket => "closing square",
+            SyntaxKind::Sym_LParen => "opening",
+            SyntaxKind::Sym_RParen => "closing",
+            _ => return None,
+        };
+
+        Some(s.to_string())
+    }
+
+    fn description(self) -> Option<String> {
+        if self.is_keyword() {
+            if self == SyntaxKind::Kwd_Unimplemented {
+                return Some("unimplemented".to_string());
+            } else {
+                return self.code_repr();
+            }
+        }
+
         let s = match self {
             SyntaxKind::Sym_Ampersand => "ampersand",
             SyntaxKind::Sym_Asterisk => "asterisk",
             SyntaxKind::Sym_At => "at",
             SyntaxKind::Sym_BackSlash => "backslash",
             SyntaxKind::Sym_Bang => "bang",
-            SyntaxKind::Sym_BangEq => "equal",
+            SyntaxKind::Sym_BangEq => "bang equal",
             SyntaxKind::Sym_Caret => "caret",
             SyntaxKind::Sym_Colon => "colon",
             SyntaxKind::Sym_Comma => "comma",
@@ -291,20 +294,130 @@ impl SyntaxKind {
             SyntaxKind::Sym_LThinArrow => "leftwards thin arrow",
             SyntaxKind::Sym_RThinArrow => "rightwards thin arrow",
             SyntaxKind::Sym_ThickArrow => "thick arrow",
-            SyntaxKind::Sym_LBrace => "opening brace",
-            SyntaxKind::Sym_RBrace => "closing brace",
-            SyntaxKind::Sym_LBracket => "opening bracket",
-            SyntaxKind::Sym_RBracket => "closing bracket",
-            SyntaxKind::Sym_LParen => "opening parenthesis",
-            SyntaxKind::Sym_RParen => "closing parenthesis",
-            _ => return self.human_readable_short_name().to_string(),
+            SyntaxKind::Sym_LBrace | SyntaxKind::Sym_RBrace => "brace",
+            SyntaxKind::Sym_LBracket | SyntaxKind::Sym_RBracket => "bracket",
+            SyntaxKind::Sym_LParen | SyntaxKind::Sym_RParen => "parenthesis",
+            SyntaxKind::Lit_Character => "character",
+            SyntaxKind::Lit_Float => "float",
+            SyntaxKind::Lit_Integer => "integer",
+            SyntaxKind::Lit_String => "string",
+            SyntaxKind::Exp_Binary => "binary",
+            SyntaxKind::Exp_Literal => "literal",
+            SyntaxKind::Exp_Paren => "parenthesized",
+            SyntaxKind::Exp_UnaryPrefix => "unary prefixed",
+            SyntaxKind::Exp_UnaryPostfix => "unary postfixed",
+            SyntaxKind::Exp_VariableRef => "variable reference",
+            SyntaxKind::Dec_GlobalBinding => "global binding",
+            SyntaxKind::DocComment => "documentation",
+            SyntaxKind::ReservedIdentifier => "reserved",
+            _ => return None,
         };
 
-        if show_code_form {
-            format!("{} symbol ('{}')", s, self.human_readable_short_name())
-        } else {
-            format!("{} symbol", s)
+        Some(s.to_string())
+    }
+
+    fn kind(self) -> String {
+        match self {
+            kind if kind.is_keyword() => "keyword".to_string(),
+            kind if kind.is_symbol() => "symbol".to_string(),
+            kind if kind.is_literal() => "literal".to_string(),
+            kind if kind.is_expression() => "expression".to_string(),
+            kind if kind.is_declaration() => "declaration".to_string(),
+            kind if kind.is_comment() => "comment".to_string(),
+            kind if kind.is_identifier() => "identifier".to_string(),
+            SyntaxKind::Whitespace => "whitespace".to_string(),
+            SyntaxKind::Error => "error".to_string(),
+            _ => unreachable!("Unreachable kind: {:?}", self),
         }
+    }
+
+    fn code_repr(self) -> Option<String> {
+        let s = match self {
+            // Keywords
+            SyntaxKind::Kwd_Alias => "alias",
+            SyntaxKind::Kwd_And => "and",
+            SyntaxKind::Kwd_As => "as",
+            SyntaxKind::Kwd_Begin => "begin",
+            SyntaxKind::Kwd_Else => "else",
+            SyntaxKind::Kwd_End => "end",
+            SyntaxKind::Kwd_Export => "export",
+            SyntaxKind::Kwd_External => "external",
+            SyntaxKind::Kwd_For => "for",
+            SyntaxKind::Kwd_Forall => "forall",
+            SyntaxKind::Kwd_If => "if",
+            SyntaxKind::Kwd_Import => "import",
+            SyntaxKind::Kwd_In => "in",
+            SyntaxKind::Kwd_Let => "let",
+            SyntaxKind::Kwd_Loop => "loop",
+            SyntaxKind::Kwd_Match => "match",
+            SyntaxKind::Kwd_Module => "module",
+            SyntaxKind::Kwd_Not => "not",
+            SyntaxKind::Kwd_Of => "of",
+            SyntaxKind::Kwd_Or => "or",
+            SyntaxKind::Kwd_Rec => "rec",
+            SyntaxKind::Kwd_Ref => "ref",
+            SyntaxKind::Kwd_Then => "then",
+            SyntaxKind::Kwd_Type => "type",
+            SyntaxKind::Kwd_Unimplemented => "???",
+            SyntaxKind::Kwd_Val => "val",
+            SyntaxKind::Kwd_While => "while",
+            SyntaxKind::Kwd_With => "with",
+
+            // Symbols
+            SyntaxKind::Sym_Ampersand => "&",
+            SyntaxKind::Sym_Asterisk => "*",
+            SyntaxKind::Sym_At => "@",
+            SyntaxKind::Sym_BackSlash => "\\",
+            SyntaxKind::Sym_Bang => "!",
+            SyntaxKind::Sym_BangEq => "!=",
+            SyntaxKind::Sym_Caret => "^",
+            SyntaxKind::Sym_Colon => ":",
+            SyntaxKind::Sym_Comma => ",",
+            SyntaxKind::Sym_Dollar => "$",
+            SyntaxKind::Sym_Dot => ".",
+            SyntaxKind::Sym_EmDash => "—",
+            SyntaxKind::Sym_EnDash => "–",
+            SyntaxKind::Sym_Eq => "=",
+            SyntaxKind::Sym_ForwardSlash => "/",
+            SyntaxKind::Sym_Minus => "-",
+            SyntaxKind::Sym_Percent => "%",
+            SyntaxKind::Sym_Pipe => "|",
+            SyntaxKind::Sym_Plus => "+",
+            SyntaxKind::Sym_Pound => "#",
+            SyntaxKind::Sym_Question => "?",
+            SyntaxKind::Sym_Semicolon => ";",
+            SyntaxKind::Sym_Sterling => "£",
+            SyntaxKind::Sym_Tilde => "~",
+            SyntaxKind::Sym_Lt => "<",
+            SyntaxKind::Sym_LtEq => "<=",
+            SyntaxKind::Sym_Gt => ">",
+            SyntaxKind::Sym_GtEq => ">=",
+            SyntaxKind::Sym_LThinArrow => "<-",
+            SyntaxKind::Sym_RThinArrow => "->",
+            SyntaxKind::Sym_ThickArrow => "=>",
+            SyntaxKind::Sym_LBrace => "{",
+            SyntaxKind::Sym_RBrace => "}",
+            SyntaxKind::Sym_LBracket => "[",
+            SyntaxKind::Sym_RBracket => "]",
+            SyntaxKind::Sym_LParen => "(",
+            SyntaxKind::Sym_RParen => ")",
+            _ => return None,
+        };
+
+        Some(s.to_string())
+    }
+
+    fn example(self) -> Option<String> {
+        let s = match self {
+            SyntaxKind::Lit_Character => "'a'",
+            SyntaxKind::Lit_Float => "123.456",
+            SyntaxKind::Lit_Integer => "123",
+            SyntaxKind::Lit_String => "\"hello, world!\"",
+            SyntaxKind::Identifier => "foo",
+            _ => return None,
+        };
+
+        Some(s.to_string())
     }
 }
 
@@ -316,7 +429,7 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
 
 impl Display for SyntaxKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.human_readable_full_name(true))
+        write!(f, "{}", self.human_readable_repr())
     }
 }
 
@@ -483,5 +596,47 @@ mod tests {
         assert!(!SyntaxKind::Kwd_Alias.is_symbol());
         assert!(!SyntaxKind::Lit_Character.is_symbol());
         assert!(!SyntaxKind::Root.is_symbol());
+    }
+
+    #[test]
+    fn test() {
+        println!("{}", SyntaxKind::Kwd_Alias.human_readable_repr());
+        println!("{}", SyntaxKind::Kwd_Match.human_readable_repr());
+        println!("{}", SyntaxKind::Kwd_Unimplemented.human_readable_repr());
+        println!("{}", SyntaxKind::Kwd_With.human_readable_repr());
+
+        println!("{}", SyntaxKind::Sym_Ampersand.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_ForwardSlash.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_Lt.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_LtEq.human_readable_repr());
+
+        println!("{}", SyntaxKind::Sym_LBrace.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_RBrace.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_LBracket.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_RBracket.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_LParen.human_readable_repr());
+        println!("{}", SyntaxKind::Sym_LParen.human_readable_repr());
+
+        println!("{}", SyntaxKind::Lit_Character.human_readable_repr());
+        println!("{}", SyntaxKind::Lit_Float.human_readable_repr());
+        println!("{}", SyntaxKind::Lit_Integer.human_readable_repr());
+        println!("{}", SyntaxKind::Lit_String.human_readable_repr());
+
+        println!("{}", SyntaxKind::Exp_Binary.human_readable_repr());
+        println!("{}", SyntaxKind::Exp_Literal.human_readable_repr());
+        println!("{}", SyntaxKind::Exp_Paren.human_readable_repr());
+        println!("{}", SyntaxKind::Exp_UnaryPrefix.human_readable_repr());
+        println!("{}", SyntaxKind::Exp_UnaryPostfix.human_readable_repr());
+        println!("{}", SyntaxKind::Exp_VariableRef.human_readable_repr());
+
+        println!("{}", SyntaxKind::Dec_GlobalBinding.human_readable_repr());
+
+        println!("{}", SyntaxKind::Comment.human_readable_repr());
+        println!("{}", SyntaxKind::DocComment.human_readable_repr());
+        println!("{}", SyntaxKind::Whitespace.human_readable_repr());
+
+        println!("{}", SyntaxKind::Identifier.human_readable_repr());
+        println!("{}", SyntaxKind::ReservedIdentifier.human_readable_repr());
+        println!("{}", SyntaxKind::Error.human_readable_repr());
     }
 }

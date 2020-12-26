@@ -40,28 +40,49 @@ impl From<ParserMessage> for Diagnostic {
             } => {
                 let found = match found {
                     Some(found) => {
-                        format!("{}", found.human_readable_full_name(false))
+                        format!(
+                            "{}",
+                            found
+                                .human_readable_repr()
+                                .omitting()
+                                .article()
+                                .code_repr()
+                                .example()
+                        )
                     }
                     None => "end of file".to_string(),
                 };
 
-                let mut expected_string = String::new();
-                for kind in expected.iter() {
-                    expected_string.push_str(&format!(
-                        "\n    {}",
-                        kind.human_readable_full_name(true)
-                    ));
-                }
+                let expected_string = {
+                    if expected.len() == 1 {
+                        format!(
+                            "I expected {} here.",
+                            expected[0].human_readable_repr()
+                        )
+                    } else {
+                        let mut expected_string = String::from(
+                            "I expected one of the follow here:\n",
+                        );
+
+                        for kind in expected.iter() {
+                            expected_string.push_str(
+                                &format!(
+                                    "\n    {}",
+                                    kind.human_readable_repr()
+                                )
+                            );
+                        }
+
+                        expected_string
+                    }
+                };
 
                 Diagnostic::error(format!("Unexpected {}", found))
                     .range(range)
                     .description(
-                        "I was partway through something when I got stuck here",
+                        "I was partway through something when I got stuck here:",
                     )
-                    .message(format!(
-                        "I expected one of the follow here:\n{}",
-                        expected_string
-                    ))
+                    .message(expected_string)
             }
         }
     }

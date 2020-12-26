@@ -51,8 +51,13 @@ fn start_main_loop() -> io::Result<()> {
             println!("{}", parse_result.debug_tree());
         }
 
+        let mut emitted_ranges = Vec::new();
         for message in messages_rx.try_iter() {
-            eprintln!("{}", Diagnostic::from(message));
+            let diagnostic = Diagnostic::from(message);
+            if !(emitted_ranges.contains(&diagnostic.range)) {
+                emitted_ranges.push(diagnostic.range);
+                eprintln!("{}", diagnostic);
+            }
         }
 
         println!();

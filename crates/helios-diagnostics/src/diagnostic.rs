@@ -40,10 +40,18 @@ impl MessageSegment {
 
 impl Display for MessageSegment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Text(s) => write!(f, "{}", s),
-            Self::CodeSnippet(s) => write!(f, "{}", s.yellow()),
-            Self::InlineCodeSnippet(s) => write!(f, "{}", s.yellow()),
+        if colored::control::SHOULD_COLORIZE.should_colorize() {
+            match self {
+                Self::Text(s) => write!(f, "{}", s),
+                Self::CodeSnippet(s) => write!(f, "{}", s.yellow()),
+                Self::InlineCodeSnippet(s) => write!(f, "{}", s.yellow()),
+            }
+        } else {
+            match self {
+                Self::Text(s) => write!(f, "{}", s),
+                Self::CodeSnippet(s) => write!(f, "{}", s),
+                Self::InlineCodeSnippet(s) => write!(f, "`{}`", s),
+            }
         }
     }
 }
@@ -111,12 +119,12 @@ pub type Hint = String;
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Diagnostic {
     /// The severity of the diagnostic.
-    severity: Severity,
-    title: String,
-    description: Option<String>,
-    message: Message,
-    range: TextRange,
-    hint: Option<Hint>,
+    pub severity: Severity,
+    pub title: String,
+    pub description: Option<String>,
+    pub message: Message,
+    pub range: TextRange,
+    pub hint: Option<Hint>,
 }
 
 impl Diagnostic {
@@ -205,12 +213,23 @@ impl Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.severity {
             Severity::Error => {
-                writeln!(f, "{}", format!("-- Error: {}", self.title).red())?
+                let left = format!("-- Error: {} ", self.title);
+                let remaining_len = 80 - left.len();
+
+                writeln!(
+                    f,
+                    "{}",
+                    format!("{}{}", left, "-".repeat(remaining_len)).red()
+                )?
             }
             _ => todo!(),
         }
 
-        writeln!(f, "{}", "-> src/Errors.he:##:##".dimmed())?;
+        writeln!(
+            f,
+            "{}",
+            format!("-> src/Errors.he:##:## ({:?})", self.range).dimmed()
+        )?;
 
         if let Some(description) = &self.description {
             writeln!(f, "\n{}", description)?;
