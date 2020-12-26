@@ -87,15 +87,19 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
         Marker::new(pos)
     }
 
-    pub(crate) fn expect(&mut self, kind: SyntaxKind) {
+    pub(crate) fn expect(
+        &mut self,
+        kind: SyntaxKind,
+        context: impl Into<Option<SyntaxKind>>,
+    ) {
         if self.is_at(kind) {
             self.bump();
         } else {
-            self.error();
+            self.error(context);
         }
     }
 
-    pub(crate) fn error(&mut self) {
+    pub(crate) fn error(&mut self, context: impl Into<Option<SyntaxKind>>) {
         let current_token = self.source.peek_token();
 
         let (found, range) =
@@ -109,14 +113,15 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
 
         self.messages_tx
             .send(
-                ParserMessage::UnexpectedToken {
+                ParserMessage::UnexpectedKind {
+                    context: context.into(),
                     found,
                     expected,
                     range,
                 }
                 .into(),
             )
-            .unwrap();
+            .expect("Failed to send message");
 
         if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
             let m = self.start();

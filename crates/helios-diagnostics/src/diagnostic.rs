@@ -21,7 +21,6 @@ impl Default for Severity {
 pub enum MessageSegment {
     Text(String),
     CodeSnippet(String),
-    InlineCodeSnippet(String),
 }
 
 impl MessageSegment {
@@ -32,10 +31,6 @@ impl MessageSegment {
     pub fn code_snippet(string: impl Into<String>) -> Self {
         Self::CodeSnippet(string.into())
     }
-
-    pub fn inline_code_snippet(string: impl Into<String>) -> Self {
-        Self::InlineCodeSnippet(string.into())
-    }
 }
 
 impl Display for MessageSegment {
@@ -44,13 +39,11 @@ impl Display for MessageSegment {
             match self {
                 Self::Text(s) => write!(f, "{}", s),
                 Self::CodeSnippet(s) => write!(f, "{}", s.yellow()),
-                Self::InlineCodeSnippet(s) => write!(f, "{}", s.yellow()),
             }
         } else {
             match self {
                 Self::Text(s) => write!(f, "{}", s),
-                Self::CodeSnippet(s) => write!(f, "{}", s),
-                Self::InlineCodeSnippet(s) => write!(f, "`{}`", s),
+                Self::CodeSnippet(s) => write!(f, "`{}`", s),
             }
         }
     }
@@ -62,14 +55,14 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn string_with_inline_code_snippets(s: impl Into<String>) -> Self {
+    pub fn from_formatted_string(s: impl Into<String>) -> Self {
         let string: String = s.into();
         let mut segments = Vec::new();
         let mut in_code_snippet = string.starts_with("`");
 
         for s in string.split("`").filter(|s| !s.is_empty()) {
             if in_code_snippet {
-                segments.push(MessageSegment::inline_code_snippet(s))
+                segments.push(MessageSegment::code_snippet(s))
             } else {
                 segments.push(MessageSegment::text(s))
             }
@@ -99,13 +92,13 @@ impl Display for Message {
 
 impl From<String> for Message {
     fn from(string: String) -> Self {
-        Self::string_with_inline_code_snippets(string)
+        Self::from_formatted_string(string)
     }
 }
 
 impl From<&str> for Message {
     fn from(string: &str) -> Self {
-        Self::string_with_inline_code_snippets(string)
+        Self::from_formatted_string(string)
     }
 }
 
@@ -211,25 +204,34 @@ impl Diagnostic {
 
 impl Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let location = format!("-> src/Foo.he:0:0 ({:?})", self.range);
+        let make_header = |msg: String| {
+            let remaining_len = 80 - msg.len();
+            format!("{}{}", msg, "-".repeat(remaining_len))
+        };
+
         match self.severity {
-            Severity::Error => {
-                let left = format!("-- Error: {} ", self.title);
-                let remaining_len = 80 - left.len();
-
-                writeln!(
-                    f,
-                    "{}",
-                    format!("{}{}", left, "-".repeat(remaining_len)).red()
-                )?
+            Severity::Bug => {
+                let msg = format!("-- Bug: {} ", self.title);
+                writeln!(f, "{}", make_header(msg).magenta())?;
+                writeln!(f, "{}", location.magenta())?;
             }
-            _ => todo!(),
+            Severity::Error => {
+                let msg = format!("-- Error: {} ", self.title);
+                writeln!(f, "{}", make_header(msg).red())?;
+                writeln!(f, "{}", location.red())?;
+            }
+            Severity::Warning => {
+                let msg = format!("-- Warning: {} ", self.title);
+                writeln!(f, "{}", make_header(msg).yellow())?;
+                writeln!(f, "{}", location.yellow())?;
+            }
+            Severity::Note => {
+                let msg = format!("-- Note: {} ", self.title);
+                writeln!(f, "{}", make_header(msg).blue())?;
+                writeln!(f, "{}", location.blue())?;
+            }
         }
-
-        writeln!(
-            f,
-            "{}",
-            format!("-> src/Errors.he:##:## ({:?})", self.range).dimmed()
-        )?;
 
         if let Some(description) = &self.description {
             writeln!(f, "\n{}", description)?;
@@ -274,45 +276,45 @@ mod tests {
     #[test]
     fn test_message_string_with_line_code_snippets() {
         assert_eq!(
-            Message::string_with_inline_code_snippets(
+            Message::from_formatted_string(
                 "I expected a colon (`:`) or an equal symbol (`=`) here"
             ),
             Message {
                 segments: vec![
                     MessageSegment::text("I expected a colon ("),
-                    MessageSegment::inline_code_snippet(":"),
+                    MessageSegment::code_snippet(":"),
                     MessageSegment::text(") or an equal symbol ("),
-                    MessageSegment::inline_code_snippet("="),
+                    MessageSegment::code_snippet("="),
                     MessageSegment::text(") here"),
                 ]
             }
         );
 
         assert_eq!(
-            Message::string_with_inline_code_snippets(
+            Message::from_formatted_string(
                 "`external` is `not` a `valid` identifier `here`"
             ),
             Message {
                 segments: vec![
-                    MessageSegment::inline_code_snippet("external"),
+                    MessageSegment::code_snippet("external"),
                     MessageSegment::text(" is "),
-                    MessageSegment::inline_code_snippet("not"),
+                    MessageSegment::code_snippet("not"),
                     MessageSegment::text(" a "),
-                    MessageSegment::inline_code_snippet("valid"),
+                    MessageSegment::code_snippet("valid"),
                     MessageSegment::text(" identifier "),
-                    MessageSegment::inline_code_snippet("here"),
+                    MessageSegment::code_snippet("here"),
                 ]
             }
         );
 
         assert_eq!(
-            Message::string_with_inline_code_snippets(
+            Message::from_formatted_string(
                 "this string doesn't terminate `properly"
             ),
             Message {
                 segments: vec![
                     MessageSegment::text("this string doesn't terminate "),
-                    MessageSegment::inline_code_snippet("properly"),
+                    MessageSegment::code_snippet("properly"),
                 ]
             }
         );

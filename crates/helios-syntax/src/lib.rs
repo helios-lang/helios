@@ -1,8 +1,8 @@
-mod human;
 mod lang;
+mod repr;
 
-use human::{Article, HumanReadableRepr};
 pub use lang::Language;
+use repr::{Article, HumanReadableRepr};
 use std::fmt::{self, Display};
 
 pub type SyntaxNode = rowan::SyntaxNode<Language>;
@@ -220,12 +220,13 @@ impl SyntaxKind {
         }
     }
 
-    fn article(self) -> Article {
+    pub fn article(self) -> Article {
         match self {
             kind if kind.is_keyword() => Article::The,
             SyntaxKind::Sym_Ampersand
             | SyntaxKind::Sym_Asterisk
             | SyntaxKind::Sym_At
+            | SyntaxKind::Sym_Bang
             | SyntaxKind::Sym_EmDash
             | SyntaxKind::Sym_EnDash
             | SyntaxKind::Sym_Eq
@@ -239,7 +240,7 @@ impl SyntaxKind {
         }
     }
 
-    fn qualifier(self) -> Option<String> {
+    pub fn qualifier(self) -> Option<String> {
         let s = match self {
             SyntaxKind::Sym_LBrace => "opening curly",
             SyntaxKind::Sym_LBracket => "opening square",
@@ -253,7 +254,7 @@ impl SyntaxKind {
         Some(s.to_string())
     }
 
-    fn description(self) -> Option<String> {
+    pub fn description(self) -> Option<String> {
         let s = match self {
             SyntaxKind::Kwd_Alias => "`alias`",
             SyntaxKind::Kwd_And => "`and`",
@@ -288,8 +289,8 @@ impl SyntaxKind {
             SyntaxKind::Sym_Asterisk => "asterisk",
             SyntaxKind::Sym_At => "at",
             SyntaxKind::Sym_BackSlash => "backslash",
-            SyntaxKind::Sym_Bang => "bang",
-            SyntaxKind::Sym_BangEq => "bang equal",
+            SyntaxKind::Sym_Bang => "exclamation mark",
+            SyntaxKind::Sym_BangEq => "not equal to",
             SyntaxKind::Sym_Caret => "caret",
             SyntaxKind::Sym_Colon => "colon",
             SyntaxKind::Sym_Comma => "comma",
@@ -337,7 +338,7 @@ impl SyntaxKind {
         Some(s.to_string())
     }
 
-    fn kind(self) -> String {
+    pub fn kind(self) -> String {
         match self {
             kind if kind.is_keyword() => "keyword".to_string(),
             kind if kind.is_symbol() => "symbol".to_string(),
@@ -352,9 +353,8 @@ impl SyntaxKind {
         }
     }
 
-    fn code_repr(self) -> Option<String> {
+    pub fn code_repr(self) -> Option<String> {
         let s = match self {
-            // Symbols
             SyntaxKind::Sym_Ampersand => "&",
             SyntaxKind::Sym_Asterisk => "*",
             SyntaxKind::Sym_At => "@",
@@ -398,7 +398,7 @@ impl SyntaxKind {
         Some(s.to_string())
     }
 
-    fn example(self) -> Option<String> {
+    pub fn example(self) -> Option<String> {
         let s = match self {
             SyntaxKind::Lit_Character => "'a'",
             SyntaxKind::Lit_Float => "123.456",
@@ -614,10 +614,10 @@ mod tests {
         check(Sym_RBracket, "a closing square bracket symbol (`]`)");
         check(Sym_RParen, "a closing parenthesis symbol (`)`)");
 
-        check(Lit_Character, "a character literal (like `'a'`)");
-        check(Lit_Float, "a float literal (like `123.456`)");
-        check(Lit_Integer, "an integer literal (like `123`)");
-        check(Lit_String, "a string literal (like `\"hello, world!\"`)");
+        check(Lit_Character, "a character literal (such as `'a'`)");
+        check(Lit_Float, "a float literal (such as `123.456`)");
+        check(Lit_Integer, "an integer literal (such as `123`)");
+        check(Lit_String, "a string literal (such as `\"hello, world!\"`)");
 
         check(Exp_Binary, "a binary expression");
         check(Exp_Literal, "a literal expression");
@@ -632,7 +632,7 @@ mod tests {
         check(DocComment, "a documentation comment");
         check(Whitespace, "a whitespace");
 
-        check(Identifier, "an identifier (like `foo`)");
+        check(Identifier, "an identifier (such as `foo`)");
         check(ReservedIdentifier, "a reserved identifier");
         check(Error, "an error");
     }

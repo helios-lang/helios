@@ -13,8 +13,8 @@ fn global_binding(parser: &mut Parser) -> CompletedMarker {
     let m = parser.start();
     parser.bump();
 
-    parser.expect(SyntaxKind::Identifier);
-    parser.expect(SyntaxKind::Sym_Eq);
+    parser.expect(SyntaxKind::Identifier, SyntaxKind::Dec_GlobalBinding);
+    parser.expect(SyntaxKind::Sym_Eq, SyntaxKind::Dec_GlobalBinding);
 
     expr::expr(parser, 0);
 

@@ -78,8 +78,10 @@ pub(super) fn expr(parser: &mut Parser, min_bp: u8) -> Option<CompletedMarker> {
 }
 
 const LHS_KINDS: &[SyntaxKind] = &[
-    SyntaxKind::Lit_Integer,
+    SyntaxKind::Lit_Character,
     SyntaxKind::Lit_Float,
+    SyntaxKind::Lit_Integer,
+    SyntaxKind::Lit_String,
     SyntaxKind::Identifier,
     SyntaxKind::Sym_LParen,
 ];
@@ -99,7 +101,7 @@ fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
             _ => unreachable!("Got unexpected kind for LHS: {:?}", kind),
         }
     } else {
-        parser.error();
+        parser.error(None);
         return None;
     };
 
@@ -151,7 +153,7 @@ fn paren_expr(parser: &mut Parser) -> CompletedMarker {
     expr(parser, 0);
 
     // Consume the closing parenthesis if possible
-    parser.expect(SyntaxKind::Sym_RParen);
+    parser.expect(SyntaxKind::Sym_RParen, SyntaxKind::Exp_Paren);
 
     m.complete(parser, SyntaxKind::Exp_Paren)
 }

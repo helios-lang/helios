@@ -17,7 +17,13 @@ impl From<Message> for Diagnostic {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ParserMessage {
-    UnexpectedToken {
+    MissingKind {
+        context: Option<SyntaxKind>,
+        expected: SyntaxKind,
+        range: TextRange,
+    },
+    UnexpectedKind {
+        context: Option<SyntaxKind>,
         found: Option<SyntaxKind>,
         expected: Vec<SyntaxKind>,
         range: TextRange,
@@ -33,54 +39,73 @@ impl From<ParserMessage> for Message {
 impl From<ParserMessage> for Diagnostic {
     fn from(message: ParserMessage) -> Self {
         match message {
-            ParserMessage::UnexpectedToken {
+            ParserMessage::MissingKind {
+                context,
+                expected,
+                range,
+            } => {
+                let error = format!(
+                    "Missing {}{}",
+                    expected.description().map(|s| s + " ").unwrap_or_default(),
+                    expected.kind()
+                );
+                let message = format!("I expected {} here.", expected);
+                let description = format!(
+                    "I was partway through {} when I got stuck here:",
+                    match context {
+                        Some(kind) => format!("{}", kind),
+                        None => "somewhere".to_string(),
+                    }
+                );
+
+                Diagnostic::error(error)
+                    .range(range)
+                    .description(description)
+                    .message(message)
+            }
+            ParserMessage::UnexpectedKind {
+                context,
                 found,
                 expected,
                 range,
             } => {
-                let found = match found {
-                    Some(found) => {
-                        format!(
-                            "{}",
-                            found
-                                .human_readable_repr()
-                                .omitting()
-                                .article()
-                                .code_repr()
-                                .example()
-                        )
+                let error = format!(
+                    "Unexpected {}",
+                    match found {
+                        Some(found) => found.kind(),
+                        None => "end of file".to_string(),
                     }
-                    None => "end of file".to_string(),
-                };
+                );
 
-                let expected_string = {
+                let description = format!(
+                    "I was partway through {} when I got stuck here:",
+                    match context {
+                        Some(kind) => format!("{}", kind),
+                        None => "somewhere".to_string(),
+                    }
+                );
+
+                let message = {
                     if expected.len() == 1 {
-                        format!(
-                            "I expected {} here.",
-                            expected[0].human_readable_repr()
-                        )
+                        format!("I expected {} here", expected[0])
                     } else {
                         let mut expected_string = String::from(
-                            "I expected one of the follow here:\n",
+                            "I expected any one of the following:\n",
                         );
 
                         for kind in expected.iter() {
-                            expected_string.push_str(&format!(
-                                "\n    {}",
-                                kind.human_readable_repr()
-                            ));
+                            expected_string
+                                .push_str(&format!("\n    {}", kind));
                         }
 
                         expected_string
                     }
                 };
 
-                Diagnostic::error(format!("Unexpected {}", found))
+                Diagnostic::error(error)
                     .range(range)
-                    .description(
-                        "I was partway through something when I got stuck here:",
-                    )
-                    .message(expected_string)
+                    .description(description)
+                    .message(message)
             }
         }
     }
