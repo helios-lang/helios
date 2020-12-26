@@ -10,17 +10,19 @@ use self::marker::Marker;
 use self::source::Source;
 use crate::lexer::Token;
 use crate::message::{Message, ParserMessage};
+use crate::FileId;
 use flume::Sender;
+use helios_diagnostics::Location;
 use helios_syntax::SyntaxKind;
 
 const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
 
 /// A lazy, lossless, error-tolerant parser for the Helios programming language.
 pub struct Parser<'tokens, 'source> {
+    file_id: FileId,
     source: Source<'tokens, 'source>,
     events: Vec<Event>,
     expected_kinds: Vec<SyntaxKind>,
-    #[allow(dead_code)]
     messages_tx: Sender<Message>,
 }
 
@@ -28,10 +30,12 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     /// Constructs a new [`Parser`] with a [`Source`] and a channel that sends
     /// [`Diagnostic`]s.
     pub fn new(
+        file_id: FileId,
         source: Source<'tokens, 'source>,
         messages_tx: Sender<Message>,
     ) -> Self {
         Self {
+            file_id,
             source,
             events: Vec::new(),
             expected_kinds: Vec::new(),
@@ -52,7 +56,10 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     }
 }
 
-impl<'tokens, 'source> Parser<'tokens, 'source> {
+impl<'tokens, 'source> Parser<'tokens, 'source>
+where
+    FileId: Clone,
+{
     /// Determines if the next [`SyntaxKind`] is the given `kind`.
     pub(crate) fn is_at(&mut self, kind: SyntaxKind) -> bool {
         self.expected_kinds.push(kind);
@@ -114,10 +121,10 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
         self.messages_tx
             .send(
                 ParserMessage::UnexpectedKind {
+                    location: Location::new(self.file_id.clone(), range),
                     context: context.into(),
                     found,
                     expected,
-                    range,
                 }
                 .into(),
             )

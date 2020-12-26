@@ -2,6 +2,21 @@ use colored::*;
 use std::fmt::{self, Display};
 use std::ops::Range;
 
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Location<FileId> {
+    pub file_id: FileId,
+    pub range: Range<usize>,
+}
+
+impl<FileId> Location<FileId> {
+    pub fn new(file_id: FileId, range: impl Into<Range<usize>>) -> Self {
+        Self {
+            file_id,
+            range: range.into(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u8)]
 pub enum Severity {
@@ -107,31 +122,33 @@ pub type Hint = String;
 /// A diagnostic that provides information about a found issue in a Helios
 /// source file like errors or warnings.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Diagnostic {
-    /// The severity of the diagnostic.
+pub struct Diagnostic<FileId> {
+    pub location: Location<FileId>,
     pub severity: Severity,
     pub title: String,
     pub description: Option<String>,
     pub message: Message,
-    pub range: Range<usize>,
     pub hint: Option<Hint>,
 }
 
-impl Diagnostic {
+impl<FileId> Diagnostic<FileId>
+where
+    FileId: Default,
+{
     pub fn new(
+        location: Location<FileId>,
         severity: Severity,
         title: impl Into<String>,
         description: impl Into<Option<String>>,
         message: impl Into<Message>,
-        range: impl Into<Range<usize>>,
         hint: impl Into<Option<Hint>>,
     ) -> Self {
         Self {
+            location,
             severity,
             title: title.into(),
             description: description.into(),
             message: message.into(),
-            range: range.into(),
             hint: hint.into(),
         }
     }
@@ -188,8 +205,8 @@ impl Diagnostic {
         self
     }
 
-    pub fn range(mut self, range: impl Into<Range<usize>>) -> Self {
-        self.range = range.into();
+    pub fn location(mut self, location: Location<FileId>) -> Self {
+        self.location = location;
         self
     }
 
@@ -199,9 +216,9 @@ impl Diagnostic {
     }
 }
 
-impl Display for Diagnostic {
+impl<FileId> Display for Diagnostic<FileId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let location = format!("-> src/Foo.he:0:0 ({:?})", self.range);
+        let location = format!("-> src/Foo.he:0:0 ({:?})", self.location.range);
         let make_header = |msg: String| {
             let remaining_len = 80 - msg.len();
             format!("{}{}", msg, "-".repeat(remaining_len))

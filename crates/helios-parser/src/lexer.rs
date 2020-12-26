@@ -16,6 +16,7 @@
 
 use crate::cursor::Cursor;
 use crate::message::Message;
+use crate::FileId;
 use flume::Sender;
 use helios_syntax::{self, SyntaxKind};
 use std::ops::Range;
@@ -120,6 +121,8 @@ impl Default for LexerMode {
 ///
 /// [`parse`]: crate::parse
 pub struct Lexer<'source> {
+    #[allow(dead_code)]
+    file_id: FileId,
     cursor: Cursor<'source>,
     mode_stack: Vec<LexerMode>,
     #[allow(dead_code)]
@@ -131,8 +134,13 @@ impl<'source> Lexer<'source> {
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
     /// cursor position to the start.
-    pub fn new(source: &'source str, messages_tx: Sender<Message>) -> Self {
+    pub fn new(
+        file_id: FileId,
+        source: &'source str,
+        messages_tx: Sender<Message>,
+    ) -> Self {
         Self {
+            file_id,
             cursor: Cursor::new(source),
             mode_stack: vec![LexerMode::Normal],
             messages_tx,
@@ -401,7 +409,7 @@ mod tests {
 
     fn check(input: &str, kind: SyntaxKind) {
         let (diagnostics_tx, _) = flume::unbounded();
-        let mut lexer = Lexer::new(input, diagnostics_tx);
+        let mut lexer = Lexer::new(0, input, diagnostics_tx);
 
         let token = lexer.next().unwrap();
         assert_eq!(token.kind, kind);

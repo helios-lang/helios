@@ -103,8 +103,9 @@ fn source_position_at_offset(
 fn parse(db: &impl Input, file_id: FileId) -> (Parse, Vec<Message>) {
     let (messages_tx, messages_rx) = unbounded();
     let source = db.source_text(file_id);
+
     (
-        helios_parser::parse(&source, messages_tx),
+        helios_parser::parse(file_id, &source, messages_tx),
         messages_rx.iter().collect::<Vec<_>>(),
     )
 }

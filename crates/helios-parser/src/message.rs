@@ -1,6 +1,5 @@
-use std::ops::Range;
-
-use helios_diagnostics::Diagnostic;
+use crate::FileId;
+use helios_diagnostics::{Diagnostic, Location};
 use helios_syntax::SyntaxKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -8,7 +7,7 @@ pub enum Message {
     Parser(ParserMessage),
 }
 
-impl From<Message> for Diagnostic {
+impl From<Message> for Diagnostic<FileId> {
     fn from(message: Message) -> Self {
         match message {
             Message::Parser(message) => message.into(),
@@ -19,15 +18,15 @@ impl From<Message> for Diagnostic {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ParserMessage {
     MissingKind {
+        location: Location<FileId>,
         context: Option<SyntaxKind>,
         expected: SyntaxKind,
-        range: Range<usize>,
     },
     UnexpectedKind {
+        location: Location<FileId>,
         context: Option<SyntaxKind>,
         found: Option<SyntaxKind>,
         expected: Vec<SyntaxKind>,
-        range: Range<usize>,
     },
 }
 
@@ -37,13 +36,13 @@ impl From<ParserMessage> for Message {
     }
 }
 
-impl From<ParserMessage> for Diagnostic {
+impl From<ParserMessage> for Diagnostic<FileId> {
     fn from(message: ParserMessage) -> Self {
         match message {
             ParserMessage::MissingKind {
+                location,
                 context,
                 expected,
-                range,
             } => {
                 let error = format!(
                     "Missing {}{}",
@@ -55,20 +54,20 @@ impl From<ParserMessage> for Diagnostic {
                     "I was partway through {} when I got stuck here:",
                     match context {
                         Some(kind) => format!("{}", kind),
-                        None => "somewhere".to_string(),
+                        None => "something".to_string(),
                     }
                 );
 
                 Diagnostic::error(error)
-                    .range(range)
+                    .location(location)
                     .description(description)
                     .message(message)
             }
             ParserMessage::UnexpectedKind {
+                location,
                 context,
                 found,
                 expected,
-                range,
             } => {
                 let error = format!(
                     "Unexpected {}",
@@ -82,16 +81,16 @@ impl From<ParserMessage> for Diagnostic {
                     "I was partway through {} when I got stuck here:",
                     match context {
                         Some(kind) => format!("{}", kind),
-                        None => "somewhere".to_string(),
+                        None => "something".to_string(),
                     }
                 );
 
                 let message = {
                     if expected.len() == 1 {
-                        format!("I expected {} here", expected[0])
+                        format!("I expected {} here.", expected[0])
                     } else {
                         let mut expected_string = String::from(
-                            "I expected any one of the following:\n",
+                            "I expected any one of the following here:\n",
                         );
 
                         for kind in expected.iter() {
@@ -104,7 +103,7 @@ impl From<ParserMessage> for Diagnostic {
                 };
 
                 Diagnostic::error(error)
-                    .range(range)
+                    .location(location)
                     .description(description)
                     .message(message)
             }

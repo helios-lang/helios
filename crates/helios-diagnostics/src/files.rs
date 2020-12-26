@@ -13,12 +13,6 @@ fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Location {
-    line: usize,
-    column: usize,
-}
-
 pub trait Files<'a> {
     type FileId: Copy + PartialEq;
     type Name: 'a + Display;
@@ -61,6 +55,14 @@ where
             source,
             line_indexes,
         }
+    }
+
+    pub fn name(&self) -> &Name {
+        &self.name
+    }
+
+    pub fn source(&self) -> &Source {
+        &self.source
     }
 
     fn line_start(&self, line_index: usize) -> Result<usize> {

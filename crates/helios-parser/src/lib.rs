@@ -21,15 +21,22 @@ use helios_syntax::SyntaxNode;
 pub use message::Message;
 use rowan::GreenNode;
 
+pub type FileId = usize;
+
 /// The entry point of the parsing process.
 ///
 /// This function parses the given source text (a `&str`) and returns a
 /// [`Parse`], which holds a [`GreenNode`] tree describing the structure of a
 /// Helios program.
-pub fn parse(source: &str, messages_tx: Sender<Message>) -> Parse {
-    let tokens = Lexer::new(source, messages_tx.clone()).collect::<Vec<_>>();
+pub fn parse(
+    file_id: FileId,
+    source: &str,
+    messages_tx: Sender<Message>,
+) -> Parse {
+    let tokens =
+        Lexer::new(file_id, source, messages_tx.clone()).collect::<Vec<_>>();
     let source = Source::new(&tokens);
-    let parser = Parser::new(source, messages_tx.clone());
+    let parser = Parser::new(file_id, source, messages_tx.clone());
     let events = parser.parse();
     let sink = Sink::new(&tokens, events);
 
@@ -59,6 +66,6 @@ impl Parse {
 #[cfg(test)]
 fn check(input: &str, expected_tree: expect_test::Expect) {
     let (messages_tx, _) = flume::unbounded();
-    let parse = parse(input, messages_tx.clone());
+    let parse = parse(0, input, messages_tx.clone());
     expected_tree.assert_eq(&parse.debug_tree());
 }
