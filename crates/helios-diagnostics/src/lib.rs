@@ -1,4 +1,4 @@
 pub mod diagnostic;
-pub mod span;
+pub mod files;
 
 pub use diagnostic::*;

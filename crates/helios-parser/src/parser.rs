@@ -104,7 +104,7 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
 
         let (found, range) =
             if let Some(Token { kind, range, .. }) = current_token {
-                (Some(*kind), *range)
+                (Some(*kind), range.clone())
             } else {
                 (None, self.source.last_token_range().unwrap())
             };

@@ -18,7 +18,7 @@ use crate::cursor::Cursor;
 use crate::message::Message;
 use flume::Sender;
 use helios_syntax::{self, SyntaxKind};
-use text_size::{TextRange, TextSize};
+use std::ops::Range;
 use unicode_xid::UnicodeXID;
 
 /// Checks if the given character is a valid start of an identifier. A valid
@@ -74,12 +74,16 @@ fn is_whitespace(c: char) -> bool {
 pub struct Token<'text> {
     pub kind: SyntaxKind,
     pub text: &'text str,
-    pub range: TextRange,
+    pub range: Range<usize>,
 }
 
 impl<'text> Token<'text> {
     /// Constructs a new [`Token`] with the given kind, text and range.
-    pub fn new(kind: SyntaxKind, text: &'text str, range: TextRange) -> Self {
+    pub fn new(
+        kind: SyntaxKind,
+        text: &'text str,
+        range: Range<usize>,
+    ) -> Self {
         Self { kind, text, range }
     }
 }
@@ -164,15 +168,7 @@ impl<'source> Lexer<'source> {
         let end = self.current_pos();
         let text = self.cursor.slice();
 
-        let range = {
-            use std::convert::TryFrom;
-            let start = TextSize::try_from(start).unwrap();
-            let end = TextSize::try_from(end).unwrap();
-
-            TextRange::new(start, end)
-        };
-
-        Some(Token::new(kind, text, range))
+        Some(Token::new(kind, text, start..end))
     }
 }
 

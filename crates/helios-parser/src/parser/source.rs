@@ -1,7 +1,8 @@
+use std::ops::Range;
+
 use helios_syntax::SyntaxKind;
 
 use crate::lexer::Token;
-use text_size::TextRange;
 
 /// An abstraction over traversing a slice of [`Token`]s.
 ///
@@ -39,8 +40,8 @@ impl<'tokens, 'source> Source<'tokens, 'source> {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn last_token_range(&self) -> Option<TextRange> {
-        self.tokens.last().map(|Token { range, .. }| *range)
+    pub(crate) fn last_token_range(&self) -> Option<Range<usize>> {
+        self.tokens.last().map(|Token { range, .. }| range.clone())
     }
 
     pub fn peek_kind(&mut self) -> Option<SyntaxKind> {

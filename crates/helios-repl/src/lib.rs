@@ -85,7 +85,7 @@ fn start_main_loop() -> io::Result<()> {
         for message in messages_rx.try_iter() {
             let diagnostic = Diagnostic::from(message);
             if !(emitted_ranges.contains(&diagnostic.range)) {
-                emitted_ranges.push(diagnostic.range);
+                emitted_ranges.push(diagnostic.range.clone());
                 eprintln!("{}", diagnostic);
             }
         }

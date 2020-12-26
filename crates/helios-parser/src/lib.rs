@@ -9,7 +9,7 @@
 mod cursor;
 mod grammar;
 mod lexer;
-mod message;
+pub mod message;
 mod parser;
 
 use self::lexer::Lexer;
@@ -18,7 +18,7 @@ use self::parser::source::Source;
 use self::parser::Parser;
 use flume::Sender;
 use helios_syntax::SyntaxNode;
-use message::Message;
+pub use message::Message;
 use rowan::GreenNode;
 
 /// The entry point of the parsing process.
@@ -37,6 +37,7 @@ pub fn parse(source: &str, messages_tx: Sender<Message>) -> Parse {
 }
 
 /// The result of parsing a source text.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Parse {
     /// The root green node of the syntax tree.
     green_node: GreenNode,

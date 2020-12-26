@@ -1,6 +1,7 @@
+use std::ops::Range;
+
 use helios_diagnostics::Diagnostic;
 use helios_syntax::SyntaxKind;
-use text_size::TextRange;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
@@ -20,13 +21,13 @@ pub enum ParserMessage {
     MissingKind {
         context: Option<SyntaxKind>,
         expected: SyntaxKind,
-        range: TextRange,
+        range: Range<usize>,
     },
     UnexpectedKind {
         context: Option<SyntaxKind>,
         found: Option<SyntaxKind>,
         expected: Vec<SyntaxKind>,
-        range: TextRange,
+        range: Range<usize>,
     },
 }
 

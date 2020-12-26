@@ -385,7 +385,9 @@ dependencies = [
 name = "helios-query"
 version = "0.2.0"
 dependencies = [
- "helios-syntax",
+ "flume",
+ "helios-diagnostics",
+ "helios-parser",
  "salsa",
 ]
 

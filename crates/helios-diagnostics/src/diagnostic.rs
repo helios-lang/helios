@@ -1,6 +1,6 @@
 use colored::*;
 use std::fmt::{self, Display};
-use text_size::TextRange;
+use std::ops::Range;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u8)]
@@ -102,12 +102,9 @@ impl From<&str> for Message {
     }
 }
 
-/// A suggestion that may be added to a [`Diagnostic`].
-///
-/// For now, this type is merely an alias to [`String`].
 pub type Hint = String;
 
-/// A diagnostic that provides information about a found problem in a Helios
+/// A diagnostic that provides information about a found issue in a Helios
 /// source file like errors or warnings.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Diagnostic {
@@ -116,7 +113,7 @@ pub struct Diagnostic {
     pub title: String,
     pub description: Option<String>,
     pub message: Message,
-    pub range: TextRange,
+    pub range: Range<usize>,
     pub hint: Option<Hint>,
 }
 
@@ -126,7 +123,7 @@ impl Diagnostic {
         title: impl Into<String>,
         description: impl Into<Option<String>>,
         message: impl Into<Message>,
-        range: impl Into<TextRange>,
+        range: impl Into<Range<usize>>,
         hint: impl Into<Option<Hint>>,
     ) -> Self {
         Self {
@@ -191,7 +188,7 @@ impl Diagnostic {
         self
     }
 
-    pub fn range(mut self, range: impl Into<TextRange>) -> Self {
+    pub fn range(mut self, range: impl Into<Range<usize>>) -> Self {
         self.range = range.into();
         self
     }
