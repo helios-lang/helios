@@ -153,6 +153,8 @@ pub enum SyntaxKind {
 
     Identifier,
     ReservedIdentifier,
+
+    UnknownChar,
     Error,
     Root, // this should be last
 }
@@ -237,6 +239,7 @@ impl SyntaxKind {
             | SyntaxKind::Lit_Integer
             | SyntaxKind::Exp_Unnamed
             | SyntaxKind::Identifier
+            | SyntaxKind::UnknownChar
             | SyntaxKind::Error => Article::An,
             _ => Article::A,
         }
@@ -341,18 +344,21 @@ impl SyntaxKind {
     }
 
     pub fn kind(self) -> String {
-        match self {
-            kind if kind.is_keyword() => "keyword".to_string(),
-            kind if kind.is_symbol() => "symbol".to_string(),
-            kind if kind.is_literal() => "literal".to_string(),
-            kind if kind.is_expression() => "expression".to_string(),
-            kind if kind.is_declaration() => "declaration".to_string(),
-            kind if kind.is_comment() => "comment".to_string(),
-            kind if kind.is_identifier() => "identifier".to_string(),
-            SyntaxKind::Whitespace => "whitespace".to_string(),
-            SyntaxKind::Error => "error".to_string(),
+        let s = match self {
+            kind if kind.is_keyword() => "keyword",
+            kind if kind.is_symbol() => "symbol",
+            kind if kind.is_literal() => "literal",
+            kind if kind.is_expression() => "expression",
+            kind if kind.is_declaration() => "declaration",
+            kind if kind.is_comment() => "comment",
+            kind if kind.is_identifier() => "identifier",
+            SyntaxKind::Whitespace => "whitespace",
+            SyntaxKind::UnknownChar => "unknown character",
+            SyntaxKind::Error => "error",
             _ => unreachable!("Unreachable kind: {:?}", self),
-        }
+        };
+
+        s.to_string()
     }
 
     pub fn code_repr(self) -> Option<String> {

@@ -33,91 +33,139 @@ impl Default for Severity {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum MessageSegment {
+pub enum FormattedTextSegment {
+    LineBreak,
     Text(String),
-    CodeSnippet(String),
+    Code(String),
+    CodeBlock(String),
+    List(Vec<FormattedText>),
 }
 
-impl MessageSegment {
-    pub fn text(string: impl Into<String>) -> Self {
-        Self::Text(string.into())
+impl FormattedTextSegment {
+    pub fn text(text: impl Display) -> Self {
+        Self::Text(text.to_string())
     }
 
-    pub fn code_snippet(string: impl Into<String>) -> Self {
-        Self::CodeSnippet(string.into())
+    pub fn code(code: impl Display) -> Self {
+        Self::Code(code.to_string())
+    }
+
+    pub fn code_block(code: impl Display) -> Self {
+        Self::CodeBlock(code.to_string())
+    }
+
+    pub fn list(list: impl Into<Vec<FormattedText>>) -> Self {
+        Self::List(list.into())
     }
 }
 
-impl Display for MessageSegment {
+impl Display for FormattedTextSegment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if colored::control::SHOULD_COLORIZE.should_colorize() {
-            match self {
-                Self::Text(s) => write!(f, "{}", s),
-                Self::CodeSnippet(s) => write!(f, "{}", s.yellow()),
+        let colorize = colored::control::SHOULD_COLORIZE.should_colorize();
+
+        match self {
+            Self::LineBreak => write!(f, "\n\n"),
+            Self::Text(text) => write!(f, "{}", text),
+            Self::Code(code) => {
+                if colorize {
+                    write!(f, "{}", code.yellow())
+                } else {
+                    write!(f, "{}", code)
+                }
             }
-        } else {
-            match self {
-                Self::Text(s) => write!(f, "{}", s),
-                Self::CodeSnippet(s) => write!(f, "`{}`", s),
+            Self::CodeBlock(block) => {
+                if colorize {
+                    write!(f, "    {}", block.yellow())
+                } else {
+                    write!(f, "    {}", block)
+                }
+            }
+            Self::List(lines) => {
+                for line in lines {
+                    write!(f, "    {}\n", line)?;
+                }
+
+                Ok(())
             }
         }
+    }
+}
+
+impl From<String> for FormattedTextSegment {
+    fn from(string: String) -> Self {
+        FormattedTextSegment::Text(string)
+    }
+}
+
+impl From<&str> for FormattedTextSegment {
+    fn from(string: &str) -> Self {
+        FormattedTextSegment::Text(string.to_string())
     }
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Message {
-    segments: Vec<MessageSegment>,
+pub struct FormattedText {
+    segments: Vec<FormattedTextSegment>,
 }
 
-impl Message {
-    pub fn from_formatted_string(s: impl Into<String>) -> Self {
-        let string: String = s.into();
-        let mut segments = Vec::new();
-        let mut in_code_snippet = string.starts_with("`");
-
-        for s in string.split("`").filter(|s| !s.is_empty()) {
-            if in_code_snippet {
-                segments.push(MessageSegment::code_snippet(s))
-            } else {
-                segments.push(MessageSegment::text(s))
-            }
-
-            in_code_snippet = !in_code_snippet;
+impl FormattedText {
+    pub fn new(segments: impl Into<Vec<FormattedTextSegment>>) -> Self {
+        Self {
+            segments: segments.into(),
         }
+    }
 
-        Self { segments }
+    pub fn text(mut self, text: impl Display) -> Self {
+        self.segments.push(FormattedTextSegment::text(text));
+        self
+    }
+
+    pub fn code(mut self, code: impl Display) -> Self {
+        self.segments.push(FormattedTextSegment::code(code));
+        self
+    }
+
+    pub fn code_block(mut self, code: impl Display) -> Self {
+        self.segments.push(FormattedTextSegment::LineBreak);
+        self.segments.push(FormattedTextSegment::code_block(code));
+        self.segments.push(FormattedTextSegment::LineBreak);
+        self
+    }
+
+    pub fn list(mut self, list: impl Into<Vec<FormattedText>>) -> Self {
+        self.segments.push(FormattedTextSegment::LineBreak);
+        self.segments.push(FormattedTextSegment::list(list));
+        self.segments.push(FormattedTextSegment::LineBreak);
+        self
+    }
+
+    pub fn line_break(mut self) -> Self {
+        self.segments.push(FormattedTextSegment::LineBreak);
+        self
     }
 }
 
-impl Display for Message {
+impl From<String> for FormattedText {
+    fn from(s: String) -> Self {
+        Self::new([s.into()])
+    }
+}
+
+impl From<&str> for FormattedText {
+    fn from(s: &str) -> Self {
+        Self::new([s.into()])
+    }
+}
+
+impl Display for FormattedText {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.segments
-                .iter()
-                .map(|s| format!("{}", s))
-                .collect::<Vec<_>>()
-                .join("")
-        )?;
+        for segment in &self.segments {
+            write!(f, "{}", segment)?;
+        }
 
         Ok(())
     }
 }
-
-impl From<String> for Message {
-    fn from(string: String) -> Self {
-        Self::from_formatted_string(string)
-    }
-}
-
-impl From<&str> for Message {
-    fn from(string: &str) -> Self {
-        Self::from_formatted_string(string)
-    }
-}
-
-pub type Hint = Message;
 
 /// A diagnostic that provides information about a found issue in a Helios
 /// source file like errors or warnings.
@@ -126,9 +174,9 @@ pub struct Diagnostic<FileId> {
     pub location: Location<FileId>,
     pub severity: Severity,
     pub title: String,
-    pub description: Option<String>,
-    pub message: Message,
-    pub hint: Option<Hint>,
+    pub description: Option<FormattedText>,
+    pub message: FormattedText,
+    pub hint: Option<FormattedText>,
 }
 
 impl<FileId> Diagnostic<FileId>
@@ -139,9 +187,9 @@ where
         location: Location<FileId>,
         severity: Severity,
         title: impl Into<String>,
-        description: impl Into<Option<String>>,
-        message: impl Into<Message>,
-        hint: impl Into<Option<Hint>>,
+        description: impl Into<Option<FormattedText>>,
+        message: impl Into<FormattedText>,
+        hint: impl Into<Option<FormattedText>>,
     ) -> Self {
         Self {
             location,
@@ -195,12 +243,15 @@ where
         self
     }
 
-    pub fn description(mut self, description: impl Into<String>) -> Self {
+    pub fn description(
+        mut self,
+        description: impl Into<FormattedText>,
+    ) -> Self {
         self.description = Some(description.into());
         self
     }
 
-    pub fn message(mut self, message: impl Into<Message>) -> Self {
+    pub fn message(mut self, message: impl Into<FormattedText>) -> Self {
         self.message = message.into();
         self
     }
@@ -210,7 +261,7 @@ where
         self
     }
 
-    pub fn hint(mut self, hint: impl Into<Hint>) -> Self {
+    pub fn hint(mut self, hint: impl Into<FormattedText>) -> Self {
         self.hint = Some(hint.into());
         self
     }
@@ -240,52 +291,5 @@ mod tests {
         }
 
         assert!(!is_ok);
-    }
-
-    #[test]
-    fn test_message_string_with_line_code_snippets() {
-        assert_eq!(
-            Message::from_formatted_string(
-                "I expected a colon (`:`) or an equal symbol (`=`) here"
-            ),
-            Message {
-                segments: vec![
-                    MessageSegment::text("I expected a colon ("),
-                    MessageSegment::code_snippet(":"),
-                    MessageSegment::text(") or an equal symbol ("),
-                    MessageSegment::code_snippet("="),
-                    MessageSegment::text(") here"),
-                ]
-            }
-        );
-
-        assert_eq!(
-            Message::from_formatted_string(
-                "`external` is `not` a `valid` identifier `here`"
-            ),
-            Message {
-                segments: vec![
-                    MessageSegment::code_snippet("external"),
-                    MessageSegment::text(" is "),
-                    MessageSegment::code_snippet("not"),
-                    MessageSegment::text(" a "),
-                    MessageSegment::code_snippet("valid"),
-                    MessageSegment::text(" identifier "),
-                    MessageSegment::code_snippet("here"),
-                ]
-            }
-        );
-
-        assert_eq!(
-            Message::from_formatted_string(
-                "this string doesn't terminate `properly"
-            ),
-            Message {
-                segments: vec![
-                    MessageSegment::text("this string doesn't terminate "),
-                    MessageSegment::code_snippet("properly"),
-                ]
-            }
-        );
     }
 }

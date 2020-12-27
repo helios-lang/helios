@@ -1,16 +1,62 @@
 use crate::FileId;
-use helios_diagnostics::{Diagnostic, Location};
+use helios_diagnostics::{Diagnostic, FormattedText, Location};
 use helios_syntax::SyntaxKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
+    Lexer(LexerMessage),
     Parser(ParserMessage),
 }
 
 impl From<Message> for Diagnostic<FileId> {
     fn from(message: Message) -> Self {
         match message {
+            Message::Lexer(message) => message.into(),
             Message::Parser(message) => message.into(),
+        }
+    }
+}
+
+impl From<LexerMessage> for Message {
+    fn from(message: LexerMessage) -> Self {
+        Message::Lexer(message)
+    }
+}
+
+impl From<ParserMessage> for Message {
+    fn from(message: ParserMessage) -> Self {
+        Message::Parser(message)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum LexerMessage {
+    UnknownCharacter {
+        location: Location<FileId>,
+        character: char,
+    },
+}
+
+impl From<LexerMessage> for Diagnostic<FileId> {
+    fn from(message: LexerMessage) -> Self {
+        match message {
+            LexerMessage::UnknownCharacter {
+                location,
+                character,
+            } => {
+                let description = FormattedText::default()
+                    .text("I encountered a token I don't know how to handle:");
+
+                let message = FormattedText::default()
+                    .text("The character ")
+                    .code(format!("{:?}", character))
+                    .text(" is not a valid token. Did you mean to write it?");
+
+                Diagnostic::error("Unknown character")
+                    .location(location)
+                    .description(description)
+                    .message(message)
+            }
         }
     }
 }
@@ -25,15 +71,9 @@ pub enum ParserMessage {
     UnexpectedKind {
         location: Location<FileId>,
         context: Option<SyntaxKind>,
-        found: Option<SyntaxKind>,
+        given: Option<SyntaxKind>,
         expected: Vec<SyntaxKind>,
     },
-}
-
-impl From<ParserMessage> for Message {
-    fn from(message: ParserMessage) -> Self {
-        Message::Parser(message)
-    }
 }
 
 impl From<ParserMessage> for Diagnostic<FileId> {
@@ -49,14 +89,18 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     expected.description().map(|s| s + " ").unwrap_or_default(),
                     expected.kind()
                 );
-                let message = format!("I expected {} here.", expected);
-                let description = format!(
-                    "I was partway through {} when I got stuck here:",
-                    match context {
-                        Some(kind) => format!("{}", kind),
-                        None => "something".to_string(),
-                    }
-                );
+
+                let description = FormattedText::default()
+                    .text("I was partway through ")
+                    .code(context.map_or("something".to_string(), |context| {
+                        context.to_string()
+                    }))
+                    .text(" when I got stuck here:");
+
+                let message = FormattedText::default()
+                    .text("I expected ")
+                    .code(expected)
+                    .text(" here.");
 
                 Diagnostic::error(error)
                     .location(location)
@@ -66,56 +110,136 @@ impl From<ParserMessage> for Diagnostic<FileId> {
             ParserMessage::UnexpectedKind {
                 location,
                 context,
-                found,
+                given,
                 expected,
             } => {
+                // let title = format!(
+                //     "Unexpected {}",
+                //     given.map_or("end of file".to_string(), |given| {
+                //         given.kind()
+                //     })
+                // );
+
+                // let description = format!(
+                //     "I was partway through {} when I got stuck here:",
+                //     match context {
+                //         Some(kind) => format!("{}", kind),
+                //         None => "something".to_string(),
+                //     }
+                // );
+
+                // let (message, hint) = {
+                //     if expected.len() == 1 {
+                //         let expected = expected[0];
+
+                //         let message = FormattedText::default()
+                //             .text("I expected ")
+                //             .code(expected)
+                //             .text(" here.");
+
+                //         use SyntaxKind::Identifier;
+                //         let hint = match (expected, given) {
+                //             (Identifier, Some(kind)) if kind.is_keyword() => {
+                //                 Some(format!(
+                //                     "{} cannot be used as an identifier \
+                //                      because it is a reserved word. Try \
+                //                      using a different name instead.",
+                //                     kind.description().expect(
+                //                         "keywords should have descriptions"
+                //                     )
+                //                 ))
+                //             }
+                //             _ => None,
+                //         };
+
+                //         (message, hint)
+                //     } else {
+                //         let mut segments = Vec::new();
+
+                //         segments.push(FormattedTextSegment::text(
+                //             "I expected one of the following here:\n",
+                //         ));
+
+                //         for kind in expected {
+                //             segments.push(FormattedTextSegment::text(format!(
+                //                 "\n    {}",
+                //                 kind
+                //             )))
+                //         }
+
+                //         (FormattedText::new(segments), None)
+                //     }
+                // };
+
+                // if let Some(hint) = hint {
+                //     Diagnostic::error(title)
+                //         .location(location)
+                //         .description(description)
+                //         .message(message)
+                //         .hint(hint)
+                // } else {
+                //     Diagnostic::error(title)
+                //         .location(location)
+                //         .description(description)
+                //         .message(message)
+                // }
+
                 let title = format!(
                     "Unexpected {}",
-                    match found {
-                        Some(found) => found.kind(),
-                        None => "end of file".to_string(),
-                    }
+                    given.map_or("end of file".to_string(), |given| {
+                        given.kind()
+                    })
                 );
 
-                let description = format!(
-                    "I was partway through {} when I got stuck here:",
-                    match context {
-                        Some(kind) => format!("{}", kind),
-                        None => "something".to_string(),
-                    }
-                );
+                let description = FormattedText::default()
+                    .text("I was partway through ")
+                    .text(context.map_or("something".to_string(), |context| {
+                        context.to_string()
+                    }))
+                    .text(" when I got stuck here:");
 
                 let (message, hint) = {
                     if expected.len() == 1 {
                         let expected = expected[0];
 
-                        use SyntaxKind::Identifier;
-                        let hint = match (expected, found) {
-                            (Identifier, Some(kind)) if kind.is_keyword() => {
+                        let message = FormattedText::default()
+                            .text("I expected ")
+                            .code(expected)
+                            .text(" here.");
+
+                        let hint = match (expected, given) {
+                            (SyntaxKind::Identifier, Some(kind))
+                                if kind.is_keyword() =>
+                            {
+                                let description = kind.description().expect(
+                                    "keywords should have descriptions",
+                                );
+
                                 Some(format!(
                                     "{} cannot be used as an identifier \
                                      because it is a reserved word. Try \
                                      using a different name instead.",
-                                    kind.description().expect(
-                                        "keywords should have descriptions"
-                                    )
+                                    description
                                 ))
                             }
                             _ => None,
                         };
 
-                        (format!("I expected {} here.", expected), hint)
+                        (message, hint)
                     } else {
-                        let mut expected_string = String::from(
-                            "I expected one of the following here:\n",
-                        );
+                        let message = FormattedText::default()
+                            .text("I expected one of the following here:")
+                            .list(
+                                expected
+                                    .iter()
+                                    .map(|kind| {
+                                        FormattedText::default()
+                                            .text(kind.to_string())
+                                    })
+                                    .collect::<Vec<_>>(),
+                            );
 
-                        for kind in expected.iter() {
-                            expected_string
-                                .push_str(&format!("\n    {}", kind));
-                        }
-
-                        (expected_string, None)
+                        (message, None)
                     }
                 };
 

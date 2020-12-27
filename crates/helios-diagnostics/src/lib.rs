@@ -115,7 +115,7 @@ pub fn emit<'files, F: Files<'files>>(
     let underline_str = underline_str.repeat(error_range.len()).color(color);
     writeln!(f, "{}{}", offset, underline_str)?;
 
-    writeln!(f, "{}\n", wrap!(diagnostic.message))?;
+    writeln!(f, "{}\n", wrap!(diagnostic.message).trim_end())?;
 
     if let Some(hint) = &diagnostic.hint {
         writeln!(f, "{}\n", wrap!("{}: {}", "Hint".underline(), hint))?;

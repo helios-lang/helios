@@ -109,7 +109,7 @@ where
     pub(crate) fn error(&mut self, context: impl Into<Option<SyntaxKind>>) {
         let current_token = self.source.peek_token();
 
-        let (found, range) =
+        let (given, range) =
             if let Some(Token { kind, range, .. }) = current_token {
                 (Some(*kind), range.clone())
             } else {
@@ -123,7 +123,7 @@ where
                 ParserMessage::UnexpectedKind {
                     location: Location::new(self.file_id.clone(), range),
                     context: context.into(),
-                    found,
+                    given,
                     expected,
                 }
                 .into(),

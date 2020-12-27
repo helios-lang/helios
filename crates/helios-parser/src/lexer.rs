@@ -14,10 +14,11 @@
 //!
 // ! [`parse`]: crate::parse
 
-use crate::cursor::Cursor;
 use crate::message::Message;
 use crate::FileId;
+use crate::{cursor::Cursor, message::LexerMessage};
 use flume::Sender;
+use helios_diagnostics::Location;
 use helios_syntax::{self, SyntaxKind};
 use std::ops::Range;
 use unicode_xid::UnicodeXID;
@@ -170,13 +171,27 @@ impl<'source> Lexer<'source> {
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
             c if is_digit(c) => self.lex_number(c),
-            c => todo!("Lexer::tokenize_normal({:?})", c),
+            c => self.error(c, start),
         };
 
         let end = self.current_pos();
         let text = self.cursor.slice();
 
         Some(Token::new(kind, text, start..end))
+    }
+
+    fn error(&self, character: char, start: usize) -> SyntaxKind {
+        self.messages_tx
+            .send(
+                LexerMessage::UnknownCharacter {
+                    location: Location::new(self.file_id, start..(start + 1)),
+                    character,
+                }
+                .into(),
+            )
+            .expect("Failed to send");
+
+        SyntaxKind::UnknownChar
     }
 }
 
