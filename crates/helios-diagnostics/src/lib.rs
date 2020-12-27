@@ -56,7 +56,7 @@ pub fn emit<'files, F: Files<'files>>(
 
     let (color, header, underline_str) = {
         let make_header = |msg: String| {
-            let remaining_len = 80 - msg.len();
+            let remaining_len = textwrap::termwidth() - msg.len();
             format!("{}{}", msg, "-".repeat(remaining_len))
         };
 
@@ -84,12 +84,27 @@ pub fn emit<'files, F: Files<'files>>(
         }
     };
 
+    macro_rules! wrap {
+        ($formatting:literal, $( $args:expr ),* $(,)?) => {
+            textwrap::fill(
+                &format!($formatting, $( $args ),*),
+                textwrap::Options::with_termwidth(),
+            )
+        };
+        ($item:expr) => {
+            textwrap::fill(
+                &format!("{}", $item),
+                textwrap::Options::with_termwidth(),
+            )
+        };
+    };
+
     let location_str = format!("-> src/Foo.he:{}:{}", line_number, col_number);
     writeln!(f, "{}", header.color(color))?;
     writeln!(f, "{}\n", location_str.color(color))?;
 
     if let Some(description) = &diagnostic.description {
-        writeln!(f, "{}\n", description)?;
+        writeln!(f, "{}\n", wrap!(description))?;
     }
 
     let gutter = format!("{:>4} | ", line_number);
@@ -100,10 +115,10 @@ pub fn emit<'files, F: Files<'files>>(
     let underline_str = underline_str.repeat(error_range.len()).color(color);
     writeln!(f, "{}{}", offset, underline_str)?;
 
-    writeln!(f, "{}\n", diagnostic.message)?;
+    writeln!(f, "{}\n", wrap!(diagnostic.message))?;
 
     if let Some(hint) = &diagnostic.hint {
-        writeln!(f, "{}: {}\n", "Hint".underline(), hint)?;
+        writeln!(f, "{}\n", wrap!("{}: {}", "Hint".underline(), hint))?;
     }
 
     Ok(())

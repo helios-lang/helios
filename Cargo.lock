@@ -354,6 +354,7 @@ version = "0.1.0"
 dependencies = [
  "colored",
  "text-size",
+ "textwrap",
 ]
 
 [[package]]
@@ -393,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "helios-repl"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "colored",
  "flume",
@@ -898,6 +899,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae524f056d7d770e174287294f562e95044c68e88dec909a00d2094805db9d75"
 
 [[package]]
+name = "smawk"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1bc737c97d093feb72e67f4926d9b22d717ce8580cd25f0ce86d74e859c466d"
+
+[[package]]
 name = "smol_str"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -982,10 +989,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "terminal_size"
+version = "0.1.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bd2d183bd3fac5f5fe38ddbeb4dc9aec4a39a9d7d59e7491d900302da01cbe1"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "text-size"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f03e7efdedc3bc78cb2337f1e2785c39e45f5ef762d9e4ebb137fff7380a6d8a"
+
+[[package]]
+name = "textwrap"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7aca9e798437265144ddacce09343df0b3413a0aef54b1e212e640e472118b80"
+dependencies = [
+ "smawk",
+ "terminal_size",
+ "unicode-width",
+]
 
 [[package]]
 name = "thin-dst"
@@ -1115,6 +1143,12 @@ name = "unicode-segmentation"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb0d2e7be6ae3a5fa87eed5fb451aff96f2573d2694942e40543ae0bbe19c796"
+
+[[package]]
+name = "unicode-width"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
 
 [[package]]
 name = "unicode-xid"

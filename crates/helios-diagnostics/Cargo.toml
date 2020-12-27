@@ -10,3 +10,4 @@ edition = "2018"
 [dependencies]
 colored = "2.0.0"
 text-size = "1.0.0"
+textwrap = { version = "0.13.1", features = ["terminal_size"] }

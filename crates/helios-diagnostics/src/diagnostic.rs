@@ -117,7 +117,7 @@ impl From<&str> for Message {
     }
 }
 
-pub type Hint = String;
+pub type Hint = Message;
 
 /// A diagnostic that provides information about a found issue in a Helios
 /// source file like errors or warnings.

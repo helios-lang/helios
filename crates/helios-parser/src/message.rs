@@ -69,7 +69,7 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                 found,
                 expected,
             } => {
-                let error = format!(
+                let title = format!(
                     "Unexpected {}",
                     match found {
                         Some(found) => found.kind(),
@@ -85,12 +85,29 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     }
                 );
 
-                let message = {
+                let (message, hint) = {
                     if expected.len() == 1 {
-                        format!("I expected {} here.", expected[0])
+                        let expected = expected[0];
+
+                        use SyntaxKind::Identifier;
+                        let hint = match (expected, found) {
+                            (Identifier, Some(kind)) if kind.is_keyword() => {
+                                Some(format!(
+                                    "{} cannot be used as an identifier \
+                                     because it is a reserved word. Try \
+                                     using a different name instead.",
+                                    kind.description().expect(
+                                        "keywords should have descriptions"
+                                    )
+                                ))
+                            }
+                            _ => None,
+                        };
+
+                        (format!("I expected {} here.", expected), hint)
                     } else {
                         let mut expected_string = String::from(
-                            "I expected any one of the following here:\n",
+                            "I expected one of the following here:\n",
                         );
 
                         for kind in expected.iter() {
@@ -98,14 +115,22 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                                 .push_str(&format!("\n    {}", kind));
                         }
 
-                        expected_string
+                        (expected_string, None)
                     }
                 };
 
-                Diagnostic::error(error)
-                    .location(location)
-                    .description(description)
-                    .message(message)
+                if let Some(hint) = hint {
+                    Diagnostic::error(title)
+                        .location(location)
+                        .description(description)
+                        .message(message)
+                        .hint(hint)
+                } else {
+                    Diagnostic::error(title)
+                        .location(location)
+                        .description(description)
+                        .message(message)
+                }
             }
         }
     }

@@ -292,7 +292,7 @@ impl SyntaxKind {
             SyntaxKind::Sym_At => "at",
             SyntaxKind::Sym_BackSlash => "backslash",
             SyntaxKind::Sym_Bang => "exclamation mark",
-            SyntaxKind::Sym_BangEq => "not equal to",
+            SyntaxKind::Sym_BangEq => "not equal",
             SyntaxKind::Sym_Caret => "caret",
             SyntaxKind::Sym_Colon => "colon",
             SyntaxKind::Sym_Comma => "comma",
@@ -312,9 +312,9 @@ impl SyntaxKind {
             SyntaxKind::Sym_Sterling => "sterling",
             SyntaxKind::Sym_Tilde => "tilde",
             SyntaxKind::Sym_Lt => "less than",
-            SyntaxKind::Sym_LtEq => "less than equal to",
+            SyntaxKind::Sym_LtEq => "less than equal",
             SyntaxKind::Sym_Gt => "greater than",
-            SyntaxKind::Sym_GtEq => "greater than equal to",
+            SyntaxKind::Sym_GtEq => "greater than equal",
             SyntaxKind::Sym_LThinArrow => "leftwards thin arrow",
             SyntaxKind::Sym_RThinArrow => "rightwards thin arrow",
             SyntaxKind::Sym_ThickArrow => "thick arrow",
@@ -607,7 +607,7 @@ mod tests {
         check(Sym_Ampersand, "an ampersand symbol (`&`)");
         check(Sym_ForwardSlash, "a forward slash symbol (`/`)");
         check(Sym_Lt, "a less than symbol (`<`)");
-        check(Sym_LtEq, "a less than equal to symbol (`<=`)");
+        check(Sym_LtEq, "a less than equal symbol (`<=`)");
 
         check(Sym_LBrace, "an opening curly brace symbol (`{`)");
         check(Sym_LBracket, "an opening square bracket symbol (`[`)");
@@ -627,6 +627,7 @@ mod tests {
         check(Exp_UnaryPrefix, "a unary prefixed expression");
         check(Exp_UnaryPostfix, "a unary postfixed expression");
         check(Exp_VariableRef, "a variable reference expression");
+        check(Exp_Unnamed, "an expression");
 
         check(Dec_GlobalBinding, "a global binding declaration");
 
