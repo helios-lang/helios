@@ -6,6 +6,19 @@ fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
+fn column_index(
+    source: &str,
+    line_range: Range<usize>,
+    byte_index: usize,
+) -> usize {
+    use std::cmp::min;
+    let end_index = min(byte_index, min(line_range.end, source.len()));
+
+    (line_range.start..end_index)
+        .filter(|index| source.is_char_boundary(index + 1))
+        .count()
+}
+
 pub trait Files<'a> {
     type FileId: Copy + PartialEq;
     type Name: 'a + Display;
@@ -18,7 +31,7 @@ pub trait Files<'a> {
     fn line_index(
         &'a self,
         id: Self::FileId,
-        byte_offset: usize,
+        byte_index: usize,
     ) -> Result<usize>;
 
     fn line_range(
@@ -26,6 +39,30 @@ pub trait Files<'a> {
         id: Self::FileId,
         line_index: usize,
     ) -> Result<Range<usize>>;
+
+    /// User-facing line number.
+    fn line_number(
+        &'a self,
+        _: Self::FileId,
+        line_index: usize,
+    ) -> Result<usize> {
+        Ok(line_index + 1)
+    }
+
+    /// User-facing column number.
+    fn column_number(
+        &'a self,
+        id: Self::FileId,
+        line_index: usize,
+        byte_index: usize,
+    ) -> Result<usize> {
+        let source = self.source(id)?;
+        let line_range = self.line_range(id, line_index)?;
+        let column_index =
+            column_index(source.as_ref(), line_range, byte_index);
+
+        Ok(column_index + 1)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -93,11 +130,11 @@ where
     fn line_index(
         &'a self,
         _: Self::FileId,
-        byte_offset: usize,
+        byte_index: usize,
     ) -> Result<usize> {
         Ok(self
             .line_indexes
-            .binary_search(&byte_offset)
+            .binary_search(&byte_index)
             .unwrap_or_else(|expected| expected.checked_sub(1).unwrap_or(0)))
     }
 
@@ -157,9 +194,9 @@ where
     fn line_index(
         &'a self,
         id: Self::FileId,
-        byte_offset: usize,
+        byte_index: usize,
     ) -> Result<usize> {
-        self.get(id)?.line_index((), byte_offset)
+        self.get(id)?.line_index((), byte_index)
     }
 
     fn line_range(

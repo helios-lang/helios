@@ -143,6 +143,7 @@ pub enum SyntaxKind {
     Exp_UnaryPrefix,
     Exp_UnaryPostfix,
     Exp_VariableRef,
+    Exp_Unnamed,
 
     Dec_GlobalBinding,
 
@@ -191,7 +192,7 @@ impl SyntaxKind {
 
     #[inline]
     pub fn is_expression(self) -> bool {
-        self >= SyntaxKind::Exp_Binary && self <= SyntaxKind::Exp_VariableRef
+        self >= SyntaxKind::Exp_Binary && self <= SyntaxKind::Exp_Unnamed
     }
 
     #[inline]
@@ -234,6 +235,7 @@ impl SyntaxKind {
             | SyntaxKind::Sym_LBracket
             | SyntaxKind::Sym_LParen
             | SyntaxKind::Lit_Integer
+            | SyntaxKind::Exp_Unnamed
             | SyntaxKind::Identifier
             | SyntaxKind::Error => Article::An,
             _ => Article::A,
@@ -298,7 +300,7 @@ impl SyntaxKind {
             SyntaxKind::Sym_Dot => "dot",
             SyntaxKind::Sym_EmDash => "em-dash",
             SyntaxKind::Sym_EnDash => "en-dash",
-            SyntaxKind::Sym_Eq => "equal",
+            SyntaxKind::Sym_Eq => "equals",
             SyntaxKind::Sym_ForwardSlash => "forward slash",
             SyntaxKind::Sym_Minus => "minus",
             SyntaxKind::Sym_Percent => "percent",

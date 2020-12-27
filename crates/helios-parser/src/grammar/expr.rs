@@ -101,7 +101,7 @@ fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
             _ => unreachable!("Got unexpected kind for LHS: {:?}", kind),
         }
     } else {
-        parser.error(None);
+        parser.error(SyntaxKind::Exp_Unnamed);
         return None;
     };
 
