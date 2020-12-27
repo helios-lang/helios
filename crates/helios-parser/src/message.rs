@@ -91,17 +91,15 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     expected.kind()
                 );
 
-                let description = FormattedText::default()
-                    .text("I was partway through ")
-                    .code(context.map_or("something".to_string(), |context| {
+                let description = FormattedText::default().text(format!(
+                    "I was partway through {} when I got stuck here:",
+                    context.map_or("something".to_string(), |context| {
                         context.to_string()
-                    }))
-                    .text(" when I got stuck here:");
+                    })
+                ));
 
                 let message = FormattedText::default()
-                    .text("I expected ")
-                    .code(expected)
-                    .text(" here.");
+                    .text(format!("I expected {} here.", expected));
 
                 Diagnostic::error(error)
                     .location(location)
@@ -114,77 +112,6 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                 given,
                 expected,
             } => {
-                // let title = format!(
-                //     "Unexpected {}",
-                //     given.map_or("end of file".to_string(), |given| {
-                //         given.kind()
-                //     })
-                // );
-
-                // let description = format!(
-                //     "I was partway through {} when I got stuck here:",
-                //     match context {
-                //         Some(kind) => format!("{}", kind),
-                //         None => "something".to_string(),
-                //     }
-                // );
-
-                // let (message, hint) = {
-                //     if expected.len() == 1 {
-                //         let expected = expected[0];
-
-                //         let message = FormattedText::default()
-                //             .text("I expected ")
-                //             .code(expected)
-                //             .text(" here.");
-
-                //         use SyntaxKind::Identifier;
-                //         let hint = match (expected, given) {
-                //             (Identifier, Some(kind)) if kind.is_keyword() => {
-                //                 Some(format!(
-                //                     "{} cannot be used as an identifier \
-                //                      because it is a reserved word. Try \
-                //                      using a different name instead.",
-                //                     kind.description().expect(
-                //                         "keywords should have descriptions"
-                //                     )
-                //                 ))
-                //             }
-                //             _ => None,
-                //         };
-
-                //         (message, hint)
-                //     } else {
-                //         let mut segments = Vec::new();
-
-                //         segments.push(FormattedTextSegment::text(
-                //             "I expected one of the following here:\n",
-                //         ));
-
-                //         for kind in expected {
-                //             segments.push(FormattedTextSegment::text(format!(
-                //                 "\n    {}",
-                //                 kind
-                //             )))
-                //         }
-
-                //         (FormattedText::new(segments), None)
-                //     }
-                // };
-
-                // if let Some(hint) = hint {
-                //     Diagnostic::error(title)
-                //         .location(location)
-                //         .description(description)
-                //         .message(message)
-                //         .hint(hint)
-                // } else {
-                //     Diagnostic::error(title)
-                //         .location(location)
-                //         .description(description)
-                //         .message(message)
-                // }
-
                 let title = format!(
                     "Unexpected {}",
                     given.map_or("end of file".to_string(), |given| {
@@ -192,21 +119,19 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     })
                 );
 
-                let description = FormattedText::default()
-                    .text("I was partway through ")
-                    .text(context.map_or("something".to_string(), |context| {
+                let description = FormattedText::default().text(format!(
+                    "I was partway through {} when I got stuck here:",
+                    context.map_or("something".to_string(), |context| {
                         context.to_string()
-                    }))
-                    .text(" when I got stuck here:");
+                    })
+                ));
 
                 let (message, hint) = {
                     if expected.len() == 1 {
                         let expected = expected[0];
 
                         let message = FormattedText::default()
-                            .text("I expected ")
-                            .code(expected)
-                            .text(" here.");
+                            .text(format!("I expected {} here.", expected));
 
                         let hint = match (expected, given) {
                             (SyntaxKind::Identifier, Some(kind))
@@ -217,10 +142,10 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                                 );
 
                                 Some(format!(
-                                    "{} cannot be used as an identifier \
-                                     because it is a reserved word. Try \
+                                    "It looks like you're trying to use the \
+                                     reserved keyword {} as an identifier! Try \
                                      using a different name instead.",
-                                    description
+                                    FormattedText::default().code(description)
                                 ))
                             }
                             _ => None,
@@ -234,8 +159,7 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                                 expected
                                     .iter()
                                     .map(|kind| {
-                                        FormattedText::default()
-                                            .text(kind.to_string())
+                                        kind.human_readable_repr().into()
                                     })
                                     .collect::<Vec<_>>(),
                             );
