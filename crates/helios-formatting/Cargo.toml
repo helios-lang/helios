@@ -1,5 +1,5 @@
 [package]
-name = "helios-diagnostics"
+name = "helios-formatting"
 version = "0.1.0"
 license = "Apache-2.0"
 authors = ["Ta-Seen Islam <taseen00.islam@gmail.com>"]
@@ -9,6 +9,3 @@ edition = "2018"
 
 [dependencies]
 colored = "2.0.0"
-helios-formatting = { version = "0.1.0", path = "../helios-formatting" }
-text-size = "1.0.0"
-textwrap = { version = "0.13.1", features = ["terminal_size"] }

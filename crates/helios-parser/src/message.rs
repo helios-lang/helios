@@ -1,5 +1,6 @@
 use crate::FileId;
-use helios_diagnostics::{Diagnostic, FormattedText, Location};
+use helios_diagnostics::{Diagnostic, Location};
+use helios_formatting::FormattedText;
 use helios_syntax::SyntaxKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

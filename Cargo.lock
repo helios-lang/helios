@@ -353,8 +353,16 @@ name = "helios-diagnostics"
 version = "0.1.0"
 dependencies = [
  "colored",
+ "helios-formatting",
  "text-size",
  "textwrap",
+]
+
+[[package]]
+name = "helios-formatting"
+version = "0.1.0"
+dependencies = [
+ "colored",
 ]
 
 [[package]]
@@ -376,6 +384,7 @@ dependencies = [
  "expect-test",
  "flume",
  "helios-diagnostics",
+ "helios-formatting",
  "helios-syntax",
  "rowan",
  "text-size",
@@ -407,6 +416,7 @@ name = "helios-syntax"
 version = "0.2.0"
 dependencies = [
  "expect-test",
+ "helios-formatting",
  "rowan",
  "unicode-xid",
 ]
