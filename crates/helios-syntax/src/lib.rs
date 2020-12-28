@@ -1,7 +1,7 @@
 mod lang;
 mod repr;
 
-use helios_formatting::FormattedText;
+use helios_formatting::FormattedString;
 pub use lang::Language;
 use repr::{Article, HumanReadableRepr};
 use std::fmt::{self, Display};
@@ -429,7 +429,7 @@ impl From<SyntaxKind> for rowan::SyntaxKind {
 
 impl Display for SyntaxKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", FormattedText::from(self.human_readable_repr()))
+        write!(f, "{}", FormattedString::from(self.human_readable_repr()))
     }
 }
 
@@ -602,7 +602,6 @@ mod tests {
     fn test_syntax_kind_human_readable_repr() {
         fn check(kind: SyntaxKind, input: impl Into<String>) {
             assert_eq!(format!("{}", kind.human_readable_repr()), input.into());
-            println!("{}", FormattedText::from(kind.human_readable_repr()));
         }
 
         use SyntaxKind::*;

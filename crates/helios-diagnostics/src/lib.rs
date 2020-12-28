@@ -44,17 +44,19 @@ pub fn emit<'files, F: Files<'files>>(
     let file_id = diagnostic.location.file_id;
     let source = files.source(file_id)?;
 
+    let severity = diagnostic.severity;
     let error_range = diagnostic.location.range.clone();
     let error_start = error_range.start;
-    let severity = diagnostic.severity;
+    let error_end = error_range.end;
 
     let line_index = files.line_index(file_id, error_range.start)?;
     let line_range = files.line_range(file_id, line_index)?;
 
     let line_number = files.line_number(file_id, line_index)?;
-    let col_number = files.column_number(file_id, line_index, error_start)?;
+    let column_start = files.column_number(file_id, line_index, error_start)?;
+    let column_end = files.column_number(file_id, line_index, error_end)?;
 
-    let (color, header, underline_str) = {
+    let (color, header, underline) = {
         let make_header = |msg: String| {
             let remaining_len = textwrap::termwidth() - msg.len();
             format!("{}{}", msg, "-".repeat(remaining_len))
@@ -99,7 +101,8 @@ pub fn emit<'files, F: Files<'files>>(
         };
     };
 
-    let location_str = format!("-> src/Foo.he:{}:{}", line_number, col_number);
+    let location_str =
+        format!("-> src/Foo.he:{}:{}", line_number, column_start);
     writeln!(f, "{}", header.color(color))?;
     writeln!(f, "{}\n", location_str.color(color))?;
 
@@ -111,9 +114,13 @@ pub fn emit<'files, F: Files<'files>>(
     let line = &source.as_ref()[line_range].trim_end(); // remove trailing LF
     writeln!(f, "{}{}", gutter.dimmed(), line)?;
 
-    let offset = " ".repeat(gutter.len() + error_start);
-    let underline_str = underline_str.repeat(error_range.len()).color(color);
-    writeln!(f, "{}{}", offset, underline_str)?;
+    // `col_start` is indexed by 1
+    let offset = " ".repeat(gutter.len() + column_start - 1);
+    // The difference of the column positions, or 1, whichever is larger
+    let underline_count = std::cmp::max(1, column_end - column_start);
+    // Underline string repeated `underline_count` times
+    let underline = underline.repeat(underline_count).color(color);
+    writeln!(f, "{}{}", offset, underline)?;
 
     writeln!(f, "{}\n", wrap!(diagnostic.message).trim_end())?;
 

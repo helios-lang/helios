@@ -1,6 +1,6 @@
 use crate::FileId;
 use helios_diagnostics::{Diagnostic, Location};
-use helios_formatting::FormattedText;
+use helios_formatting::FormattedString;
 use helios_syntax::SyntaxKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -45,10 +45,10 @@ impl From<LexerMessage> for Diagnostic<FileId> {
                 location,
                 character,
             } => {
-                let description = FormattedText::default()
+                let description = FormattedString::default()
                     .text("I encountered a token I don't know how to handle:");
 
-                let message = FormattedText::default()
+                let message = FormattedString::default()
                     .text("The character ")
                     .code(format!("{:?}", character))
                     .text(" is not a valid token. Did you mean to write it?");
@@ -91,14 +91,14 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     expected.kind()
                 );
 
-                let description = FormattedText::default().text(format!(
+                let description = FormattedString::default().text(format!(
                     "I was partway through {} when I got stuck here:",
                     context.map_or("something".to_string(), |context| {
                         context.to_string()
                     })
                 ));
 
-                let message = FormattedText::default()
+                let message = FormattedString::default()
                     .text(format!("I expected {} here.", expected));
 
                 Diagnostic::error(error)
@@ -119,7 +119,7 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     })
                 );
 
-                let description = FormattedText::default().text(format!(
+                let description = FormattedString::default().text(format!(
                     "I was partway through {} when I got stuck here:",
                     context.map_or("something".to_string(), |context| {
                         context.to_string()
@@ -130,7 +130,7 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     if expected.len() == 1 {
                         let expected = expected[0];
 
-                        let message = FormattedText::default()
+                        let message = FormattedString::default()
                             .text(format!("I expected {} here.", expected));
 
                         let hint = match (expected, given) {
@@ -145,7 +145,7 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                                     "It looks like you're trying to use the \
                                      reserved keyword {} as an identifier! Try \
                                      using a different name instead.",
-                                    FormattedText::default().code(description)
+                                    FormattedString::default().code(description)
                                 ))
                             }
                             _ => None,
@@ -153,7 +153,7 @@ impl From<ParserMessage> for Diagnostic<FileId> {
 
                         (message, hint)
                     } else {
-                        let message = FormattedText::default()
+                        let message = FormattedString::default()
                             .text("I expected one of the following here:")
                             .list(
                                 expected

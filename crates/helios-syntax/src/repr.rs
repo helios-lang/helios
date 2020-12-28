@@ -1,4 +1,4 @@
-use helios_formatting::{FormattedText, FormattedTextSegment};
+use helios_formatting::{FormattedString, FormattedStringSegment};
 use std::fmt::{self, Display};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -28,35 +28,35 @@ pub struct HumanReadableRepr {
     pub example: Option<String>,
 }
 
-impl From<HumanReadableRepr> for FormattedText {
+impl From<HumanReadableRepr> for FormattedString {
     fn from(repr: HumanReadableRepr) -> Self {
-        let mut formatted_text = FormattedText::default();
+        let mut formatted = FormattedString::new();
 
-        formatted_text.push(repr.article.to_string() + " ");
+        formatted.push(repr.article.to_string() + " ");
 
         if let Some(qualifier) = repr.qualifier {
-            formatted_text.push(qualifier + " ");
+            formatted.push(qualifier + " ");
         }
 
         if let Some(description) = repr.description {
-            formatted_text.push(description + " ");
+            formatted.push(description + " ");
         }
 
-        formatted_text.push(repr.kind);
+        formatted.push(repr.kind);
 
         if let Some(code_repr) = repr.code_repr {
-            formatted_text.push(" (");
-            formatted_text.push(FormattedTextSegment::code(code_repr));
-            formatted_text.push(")");
+            formatted.push(" (");
+            formatted.push(FormattedStringSegment::code(code_repr));
+            formatted.push(")");
         }
 
         if let Some(example) = repr.example {
-            formatted_text.push(" (such as ");
-            formatted_text.push(FormattedTextSegment::code(example));
-            formatted_text.push(")");
+            formatted.push(" (such as ");
+            formatted.push(FormattedStringSegment::code(example));
+            formatted.push(")");
         }
 
-        formatted_text
+        formatted
     }
 }
 

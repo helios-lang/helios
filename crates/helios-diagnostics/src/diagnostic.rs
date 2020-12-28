@@ -1,4 +1,4 @@
-use helios_formatting::FormattedText;
+use helios_formatting::FormattedString;
 use std::ops::Range;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -38,9 +38,9 @@ pub struct Diagnostic<FileId> {
     pub location: Location<FileId>,
     pub severity: Severity,
     pub title: String,
-    pub description: Option<FormattedText>,
-    pub message: FormattedText,
-    pub hint: Option<FormattedText>,
+    pub description: Option<FormattedString>,
+    pub message: FormattedString,
+    pub hint: Option<FormattedString>,
 }
 
 impl<FileId> Diagnostic<FileId>
@@ -51,9 +51,9 @@ where
         location: Location<FileId>,
         severity: Severity,
         title: impl Into<String>,
-        description: impl Into<Option<FormattedText>>,
-        message: impl Into<FormattedText>,
-        hint: impl Into<Option<FormattedText>>,
+        description: impl Into<Option<FormattedString>>,
+        message: impl Into<FormattedString>,
+        hint: impl Into<Option<FormattedString>>,
     ) -> Self {
         Self {
             location,
@@ -109,13 +109,13 @@ where
 
     pub fn description(
         mut self,
-        description: impl Into<FormattedText>,
+        description: impl Into<FormattedString>,
     ) -> Self {
         self.description = Some(description.into());
         self
     }
 
-    pub fn message(mut self, message: impl Into<FormattedText>) -> Self {
+    pub fn message(mut self, message: impl Into<FormattedString>) -> Self {
         self.message = message.into();
         self
     }
@@ -125,7 +125,7 @@ where
         self
     }
 
-    pub fn hint(mut self, hint: impl Into<FormattedText>) -> Self {
+    pub fn hint(mut self, hint: impl Into<FormattedString>) -> Self {
         self.hint = Some(hint.into());
         self
     }
