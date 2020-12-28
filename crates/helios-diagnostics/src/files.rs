@@ -49,8 +49,7 @@ pub trait Files<'a> {
         Ok(line_index + 1)
     }
 
-    /// User-facing column number.
-    fn column_number(
+    fn column_index(
         &'a self,
         id: Self::FileId,
         line_index: usize,
@@ -61,7 +60,17 @@ pub trait Files<'a> {
         let column_index =
             column_index(source.as_ref(), line_range, byte_index);
 
-        Ok(column_index + 1)
+        Ok(column_index)
+    }
+
+    /// User-facing column number.
+    fn column_number(
+        &'a self,
+        id: Self::FileId,
+        line_index: usize,
+        byte_index: usize,
+    ) -> Result<usize> {
+        Ok(self.column_index(id, line_index, byte_index)? + 1)
     }
 }
 

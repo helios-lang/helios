@@ -9,7 +9,10 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+flume = "0.10.0"
 env_logger = "0.7.1"
+helios-diagnostics = { version = "0.1.0", path = "../helios-diagnostics" }
+helios-parser = { version = "0.2.0", path = "../helios-parser" }
 helios-syntax = { version = "0.2.0", path = "../helios-syntax" }
 log = "0.4.11"
 tokio = { version = "0.2.24", features = ["io-std"] }

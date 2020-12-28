@@ -1,7 +1,69 @@
+use helios_diagnostics::files::{Files, SimpleFiles};
+use helios_diagnostics::{Diagnostic as HDiagnostic, Location as HLocation};
+use helios_parser::Message;
 use tokio::runtime::Runtime;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
+
+fn range_from_location<'files, F: Files<'files>>(
+    files: &'files F,
+    location: HLocation<F::FileId>,
+) -> Range {
+    let file_id = location.file_id;
+    let range_start = location.range.start;
+    let range_end = location.range.end;
+
+    let s_ln = files.line_index(file_id, range_start).unwrap();
+    let s_cl = files.column_index(file_id, s_ln, range_start).unwrap();
+
+    let e_ln = files.line_index(file_id, range_end).unwrap();
+    let e_cl = files.column_index(file_id, e_ln, range_end).unwrap();
+
+    let start = Position::new(s_ln as u64, s_cl as u64);
+    let end = Position::new(e_ln as u64, e_cl as u64);
+
+    Range::new(start, end)
+}
+
+fn diagnostic_for_message<'files, F: Files<'files, FileId = usize>>(
+    files: &'files F,
+    uri: Url,
+    message: Message,
+) -> Diagnostic {
+    let h_diagnostic = HDiagnostic::from(message);
+    let range = range_from_location(files, h_diagnostic.location);
+
+    Diagnostic::new(
+        range,
+        Some(DiagnosticSeverity::Error),
+        None,
+        Some("helios-ls".to_string()),
+        h_diagnostic.title.to_string(),
+        Some(vec![DiagnosticRelatedInformation {
+            location: Location { uri, range },
+            message: h_diagnostic.message.to_string().trim_end().to_string(),
+        }]),
+        None,
+    )
+}
+
+fn check(uri: Url, source: String) -> Vec<Diagnostic> {
+    let mut files = SimpleFiles::new();
+    let path = uri.to_string();
+    let file_id = files.add(&*path, &*source);
+    let file = files.get(file_id).unwrap();
+
+    let (messages_tx, messages_rx) = flume::unbounded::<Message>();
+    let _ = helios_parser::parse(0, file.source(), messages_tx);
+
+    let mut diagnostics = Vec::new();
+    for message in messages_rx.try_iter() {
+        diagnostics.push(diagnostic_for_message(&files, uri.clone(), message));
+    }
+
+    diagnostics
+}
 
 struct HeliosLanguageServer {
     client: Client,
@@ -48,6 +110,21 @@ impl LanguageServer for HeliosLanguageServer {
             .await;
 
         Ok(())
+    }
+
+    async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        self.client
+            .log_message(MessageType::Info, format!("{:?}", params))
+            .await;
+
+        let diagnostics = check(
+            params.text_document.uri.clone(),
+            params.text_document.text,
+        );
+
+        self.client
+            .publish_diagnostics(params.text_document.uri, diagnostics, None)
+            .await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {

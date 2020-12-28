@@ -13,12 +13,12 @@ pub mod message;
 mod parser;
 
 use self::lexer::Lexer;
+pub use self::message::*;
 use self::parser::sink::Sink;
 use self::parser::source::Source;
 use self::parser::Parser;
 use flume::Sender;
 use helios_syntax::SyntaxNode;
-pub use message::Message;
 use rowan::GreenNode;
 
 pub type FileId = usize;

@@ -376,6 +376,9 @@ name = "helios-ls"
 version = "0.2.0"
 dependencies = [
  "env_logger",
+ "flume",
+ "helios-diagnostics",
+ "helios-parser",
  "helios-syntax",
  "log",
  "tokio",
