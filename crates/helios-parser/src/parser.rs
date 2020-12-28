@@ -175,10 +175,10 @@ mod tests {
     #[test]
     fn test_parse_comment() {
         check(
-            "// hello, world!",
+            "-- hello, world!",
             expect![[r#"
                 Root@0..16
-                  Comment@0..16 "// hello, world!"
+                  Comment@0..16 "-- hello, world!"
             "#]],
         );
     }
@@ -186,10 +186,10 @@ mod tests {
     #[test]
     fn test_parse_comment_followed_by_whitespace() {
         check(
-            "// hello, world!\n",
+            "-- hello, world!\n",
             expect![[r#"
                 Root@0..17
-                  Comment@0..16 "// hello, world!"
+                  Comment@0..16 "-- hello, world!"
                   Whitespace@16..17 "\n"
             "#]],
         );
@@ -199,15 +199,15 @@ mod tests {
     fn test_parse_multiple_comments() {
         check(
             "
-// hello, world!
-// this is another line
+-- hello, world!
+-- this is another line
 ",
             expect![[r#"
                 Root@0..42
                   Whitespace@0..1 "\n"
-                  Comment@1..17 "// hello, world!"
+                  Comment@1..17 "-- hello, world!"
                   Whitespace@17..18 "\n"
-                  Comment@18..41 "// this is another line"
+                  Comment@18..41 "-- this is another line"
                   Whitespace@41..42 "\n"
             "#]],
         );

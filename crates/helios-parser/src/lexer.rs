@@ -166,7 +166,7 @@ impl<'source> Lexer<'source> {
         let start = self.current_pos();
 
         let kind = match self.cursor.advance()? {
-            c if c == '/' && self.peek() == '/' => self.lex_comment(c),
+            c if c == '-' && self.peek() == '-' => self.lex_comment(c),
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
@@ -268,17 +268,16 @@ impl<'source> Lexer<'source> {
 impl<'source> Lexer<'source> {
     /// Tokenizes a line comment.
     ///
-    /// A line comment starts with two forward slashes (`//`) and ends at the
-    /// next line feed (or the end of the file, whichever comes first). This
-    /// function also distinguishes if the comment tokenized is a doc-comment
-    /// (which starts with three forward slashes (`///`) or two forward slashes
-    /// followed by an exclamation mark (`//!`)).
+    /// A line comment starts with two consecutive minus characters (`--`) and
+    /// ends at the next line feed (or the end of file, whichever comes first).
+    /// This function also determines if it is a documentation comment, which
+    /// starts with two minus characters and a pipe character (`--|`).
     fn lex_comment(&mut self, _: char) -> SyntaxKind {
         // Consume the second `/`
         self.next_char();
 
         // Check if it is a doc-comment
-        if matches!(self.peek(), '/' | '!') {
+        if self.peek() == '|' {
             self.consume_while(|c| c != '\n');
             SyntaxKind::DocComment
         } else {
@@ -434,22 +433,16 @@ mod tests {
     #[test]
     fn test_lex_line_comment() {
         // Normal line comments
-        check("//", SyntaxKind::Comment);
-        check("//abc", SyntaxKind::Comment);
-        check("// abc 123", SyntaxKind::Comment);
-        check("// This is a random line comment", SyntaxKind::Comment);
+        check("--", SyntaxKind::Comment);
+        check("--abc", SyntaxKind::Comment);
+        check("-- abc 123", SyntaxKind::Comment);
+        check("-- This is a random line comment", SyntaxKind::Comment);
 
-        // Item doc-comments
-        check("///", SyntaxKind::DocComment);
-        check("///abc", SyntaxKind::DocComment);
-        check("/// abc 123", SyntaxKind::DocComment);
-        check("/// This is a random line comment", SyntaxKind::DocComment);
-
-        // Module doc-comments
-        check("//!", SyntaxKind::DocComment);
-        check("//!abc", SyntaxKind::DocComment);
-        check("//! abc 123", SyntaxKind::DocComment);
-        check("//! This is a random line comment", SyntaxKind::DocComment);
+        // Documentation comments
+        check("--|", SyntaxKind::DocComment);
+        check("--|abc", SyntaxKind::DocComment);
+        check("--| abc 123", SyntaxKind::DocComment);
+        check("--| This is a random line comment", SyntaxKind::DocComment);
     }
 
     #[test]

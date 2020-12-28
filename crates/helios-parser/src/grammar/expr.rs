@@ -392,8 +392,8 @@ mod tests {
         check(
             "
 1
-  + 1 // Add one
-  + 10 // Add ten",
+  + 1 -- Add one
+  + 10 -- Add ten",
             expect![[r#"
                 Root@0..37
                   Whitespace@0..1 "\n"
@@ -407,14 +407,14 @@ mod tests {
                       Exp_Literal@7..22
                         Lit_Integer@7..8 "1"
                         Whitespace@8..9 " "
-                        Comment@9..19 "// Add one"
+                        Comment@9..19 "-- Add one"
                         Whitespace@19..22 "\n  "
                     Sym_Plus@22..23 "+"
                     Whitespace@23..24 " "
                     Exp_Literal@24..37
                       Lit_Integer@24..26 "10"
                       Whitespace@26..27 " "
-                      Comment@27..37 "// Add ten"
+                      Comment@27..37 "-- Add ten"
             "#]],
         );
     }
