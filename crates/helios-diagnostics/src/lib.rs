@@ -18,9 +18,24 @@ pub enum Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            Self::MissingFile => write!(f, "missing file"),
+            Self::OutOfBounds { given, max } => write!(
+                f,
+                "the provided index ({}) is outside the maximum index of {}",
+                given, max
+            ),
+            Self::IoError(error) => {
+                write!(f, "an IO error occurred: {}", error)
+            }
+            Self::FmtError(error) => {
+                write!(f, "a formatting error occurred: {}", error)
+            }
+        }
     }
 }
+
+impl std::error::Error for Error {}
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
@@ -33,8 +48,6 @@ impl From<std::fmt::Error> for Error {
         Self::FmtError(error)
     }
 }
-
-impl std::error::Error for Error {}
 
 pub fn emit<'files, F: Files<'files>>(
     f: &mut dyn Write,

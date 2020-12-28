@@ -99,6 +99,7 @@ fn start_main_loop() -> io::Result<()> {
         let mut emitted_ranges = Vec::new();
         for message in messages_rx.try_iter() {
             let diagnostic = Diagnostic::from(message);
+            
             if !(emitted_ranges.contains(&diagnostic.location)) {
                 emitted_ranges.push(diagnostic.location.clone());
                 helios_diagnostics::emit(&mut stdout, &files, &diagnostic)

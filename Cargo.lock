@@ -347,6 +347,12 @@ dependencies = [
 [[package]]
 name = "helios-build"
 version = "0.2.0"
+dependencies = [
+ "colored",
+ "flume",
+ "helios-diagnostics",
+ "helios-parser",
+]
 
 [[package]]
 name = "helios-diagnostics"

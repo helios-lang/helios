@@ -145,7 +145,8 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                                     "It looks like you're trying to use the \
                                      reserved keyword {} as an identifier! Try \
                                      using a different name instead.",
-                                    FormattedString::default().code(description)
+                                    FormattedString::default()
+                                        .code(description)
                                 ))
                             }
                             _ => None,
