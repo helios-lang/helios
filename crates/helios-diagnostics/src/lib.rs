@@ -71,7 +71,9 @@ pub fn emit<'files, F: Files<'files>>(
 
     let (color, header, underline) = {
         let make_header = |msg: String| {
-            let remaining_len = textwrap::termwidth() - msg.len();
+            let remaining_len = textwrap::termwidth()
+                .checked_sub(msg.len())
+                .unwrap_or_default();
             format!("{}{}", msg, "-".repeat(remaining_len))
         };
 
