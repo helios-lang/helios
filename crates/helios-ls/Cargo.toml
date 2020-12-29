@@ -11,9 +11,7 @@ publish = false
 [dependencies]
 flume = "0.10.0"
 env_logger = "0.7.1"
-helios-diagnostics = { version = "0.1.0", path = "../helios-diagnostics" }
-helios-parser = { version = "0.2.0", path = "../helios-parser" }
-helios-syntax = { version = "0.2.0", path = "../helios-syntax" }
 log = "0.4.11"
-tokio = { version = "0.2.24", features = ["io-std"] }
-tower-lsp = "0.13.3"
+lsp-types = "0.86.0"
+serde = { version = "1.0.118", features = ["derive"] }
+serde_json = "1.0.61"

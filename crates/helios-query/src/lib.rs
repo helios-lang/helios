@@ -14,6 +14,14 @@ pub struct HeliosDatabase {
 
 impl salsa::Database for HeliosDatabase {}
 
+impl salsa::ParallelDatabase for HeliosDatabase {
+    fn snapshot(&self) -> salsa::Snapshot<Self> {
+        salsa::Snapshot::new(HeliosDatabase {
+            storage: self.storage.snapshot(),
+        })
+    }
+}
+
 impl Debug for HeliosDatabase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("HeliosDatabase").finish()
