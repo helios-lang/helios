@@ -37,7 +37,7 @@ impl Display for Error {
     }
 }
 
-fn build_inner(path: &str) -> Result<()> {
+fn __build(path: &str) -> Result<()> {
     let mut stdout = std::io::stdout();
     let (messages_tx, messages_rx) = flume::unbounded();
 
@@ -83,13 +83,13 @@ fn build_inner(path: &str) -> Result<()> {
 
 /// Starts the build process with the given path to a file.
 pub fn build(path: &str) {
-    println!("{} {}...\n", "Building".green().bold(), path.underline());
+    println!("\n{} {}\n", "Building".green().bold(), path.underline());
 
-    match build_inner(path) {
-        Ok(()) => println!("{}", "Finished building".green().bold()),
-        Err(error) => {
-            eprintln!("{}", format!("{}", error).red().bold());
-            std::process::exit(1)
-        },
+    if let Err(error) = __build(path) {
+        let error = format!("{}", error).red().bold();
+        eprintln!("{}", error);
+        std::process::exit(1);
     }
+
+    println!("{}", "Finished building".green().bold());
 }

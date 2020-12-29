@@ -1,71 +1,60 @@
 mod cancel;
 mod input;
+mod interner;
 
-use crate::input::InputStorage;
-use salsa::Database as SalsaDatabase;
+use crate::input::*;
+use crate::interner::*;
+use std::fmt::{self, Debug};
 
-#[salsa::database(InputStorage)]
-#[derive(Debug, Default)]
+#[salsa::database(InputDatabase, InternerDatabase)]
+#[derive(Default)]
 pub struct HeliosDatabase {
-    runtime: salsa::Runtime<HeliosDatabase>,
+    storage: salsa::Storage<HeliosDatabase>,
 }
 
-impl SalsaDatabase for HeliosDatabase {
-    fn salsa_runtime(&self) -> &salsa::Runtime<Self> {
-        &self.runtime
-    }
+impl salsa::Database for HeliosDatabase {}
 
-    fn salsa_runtime_mut(&mut self) -> &mut salsa::Runtime<Self> {
-        &mut self.runtime
+impl Debug for HeliosDatabase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HeliosDatabase").finish()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::Input;
+    use std::sync::Arc;
+
+    const FILE_ID: usize = 0;
+    const SOURCE: &str = "let a = 0\nlet b = 1\n\nlet c = 2\n";
 
     #[test]
-    #[allow(non_snake_case)]
-    fn test_source_locations_with_LF() {
-        const FILE_ID: usize = 0;
+    fn test_source_length() {
         let mut db = HeliosDatabase::default();
+        db.set_source(FILE_ID, Arc::new(SOURCE.to_string()));
 
-        let contents =
-            "let a = 10 in\nlet b = foo a in\n\nIO.println (a + b)\n";
-        db.set_source_text(FILE_ID, contents.to_string());
+        assert_eq!(db.source_len(FILE_ID), 31);
 
-        let line_offsets = vec![0, 14, 31, 32, 51];
-        assert_eq!(db.source_line_offsets(FILE_ID), line_offsets);
-
-        assert_eq!(db.source_offset_at_position(FILE_ID, 1, 10), 24);
-        assert_eq!(db.source_offset_at_position(FILE_ID, 2, 0), 31);
-        assert_eq!(db.source_offset_at_position(FILE_ID, 3, 8), 40);
-
-        assert_eq!(db.source_position_at_offset(FILE_ID, 24), (1, 10));
-        assert_eq!(db.source_position_at_offset(FILE_ID, 31), (2, 0));
-        assert_eq!(db.source_position_at_offset(FILE_ID, 40), (3, 8));
+        let indexes = vec![0, 10, 20, 21, 31];
+        assert_eq!(db.source_line_indexes(FILE_ID), Arc::new(indexes));
     }
 
     #[test]
-    #[allow(non_snake_case)]
-    fn test_source_locations_with_CRLF() {
-        const FILE_ID: usize = 0;
+    fn test_all_bindings() {
+        fn print_bindings(
+            db: &mut HeliosDatabase,
+            bindings: Arc<Vec<BindingId>>,
+        ) {
+            for binding in bindings.iter() {
+                let binding_data = db.lookup_intern_binding(*binding);
+                println!("{:?} => {}", binding, binding_data.identifier);
+            }
+        }
+
         let mut db = HeliosDatabase::default();
+        db.set_source(FILE_ID, Arc::new(SOURCE.to_string()));
 
-        let contents =
-            "let a = 10 in\r\nlet b = foo a in\r\n\r\nIO.println (a + b)\r\n";
-        db.set_source_text(FILE_ID, contents.to_string());
-
-        let line_offsets = vec![0, 15, 33, 35, 55];
-        assert_eq!(db.source_line_offsets(FILE_ID), line_offsets);
-
-        assert_eq!(db.source_offset_at_position(FILE_ID, 1, 10), 25);
-        assert_eq!(db.source_offset_at_position(FILE_ID, 2, 0), 33);
-        assert_eq!(db.source_offset_at_position(FILE_ID, 3, 8), 43);
-
-        assert_eq!(db.source_position_at_offset(FILE_ID, 25), (1, 10));
-        assert_eq!(db.source_position_at_offset(FILE_ID, 33), (2, 0));
-        assert_eq!(db.source_position_at_offset(FILE_ID, 43), (3, 8));
+        let bindings = db.all_bindings(FILE_ID);
+        print_bindings(&mut db, bindings);
     }
 }

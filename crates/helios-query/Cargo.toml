@@ -11,4 +11,4 @@ edition = "2018"
 flume = "0.10.0"
 helios-diagnostics = { version = "0.1.0", path = "../helios-diagnostics" }
 helios-parser = { version = "0.2.0", path = "../helios-parser" }
-salsa = "0.14.4"
+salsa = "0.16.0"

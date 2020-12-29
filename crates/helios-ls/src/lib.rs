@@ -117,10 +117,8 @@ impl LanguageServer for HeliosLanguageServer {
             .log_message(MessageType::Info, format!("{:?}", params))
             .await;
 
-        let diagnostics = check(
-            params.text_document.uri.clone(),
-            params.text_document.text,
-        );
+        let diagnostics =
+            check(params.text_document.uri.clone(), params.text_document.text);
 
         self.client
             .publish_diagnostics(params.text_document.uri, diagnostics, None)

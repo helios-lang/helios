@@ -22,9 +22,7 @@ fn print_version() {
 }
 
 fn main() {
-    // Initialize the logger
     env_logger::init();
-
     let mut args = std::env::args();
     args.next(); // Skip path to executable
 
@@ -38,7 +36,7 @@ fn main() {
             }
         },
         _ => {
-            log::trace!("Starting Helios language server...");
+            log::trace!("Starting Helios-LS...");
             helios_ls::start()
         }
     }

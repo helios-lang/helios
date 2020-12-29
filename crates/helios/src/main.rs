@@ -16,14 +16,12 @@ fn print_version() {
     if let Some(version) = option_env!("CARGO_PKG_VERSION") {
         println!("helios {}", version);
     } else {
-        eprintln!("ERROR: Failed to get version.");
+        print_error("Failed to get version of executable");
     }
 }
 
 fn main() {
-    // Initialize the logger
     env_logger::init();
-
     let mut args = std::env::args();
     args.next(); // Skip path to executable
 
