@@ -42,16 +42,17 @@ impl Display for RequestId {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Request {
     /// The request id.
-    id: RequestId,
+    pub(crate) id: RequestId,
     /// The method to be invoked.
-    method: String,
+    pub(crate) method: String,
     /// The method's params.
     #[serde(default = "serde_json::Value::default")]
     #[serde(skip_serializing_if = "serde_json::Value::is_null")]
-    params: serde_json::Value,
+    pub(crate) params: serde_json::Value,
 }
 
 impl Request {
+    #[allow(dead_code)]
     pub fn new(
         id: impl Into<RequestId>,
         method: impl Into<String>,
@@ -64,11 +65,21 @@ impl Request {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_without_params(
         id: impl Into<RequestId>,
         method: impl Into<String>,
     ) -> Self {
         Self::new(id, method, serde_json::Value::Null)
+    }
+
+    pub fn is_initialize(&self) -> bool {
+        self.method == "initialize"
+    }
+
+    #[allow(dead_code)]
+    pub fn is_shutdown(&self) -> bool {
+        self.method == "shutdown"
     }
 }
 
@@ -81,14 +92,14 @@ impl Request {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Response {
     /// The request id.
-    id: RequestId,
+    pub(crate) id: RequestId,
     /// The result of a request. This member is **REQUIRED** on success. This
     /// member **MUST NOT** exist if there was an error invoking the method.
     #[serde(skip_serializing_if = "Option::is_none")]
-    result: Option<serde_json::Value>,
+    pub(crate) result: Option<serde_json::Value>,
     /// The error object in case a request fails.
     #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<ResponseError>,
+    pub(crate) error: Option<ResponseError>,
 }
 
 impl Response {
@@ -100,6 +111,7 @@ impl Response {
         }
     }
 
+    #[allow(dead_code)]
     pub fn new_error(
         id: impl Into<RequestId>,
         code: ErrorCode,
@@ -122,13 +134,13 @@ impl Response {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResponseError {
     /// A number indicating the error type that occurred.
-    code: i32,
+    pub(crate) code: i32,
     /// A string providing a short description of the error.
-    message: String,
+    pub(crate) message: String,
     /// A primitive or structured value that contains additional information
     /// about the error. Can be omitted.
     #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<serde_json::Value>,
+    pub(crate) data: Option<serde_json::Value>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -149,14 +161,15 @@ pub enum ErrorCode {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Notification {
     /// The method to be invoked.
-    method: String,
+    pub(crate) method: String,
     /// The notification's params.
     #[serde(default = "serde_json::Value::default")]
     #[serde(skip_serializing_if = "serde_json::Value::is_null")]
-    params: serde_json::Value,
+    pub(crate) params: serde_json::Value,
 }
 
 impl Notification {
+    #[allow(dead_code)]
     pub fn new(method: impl Into<String>, params: impl Serialize) -> Self {
         Self {
             method: method.into(),
@@ -294,13 +307,14 @@ fn read_message(reader: &mut impl BufRead) -> io::Result<Option<String>> {
     reader.read_exact(&mut buffer)?;
 
     let buffer = String::from_utf8(buffer).map_err(invalid_data)?;
-    log::trace!("<-- {}", buffer);
+    log::trace!("-> {}", buffer);
 
     Ok(Some(buffer))
 }
 
 fn write_message(writer: &mut impl Write, message: &str) -> io::Result<()> {
-    log::trace!("--> {}", message);
+    log::trace!("<- {}", message);
+
     write!(writer, "Content-Length: {}\r\n\r\n", message.len())?;
     writer.write_all(message.as_bytes())?;
     writer.flush()?;
