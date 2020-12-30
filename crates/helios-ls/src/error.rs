@@ -1,5 +1,5 @@
-use std::fmt::{self, Display};
 use std::error::Error;
+use std::fmt::{self, Display};
 
 #[derive(Debug, Clone)]
 pub struct ProtocolError(pub(crate) String);
