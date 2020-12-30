@@ -8,7 +8,7 @@ fn print_usage() {
 /// This function will print the version number found in the `Cargo.toml`
 /// file of this package.
 fn print_version() {
-    // TODO: Should we allow hash to fail and not be outputted?
+    // TODO: Should we allow retrieving hash to fail?
     fn get_env_variables<'a>() -> Option<(&'a str, &'a str)> {
         let version = option_env!("CARGO_PKG_VERSION")?;
         let hash = option_env!("GIT_HASH")?;

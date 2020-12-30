@@ -1,10 +1,8 @@
-#![allow(dead_code)]
-
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display};
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum RequestId {
     Integer(i32),
@@ -17,9 +15,15 @@ impl From<i32> for RequestId {
     }
 }
 
+impl From<&str> for RequestId {
+    fn from(s: &str) -> Self {
+        RequestId::String(s.to_string())
+    }
+}
+
 impl From<String> for RequestId {
-    fn from(string: String) -> Self {
-        RequestId::String(string)
+    fn from(s: String) -> Self {
+        RequestId::String(s)
     }
 }
 
@@ -35,7 +39,7 @@ impl Display for RequestId {
 /// A request message to describe a request between the client and the server.
 /// Every processed request must send a response back to the sender of the
 /// request.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Request {
     /// The request id.
     id: RequestId,
@@ -59,6 +63,13 @@ impl Request {
             params: serde_json::to_value(params).unwrap(),
         }
     }
+
+    pub fn new_without_params(
+        id: impl Into<RequestId>,
+        method: impl Into<String>,
+    ) -> Self {
+        Self::new(id, method, serde_json::Value::Null)
+    }
 }
 
 /// A response message sent as a result of a request.
@@ -67,7 +78,7 @@ impl Request {
 /// needs to return a response message to conform to the JSON RPC specification.
 /// The result property of the `Response` should be set to `null` in this case
 /// to signal a successful request.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Response {
     /// The request id.
     id: RequestId,
@@ -108,7 +119,7 @@ impl Response {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResponseError {
     /// A number indicating the error type that occurred.
     code: i32,
@@ -135,7 +146,7 @@ pub enum ErrorCode {
 ///
 /// A processed notification message must not send a response back. They work
 /// like events.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Notification {
     /// The method to be invoked.
     method: String,
@@ -152,14 +163,47 @@ impl Notification {
             params: serde_json::to_value(params).unwrap(),
         }
     }
+
+    pub fn is_exit(&self) -> bool {
+        self.method == "exit"
+    }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+/// An enumeration that can either be a [`Request`], a [`Response`] or a
+/// [`Notification`] as defined by the JSON-RPC.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Message {
     Request(Request),
     Response(Response),
     Notification(Notification),
+}
+
+impl Message {
+    pub fn read(reader: &mut impl BufRead) -> io::Result<Option<Self>> {
+        if let Some(input) = read_message(reader)? {
+            let input = serde_json::from_str(&input)?;
+            Ok(Some(input))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn write(self, writer: &mut impl Write) -> io::Result<()> {
+        #[derive(Serialize)]
+        struct JsonRpc {
+            jsonrpc: &'static str,
+            #[serde(flatten)]
+            pub(crate) message: Message,
+        }
+
+        let content = serde_json::to_string(&JsonRpc {
+            jsonrpc: "2.0",
+            message: self,
+        })?;
+
+        write_message(writer, &content)
+    }
 }
 
 impl From<Request> for Message {
@@ -180,53 +224,145 @@ impl From<Notification> for Message {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct JsonRpc {
-    jsonrpc: &'static str,
-    #[serde(flatten)]
-    message: Message,
+fn invalid_data(
+    error: impl Into<Box<dyn std::error::Error + Send + Sync>>,
+) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, error)
 }
 
-impl JsonRpc {
-    pub fn with(message: impl Into<Message>) -> Self {
-        Self {
-            jsonrpc: "2.0",
-            message: message.into(),
+fn read_message(reader: &mut impl BufRead) -> io::Result<Option<String>> {
+    macro_rules! invalid_data {
+        ($($tt:tt)*) => (invalid_data(format!($($tt)*)))
+    }
+
+    let mut header_buffer = String::new();
+    let mut content_length = None::<usize>;
+
+    // Process the header of the JSON-RPC message
+    loop {
+        header_buffer.clear();
+
+        // An empty header means no input; we return `None` here to signify
+        // that we successfully read the input
+        if reader.read_line(&mut header_buffer)? == 0 {
+            return Ok(None);
+        }
+
+        // The header MUST be separated by a CRLF sequence
+        if !header_buffer.ends_with("\r\n") {
+            return Err(invalid_data!("malformed header: {:?}", header_buffer));
+        }
+
+        // We'll ignore the CRLF sequence and split the field and value
+        let header_buffer = &header_buffer[..header_buffer.len() - 2];
+        if header_buffer.is_empty() {
+            break;
+        }
+
+        let mut header_parts = header_buffer.splitn(2, ": ");
+
+        // If we get a valid field, we'll process it, otherwise we'll bail with
+        // an error message. If we don't find anything, we'll assume to have
+        // finished processing the header and break the loop.
+        match header_parts.next() {
+            None => break,
+            Some("Content-Length") => {
+                let value = header_parts.next().ok_or_else(|| {
+                    invalid_data!("missing value for `Content-Length` field")
+                })?;
+
+                let parsed_value = value.parse().map_err(invalid_data)?;
+                content_length = Some(parsed_value)
+            }
+            Some("Content-Type") => {
+                log::warn!(
+                    "The `Content-Type` field is unsupported at the moment. \
+                     Defaulting to `application/vscode-jsonrpc; charset=utf-8`."
+                );
+                break;
+            }
+            Some(field) => {
+                return Err(invalid_data!("unrecognized field: {:?}", field))
+            }
         }
     }
 
-    pub fn write(self, w: &mut impl Write) -> io::Result<()> {
-        let text = serde_json::to_string(&self)?;
+    let content_length = content_length
+        .ok_or_else(|| invalid_data!("missing `Content-Length` value"))?;
+    let mut buffer = header_buffer.into_bytes();
+    buffer.resize(content_length, 0);
+    reader.read_exact(&mut buffer)?;
 
-        write!(w, "Content-Length: {}\r\n\r\n", text.len())?;
-        w.write_all(text.as_bytes())?;
-        w.flush()?;
+    let buffer = String::from_utf8(buffer).map_err(invalid_data)?;
+    log::trace!("<-- {}", buffer);
 
-        Ok(())
-    }
+    Ok(Some(buffer))
+}
+
+fn write_message(writer: &mut impl Write, message: &str) -> io::Result<()> {
+    log::trace!("--> {}", message);
+    write!(writer, "Content-Length: {}\r\n\r\n", message.len())?;
+    writer.write_all(message.as_bytes())?;
+    writer.flush()?;
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const CONTENT: &str = r#"{"jsonrpc":"2.0","id":0,"method":"shutdown"}"#;
+    const CONTENT_LEN: usize = CONTENT.len();
+
     #[test]
-    fn test_jsonrpc_to_string() {
-        let request = Request::new(0, "shutdown", serde_json::Value::Null);
-        let message = serde_json::to_string(&JsonRpc::with(request)).unwrap();
-        let content = r#"{"jsonrpc":"2.0","id":0,"method":"shutdown"}"#;
-        assert_eq!(content.to_string(), message);
+    fn test_message_from_valid_input() {
+        macro_rules! check {
+            ($buffer:expr, $expected:expr) => {
+                assert_eq!(
+                    Message::read(&mut $buffer.as_bytes()).unwrap(),
+                    Some($expected.into())
+                )
+            };
+        }
+
+        // Without `Content-Type` header field
+        let header = format!("Content-Length: {}\r\n\r\n", CONTENT_LEN);
+        let request = header + CONTENT;
+        check!(request, Request::new_without_params(0, "shutdown"));
+
+        // With `Content-Type` header field
+        let header = format!("Content-Length: {}\r\nContent-Type: \"application/vscode-jsonrpc; charset=utf-8\"\r\n", CONTENT_LEN);
+        let request = header + CONTENT;
+        check!(request, Request::new_without_params(0, "shutdown"));
     }
 
     #[test]
-    fn test_jsonrpc_write() {
-        let mut buffer = Vec::new();
-        let request = Request::new(0, "shutdown", serde_json::Value::Null);
-        JsonRpc::with(request).write(&mut buffer).unwrap();
+    fn test_message_from_invalid_input() {
+        // Missing header
+        assert!(Message::read(&mut CONTENT.as_bytes()).is_err());
 
-        let content = r#"{"jsonrpc":"2.0","id":0,"method":"shutdown"}"#;
-        let header = format!("Content-Length: {}\r\n\r\n", content.len());
-        let request = header + content;
-        assert_eq!(&request.as_bytes(), &buffer);
+        // Missing `Content-Length` value
+        let header = format!("Content-Length: \r\n\r\n");
+        let request = header + CONTENT;
+        assert!(Message::read(&mut request.as_bytes()).is_err());
+
+        // Missing header fields
+        let header = format!("\r\n\r\n");
+        let request = header + CONTENT;
+        assert!(Message::read(&mut request.as_bytes()).is_err());
+
+        // Invalid header fields
+        let header = format!("Foo: abc\r\nBar: def\r\n");
+        let request = header + CONTENT;
+        assert!(Message::read(&mut request.as_bytes()).is_err());
+
+        // Malformed header
+        let header = format!("abcdef\r\n");
+        let request = header + CONTENT;
+        assert!(Message::read(&mut request.as_bytes()).is_err());
+
+        // Malformed input
+        assert!(Message::read(&mut "<INVALID-INPUT>".as_bytes()).is_err());
     }
 }
