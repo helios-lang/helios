@@ -1,11 +1,9 @@
+use server::Server;
+
 mod connection;
 mod error;
 mod protocol;
 mod server;
-mod state;
-
-use server::Server;
-use state::GlobalState;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -20,8 +18,7 @@ pub fn start() {
 pub fn __start() -> Result<()> {
     let (connection, threads) = connection::stdio();
 
-    let state = GlobalState::new();
-    Server::new(connection, state).initialize()?.run()?;
+    Server::new(connection).initialize()?.run()?;
 
     threads.join()?;
     log::info!("Connection to client has closed");

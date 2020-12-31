@@ -1,32 +1,29 @@
+mod dispatcher;
 mod handler;
 
-pub use self::handler::Handler;
-use crate::connection::Connection;
 use crate::error::ProtocolError;
-use crate::protocol::*;
+use crate::protocol::{Message, Request};
 use crate::Result;
+use crate::{connection::Connection, protocol::Notification};
+use dispatcher::{NotificationDispatcher, RequestDispatcher};
 
-pub struct Server<H: Handler> {
+pub struct Server {
     did_initialize: bool,
     connection: Connection,
-    handler: H,
 }
 
-impl<H: Handler> Server<H> {
-    pub fn new(connection: Connection, handler: H) -> Self {
+impl Server {
+    pub fn new(connection: Connection) -> Self {
         Self {
             did_initialize: false,
             connection,
-            handler,
         }
     }
 
     pub fn initialize(mut self) -> Result<Self> {
         match self.connection.receiver.recv()? {
             Message::Request(request) if request.is_initialize() => {
-                let params = serde_json::from_value(request.params)?;
-                let result = self.handler.initialize(params);
-                self.send(Response::new_ok(request.id, result))?;
+                self.handle_request(request)?;
                 self.did_initialize = true;
             }
             message => {
@@ -52,14 +49,32 @@ impl<H: Handler> Server<H> {
                 continue;
             }
 
-            log::info!("~> {:?}", message);
+            match message {
+                Message::Request(request) => self.handle_request(request)?,
+                Message::Notification(notification) => {
+                    self.handle_notification(notification)?
+                }
+                _ => log::info!("Unhandled message: {:?}", message),
+            }
         }
 
         Ok(())
     }
 
-    fn send(&self, message: impl Into<Message>) -> Result<()> {
-        self.connection.sender.send(message.into())?;
+    fn handle_request(&self, request: Request) -> Result<()> {
+        RequestDispatcher::new(request, self.connection.sender.clone())
+            .on::<lsp_types::request::Initialize>(handler::initialize)
+            .on::<lsp_types::request::Shutdown>(handler::shutdown)
+            .finish();
+
+        Ok(())
+    }
+
+    fn handle_notification(&self, notification: Notification) -> Result<()> {
+        NotificationDispatcher::new(notification)
+            .on::<lsp_types::notification::Initialized>(handler::initialized)
+            .finish();
+
         Ok(())
     }
 }

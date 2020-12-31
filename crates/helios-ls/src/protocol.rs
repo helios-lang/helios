@@ -73,6 +73,7 @@ impl Request {
         Self::new(id, method, serde_json::Value::Null)
     }
 
+    #[allow(dead_code)]
     pub fn is_initialize(&self) -> bool {
         self.method == "initialize"
     }
@@ -103,6 +104,7 @@ pub struct Response {
 }
 
 impl Response {
+    #[allow(dead_code)]
     pub fn new_ok(id: impl Into<RequestId>, result: impl Serialize) -> Self {
         Self {
             id: id.into(),
