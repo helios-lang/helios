@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_simple_file() {
-        let source = "let a = 0\nlet b = 1\r\nlet c = 3\r\n\nfoo";
+        let source = "let a = 0\nlet b = 1\r\nlet c = 3\r\n\nfoo\n";
         let file = SimpleFile::new("Foo.he", source);
 
         assert_eq!(
@@ -233,7 +233,8 @@ mod tests {
                 10, // "let b = 1\r\n"
                 21, // "let c = 2\r\n"
                 32, // "\n"
-                33  // "foo"
+                33, // "foo"
+                37, // "\n"
             ]
         );
 
@@ -253,12 +254,14 @@ mod tests {
         assert_eq!(file.line_index((), 33), Ok(4));
         assert_eq!(file.line_index((), 34), Ok(4));
         assert_eq!(file.line_index((), 36), Ok(4));
+        assert_eq!(file.line_index((), 37), Ok(5));
 
         assert_eq!(file.line_range((), 0), Ok(0..10));
         assert_eq!(file.line_range((), 1), Ok(10..21));
         assert_eq!(file.line_range((), 2), Ok(21..32));
         assert_eq!(file.line_range((), 3), Ok(32..33));
-        assert_eq!(file.line_range((), 4), Ok(33..36));
+        assert_eq!(file.line_range((), 4), Ok(33..37));
+        assert_eq!(file.line_range((), 5), Ok(37..37));
     }
 
     #[test]

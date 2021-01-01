@@ -1,6 +1,5 @@
-use helios_parser::Parse;
-
 use crate::interner::{BindingData, BindingId, Interner};
+use helios_parser::Parse;
 use std::sync::Arc;
 
 pub type FileId = usize;
@@ -13,11 +12,6 @@ pub trait Input: Interner {
     /// The length of the source's text.
     fn source_len(&self, file_id: FileId) -> usize;
 
-    /// Calculates the indexes of each line in a file.
-    ///
-    /// The first element in the returned vector will always be `0`.
-    fn source_line_indexes(&self, file_id: FileId) -> Arc<Vec<usize>>;
-
     /// Constructs a parsed syntax tree of the given file.
     fn parse(&self, file_id: FileId) -> Parse;
 
@@ -27,15 +21,6 @@ pub trait Input: Interner {
 fn source_len(db: &dyn Input, file_id: FileId) -> usize {
     let source = db.source(file_id);
     source.len()
-}
-
-fn source_line_indexes(db: &dyn Input, file_id: FileId) -> Arc<Vec<usize>> {
-    let source = db.source(file_id);
-    let indexes = std::iter::once(0)
-        .chain(source.match_indices('\n').map(|(i, _)| i + 1))
-        .collect();
-
-    Arc::new(indexes)
 }
 
 fn parse(db: &dyn Input, file_id: FileId) -> Parse {
