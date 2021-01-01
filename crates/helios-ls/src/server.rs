@@ -1,27 +1,30 @@
 mod dispatcher;
 mod handler;
 
+use self::dispatcher::{NotificationDispatcher, RequestDispatcher};
 use crate::error::ProtocolError;
-use crate::protocol::{Message, Request};
+use crate::protocol::{Message, Notification, Request};
+use crate::state::State;
 use crate::Result;
-use crate::{connection::Connection, protocol::Notification};
-use dispatcher::{NotificationDispatcher, RequestDispatcher};
+use flume::Receiver;
 
-pub struct Server {
+pub struct Server<'a> {
     did_initialize: bool,
-    connection: Connection,
+    receiver: Receiver<Message>,
+    state: &'a mut State,
 }
 
-impl Server {
-    pub fn new(connection: Connection) -> Self {
+impl<'a> Server<'a> {
+    pub fn new(receiver: Receiver<Message>, state: &'a mut State) -> Self {
         Self {
             did_initialize: false,
-            connection,
+            receiver,
+            state,
         }
     }
 
     pub fn initialize(mut self) -> Result<Self> {
-        match self.connection.receiver.recv()? {
+        match self.receiver.recv()? {
             Message::Request(request) if request.is_initialize() => {
                 self.handle_request(request)?;
                 self.did_initialize = true;
@@ -42,18 +45,24 @@ impl Server {
         })
     }
 
-    pub fn run(self) -> Result<()> {
-        while let Ok(message) = self.connection.receiver.recv() {
+    pub fn run(mut self) -> Result<()> {
+        while let Ok(message) = self.receiver.recv() {
             if !self.did_initialize {
-                log::warn!("Server is not initialized. Waiting for `initialize` message...");
+                log::warn!(
+                    "Cannot process received message because the connection to \
+                     the client has not been properly initialized. Waiting for \
+                     the `initialize` message..."
+                );
                 continue;
             }
 
             match message {
-                Message::Request(request) => self.handle_request(request)?,
-                Message::Notification(notification) => {
-                    self.handle_notification(notification)?
+                Message::Request(r) => self.handle_request(r)?,
+                Message::Notification(n) if n.is_exit() => {
+                    log::trace!("Exiting...");
+                    break;
                 }
+                Message::Notification(n) => self.handle_notification(n)?,
                 _ => log::info!("Unhandled message: {:?}", message),
             }
         }
@@ -61,18 +70,27 @@ impl Server {
         Ok(())
     }
 
-    fn handle_request(&self, request: Request) -> Result<()> {
-        RequestDispatcher::new(request, self.connection.sender.clone())
-            .on::<lsp_types::request::Initialize>(handler::initialize)
-            .on::<lsp_types::request::Shutdown>(handler::shutdown)
+    fn handle_request(&mut self, request: Request) -> Result<()> {
+        RequestDispatcher::new(request, self.state)
+            .on::<lsp_types::request::Initialize>(handler::initialize)?
+            .on::<lsp_types::request::Shutdown>(handler::shutdown)?
             .finish();
 
         Ok(())
     }
 
-    fn handle_notification(&self, notification: Notification) -> Result<()> {
-        NotificationDispatcher::new(notification)
+    fn handle_notification(
+        &mut self,
+        notification: Notification,
+    ) -> Result<()> {
+        NotificationDispatcher::new(notification, self.state)
             .on::<lsp_types::notification::Initialized>(handler::initialized)
+            .on::<lsp_types::notification::DidOpenTextDocument>(
+                handler::did_open_text_document,
+            )
+            .on::<lsp_types::notification::DidChangeTextDocument>(
+                handler::did_change_text_document,
+            )
             .finish();
 
         Ok(())

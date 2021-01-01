@@ -91,20 +91,20 @@ mod tests {
         assert_eq!(db.source_column_index(FILE_ID, 3, 30), 9);
         assert_eq!(db.source_column_index(FILE_ID, 4, 31), 0);
 
-        assert_eq!(db.source_position(FILE_ID, 0), (0, 0));
-        assert_eq!(db.source_position(FILE_ID, 1), (0, 1));
-        assert_eq!(db.source_position(FILE_ID, 5), (0, 5));
-        assert_eq!(db.source_position(FILE_ID, 9), (0, 9));
-        assert_eq!(db.source_position(FILE_ID, 10), (1, 0));
-        assert_eq!(db.source_position(FILE_ID, 11), (1, 1));
-        assert_eq!(db.source_position(FILE_ID, 15), (1, 5));
-        assert_eq!(db.source_position(FILE_ID, 19), (1, 9));
-        assert_eq!(db.source_position(FILE_ID, 20), (2, 0));
-        assert_eq!(db.source_position(FILE_ID, 21), (3, 0));
-        assert_eq!(db.source_position(FILE_ID, 22), (3, 1));
-        assert_eq!(db.source_position(FILE_ID, 26), (3, 5));
-        assert_eq!(db.source_position(FILE_ID, 30), (3, 9));
-        assert_eq!(db.source_position(FILE_ID, 31), (4, 0));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 0), (0, 0));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 1), (0, 1));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 5), (0, 5));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 9), (0, 9));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 10), (1, 0));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 11), (1, 1));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 15), (1, 5));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 19), (1, 9));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 20), (2, 0));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 21), (3, 0));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 22), (3, 1));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 26), (3, 5));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 30), (3, 9));
+        assert_eq!(db.source_position_at_offset(FILE_ID, 31), (4, 0));
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use crate::Result;
 use lsp_types::*;
 
 pub mod notification;

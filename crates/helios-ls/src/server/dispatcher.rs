@@ -1,24 +1,28 @@
-use crate::protocol::{Message, Notification, Request, RequestId, Response};
-use flume::Sender;
+use crate::protocol::{Notification, Request, RequestId, Response};
+use crate::state::{State, StateSnapshot};
+use crate::Result;
 use serde::{de::DeserializeOwned, Serialize};
 
-pub struct RequestDispatcher {
+pub struct RequestDispatcher<'a> {
     request: Option<Request>,
-    sender: Sender<Message>,
+    state: &'a mut State,
 }
 
-impl RequestDispatcher {
+impl<'a> RequestDispatcher<'a> {
     pub fn new(
         request: impl Into<Option<Request>>,
-        sender: Sender<Message>,
+        state: &'a mut State,
     ) -> Self {
         Self {
             request: request.into(),
-            sender,
+            state,
         }
     }
 
-    pub fn on<R>(&mut self, handler: fn(R::Params) -> R::Result) -> &mut Self
+    pub fn on<R>(
+        &mut self,
+        handler: fn(StateSnapshot, R::Params) -> Result<R::Result>,
+    ) -> Result<&mut Self>
     where
         R: lsp_types::request::Request + 'static,
         R::Params: DeserializeOwned + Send + 'static,
@@ -26,14 +30,24 @@ impl RequestDispatcher {
     {
         let (id, params) = match self.parse_request::<R>() {
             Some(it) => it,
-            _ => return self,
+            _ => return Ok(self),
         };
 
-        let result = handler(params);
-        let response = Response::new_ok(id, result);
-        self.sender.send(response.into()).expect("Failed to send");
+        let snapshot = self.state.snapshot();
+        let handle_response: std::thread::JoinHandle<Result<Response>> =
+            std::thread::spawn(move || {
+                log::trace!("Invoking response handler in separate thread...");
+                let result = handler(snapshot, params)?;
+                let response = Response::new_ok(id, result);
 
-        self
+                Ok(response)
+            });
+
+        let response = handle_response.join().expect("Failed to join")?;
+        log::trace!("Sending response: {:?}", response);
+        self.state.send(response);
+
+        Ok(self)
     }
 
     pub fn finish(&mut self) {
@@ -58,18 +72,23 @@ impl RequestDispatcher {
     }
 }
 
-pub struct NotificationDispatcher {
+pub struct NotificationDispatcher<'a> {
     notification: Option<Notification>,
+    state: &'a mut State,
 }
 
-impl NotificationDispatcher {
-    pub fn new(notification: impl Into<Option<Notification>>) -> Self {
+impl<'a> NotificationDispatcher<'a> {
+    pub fn new(
+        notification: impl Into<Option<Notification>>,
+        state: &'a mut State,
+    ) -> Self {
         Self {
             notification: notification.into(),
+            state,
         }
     }
 
-    pub fn on<N>(&mut self, handler: fn(N::Params)) -> &mut Self
+    pub fn on<N>(&mut self, handler: fn(&mut State, N::Params)) -> &mut Self
     where
         N: lsp_types::notification::Notification + 'static,
         N::Params: DeserializeOwned + Send + 'static,
@@ -79,7 +98,7 @@ impl NotificationDispatcher {
             _ => return self,
         };
 
-        handler(params);
+        handler(self.state, params);
 
         self
     }

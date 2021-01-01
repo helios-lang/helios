@@ -1,9 +1,13 @@
 use super::*;
+use crate::state::StateSnapshot;
 
-pub fn initialize(_: InitializeParams) -> InitializeResult {
+pub fn initialize(
+    _: StateSnapshot,
+    _: InitializeParams,
+) -> Result<InitializeResult> {
     let server_info = ServerInfo {
         name: "Helios-LS".to_string(),
-        version: Some(env!("CARGO_PKG_VERSION").to_string()),
+        version: Some(env!("CARGO_PKG_VERSION").into()),
     };
 
     let capabilities = ServerCapabilities {
@@ -13,7 +17,7 @@ pub fn initialize(_: InitializeParams) -> InitializeResult {
         hover_provider: Some(HoverProviderCapability::Simple(true)),
         completion_provider: Some(CompletionOptions {
             resolve_provider: Some(true),
-            trigger_characters: Some(vec![".".to_string()]),
+            trigger_characters: Some(vec![".".into()]),
             work_done_progress_options: WorkDoneProgressOptions {
                 work_done_progress: Some(false),
             },
@@ -21,12 +25,13 @@ pub fn initialize(_: InitializeParams) -> InitializeResult {
         ..ServerCapabilities::default()
     };
 
-    InitializeResult {
+    Ok(InitializeResult {
         server_info: Some(server_info),
         capabilities,
-    }
+    })
 }
 
-pub fn shutdown(_: ()) {
-    log::info!("Shutting down...")
+pub fn shutdown(_: StateSnapshot, _: ()) -> Result<()> {
+    log::trace!("Shutting down...");
+    Ok(())
 }

@@ -27,11 +27,17 @@ pub trait InputLocation: Input {
         byte_offset: usize,
     ) -> usize;
 
-    fn source_position(
+    fn source_position_at_offset(
         &self,
         file_id: FileId,
         byte_offset: usize,
     ) -> (usize, usize);
+
+    fn source_offset_at_position(
+        &self,
+        file_id: FileId,
+        position: (usize, usize),
+    ) -> usize;
 }
 
 fn source_line_indexes(
@@ -110,7 +116,7 @@ fn source_column_index(
     column_index
 }
 
-fn source_position(
+fn source_position_at_offset(
     db: &dyn InputLocation,
     file_id: FileId,
     byte_offset: usize,
@@ -119,4 +125,13 @@ fn source_position(
     let column_index = db.source_column_index(file_id, line_index, byte_offset);
 
     (line_index, column_index)
+}
+
+fn source_offset_at_position(
+    db: &dyn InputLocation,
+    file_id: FileId,
+    position: (usize, usize)
+) -> usize {
+    let line_indexes = db.source_line_indexes(file_id);
+    line_indexes[position.0] + position.1
 }

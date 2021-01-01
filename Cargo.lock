@@ -229,8 +229,10 @@ version = "0.2.0"
 dependencies = [
  "env_logger",
  "flume",
+ "helios-query",
  "log",
  "lsp-types",
+ "salsa",
  "serde",
  "serde_json",
 ]
