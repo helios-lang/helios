@@ -74,6 +74,7 @@ impl<'a> Server<'a> {
         RequestDispatcher::new(request, self.state)
             .on::<lsp_types::request::Initialize>(handler::initialize)?
             .on::<lsp_types::request::Shutdown>(handler::shutdown)?
+            .on::<lsp_types::request::Completion>(handler::completion)?
             .finish();
 
         Ok(())

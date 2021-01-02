@@ -1,50 +1,86 @@
-use crate::FileId;
 use helios_diagnostics::{Diagnostic, Location};
 use helios_formatting::FormattedString;
 use helios_syntax::SyntaxKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Message {
-    Lexer(LexerMessage),
-    Parser(ParserMessage),
+pub struct Message<FileId> {
+    kind: MessageKind,
+    location: Location<FileId>,
 }
 
-impl From<Message> for Diagnostic<FileId> {
-    fn from(message: Message) -> Self {
-        match message {
-            Message::Lexer(message) => message.into(),
-            Message::Parser(message) => message.into(),
+impl<FileId> Message<FileId>
+where
+    FileId: Clone + Default,
+{
+    pub fn new(
+        kind: impl Into<MessageKind>,
+        location: Location<FileId>,
+    ) -> Self {
+        Self {
+            kind: kind.into(),
+            location,
+        }
+    }
+
+    pub fn generate_diagnostic(&self) -> Diagnostic<FileId> {
+        match &self.kind {
+            MessageKind::Lexer(it) => it.diagnostic(self.location.clone()),
+            MessageKind::Parser(it) => it.diagnostic(self.location.clone()),
         }
     }
 }
 
-impl From<LexerMessage> for Message {
-    fn from(message: LexerMessage) -> Self {
-        Message::Lexer(message)
+impl<FileId> From<Message<FileId>> for Diagnostic<FileId>
+where
+    FileId: Clone + Default,
+{
+    fn from(message: Message<FileId>) -> Self {
+        message.generate_diagnostic()
     }
 }
 
-impl From<ParserMessage> for Message {
+impl<FileId> From<&Message<FileId>> for Diagnostic<FileId>
+where
+    FileId: Clone + Default,
+{
+    fn from(message: &Message<FileId>) -> Self {
+        message.generate_diagnostic()
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MessageKind {
+    Lexer(LexerMessage),
+    Parser(ParserMessage),
+}
+
+impl From<LexerMessage> for MessageKind {
+    fn from(message: LexerMessage) -> Self {
+        MessageKind::Lexer(message)
+    }
+}
+
+impl From<ParserMessage> for MessageKind {
     fn from(message: ParserMessage) -> Self {
-        Message::Parser(message)
+        MessageKind::Parser(message)
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LexerMessage {
-    UnknownCharacter {
-        location: Location<FileId>,
-        character: char,
-    },
+    UnknownCharacter(char),
 }
 
-impl From<LexerMessage> for Diagnostic<FileId> {
-    fn from(message: LexerMessage) -> Self {
-        match message {
-            LexerMessage::UnknownCharacter {
-                location,
-                character,
-            } => {
+impl LexerMessage {
+    pub fn diagnostic<FileId>(
+        &self,
+        location: Location<FileId>,
+    ) -> Diagnostic<FileId>
+    where
+        FileId: Default,
+    {
+        match self {
+            LexerMessage::UnknownCharacter(character) => {
                 let description = FormattedString::default()
                     .text("I encountered a token I don't know how to handle:");
 
@@ -65,26 +101,26 @@ impl From<LexerMessage> for Diagnostic<FileId> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ParserMessage {
     MissingKind {
-        location: Location<FileId>,
         context: Option<SyntaxKind>,
         expected: SyntaxKind,
     },
     UnexpectedKind {
-        location: Location<FileId>,
         context: Option<SyntaxKind>,
         given: Option<SyntaxKind>,
         expected: Vec<SyntaxKind>,
     },
 }
 
-impl From<ParserMessage> for Diagnostic<FileId> {
-    fn from(message: ParserMessage) -> Self {
-        match message {
-            ParserMessage::MissingKind {
-                location,
-                context,
-                expected,
-            } => {
+impl ParserMessage {
+    pub fn diagnostic<FileId>(
+        &self,
+        location: Location<FileId>,
+    ) -> Diagnostic<FileId>
+    where
+        FileId: Default,
+    {
+        match self {
+            ParserMessage::MissingKind { context, expected } => {
                 let error = format!(
                     "Missing {}{}",
                     expected.description().map(|s| s + " ").unwrap_or_default(),
@@ -107,7 +143,6 @@ impl From<ParserMessage> for Diagnostic<FileId> {
                     .message(message)
             }
             ParserMessage::UnexpectedKind {
-                location,
                 context,
                 given,
                 expected,

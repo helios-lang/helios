@@ -1,9 +1,9 @@
 use crate::SyntaxKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Language;
+pub struct HeliosLanguage;
 
-impl rowan::Language for Language {
+impl rowan::Language for HeliosLanguage {
     type Kind = SyntaxKind;
 
     fn kind_from_raw(raw: rowan::SyntaxKind) -> Self::Kind {

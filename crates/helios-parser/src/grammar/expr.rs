@@ -44,12 +44,18 @@ fn infix_binding_power(kind: SyntaxKind) -> (u8, u8) {
 }
 
 /// Parses an expression.
-pub(super) fn expr(parser: &mut Parser, min_bp: u8) -> Option<CompletedMarker> {
-    let mut lhs = lhs(parser)?;
+pub(super) fn expr<FileId>(
+    p: &mut Parser<FileId>,
+    min_bp: u8,
+) -> Option<CompletedMarker>
+where
+    FileId: Clone + Default,
+{
+    let mut lhs = lhs(p)?;
 
     loop {
         // Peek the next `SyntaxKind`, assuming it's an operator
-        if let Some(operator) = parser.is_at_either(INFIX_OPS) {
+        if let Some(operator) = p.is_at_either(INFIX_OPS) {
             // Get the left and right binding power of the operator
             let (left_bp, right_bp) = infix_binding_power(*operator);
 
@@ -58,11 +64,11 @@ pub(super) fn expr(parser: &mut Parser, min_bp: u8) -> Option<CompletedMarker> {
             }
 
             // Consume the operator token
-            parser.bump();
+            p.bump();
 
-            let m = lhs.precede(parser);
-            let parsed_rhs = expr(parser, right_bp).is_some();
-            lhs = m.complete(parser, SyntaxKind::Exp_Binary);
+            let m = lhs.precede(p);
+            let parsed_rhs = expr(p, right_bp).is_some();
+            lhs = m.complete(p, SyntaxKind::Exp_Binary);
 
             if !parsed_rhs {
                 break;
@@ -87,21 +93,24 @@ const LHS_KINDS: &[SyntaxKind] = &[
 ];
 
 /// Parses the left-hand side of an expression.
-fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
+fn lhs<FileId>(p: &mut Parser<FileId>) -> Option<CompletedMarker>
+where
+    FileId: Clone + Default,
+{
     let lhs_kinds_or_prefix_ops = &[LHS_KINDS, PREFIX_OPS].concat();
 
     // We'll check if the next `SyntaxKind` can start a LHS expression (either
     // any of `LHS_KINDS` or `PREFIX_OPS`)
-    let cm = if let Some(kind) = parser.is_at_either(lhs_kinds_or_prefix_ops) {
+    let cm = if let Some(kind) = p.is_at_either(lhs_kinds_or_prefix_ops) {
         match kind {
-            SyntaxKind::Lit_Integer | SyntaxKind::Lit_Float => literal(parser),
-            SyntaxKind::Identifier => variable_ref(parser),
-            SyntaxKind::Sym_LParen => paren_expr(parser),
-            kind if PREFIX_OPS.contains(kind) => unary_prefix_expr(parser),
+            SyntaxKind::Lit_Integer | SyntaxKind::Lit_Float => literal(p),
+            SyntaxKind::Identifier => variable_ref(p),
+            SyntaxKind::Sym_LParen => paren_expr(p),
+            kind if PREFIX_OPS.contains(kind) => unary_prefix_expr(p),
             _ => unreachable!("Got unexpected kind for LHS: {:?}", kind),
         }
     } else {
-        parser.error(SyntaxKind::Exp_Unnamed);
+        p.error(SyntaxKind::Exp_Unnamed);
         return None;
     };
 
@@ -109,53 +118,65 @@ fn lhs(parser: &mut Parser) -> Option<CompletedMarker> {
 }
 
 /// Parses a literal that may stand alone as an expression.
-fn literal(parser: &mut Parser) -> CompletedMarker {
+fn literal<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
+where
+    FileId: Clone + Default,
+{
     use SyntaxKind::*;
-    assert!(parser.is_at(Lit_Integer) || parser.is_at(Lit_Float));
+    assert!(p.is_at(Lit_Integer) || p.is_at(Lit_Float));
 
-    let m = parser.start();
-    parser.bump();
-    m.complete(parser, Exp_Literal)
+    let m = p.start();
+    p.bump();
+    m.complete(p, Exp_Literal)
 }
 
 /// Parses an identifier as a variable reference.
-fn variable_ref(parser: &mut Parser) -> CompletedMarker {
-    assert!(parser.is_at(SyntaxKind::Identifier));
+fn variable_ref<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
+where
+    FileId: Clone + Default,
+{
+    assert!(p.is_at(SyntaxKind::Identifier));
 
-    let m = parser.start();
-    parser.bump();
-    m.complete(parser, SyntaxKind::Exp_VariableRef)
+    let m = p.start();
+    p.bump();
+    m.complete(p, SyntaxKind::Exp_VariableRef)
 }
 
 /// Parses a unary expression with a prefixed operator.
-fn unary_prefix_expr(parser: &mut Parser) -> CompletedMarker {
-    let m = parser.start();
+fn unary_prefix_expr<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
+where
+    FileId: Clone + Default,
+{
+    let m = p.start();
 
     // Get the right binding power of the operator
     let operator = SyntaxKind::Sym_Minus;
     let ((), right_bp) = prefix_binding_power(operator);
 
     // Consume the operator token and the expression it holds
-    parser.bump();
-    expr(parser, right_bp);
+    p.bump();
+    expr(p, right_bp);
 
-    m.complete(parser, SyntaxKind::Exp_UnaryPrefix)
+    m.complete(p, SyntaxKind::Exp_UnaryPrefix)
 }
 
 /// Parses an expression surrounded by parenthesis.
-fn paren_expr(parser: &mut Parser) -> CompletedMarker {
-    assert!(parser.is_at(SyntaxKind::Sym_LParen));
+fn paren_expr<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
+where
+    FileId: Clone + Default,
+{
+    assert!(p.is_at(SyntaxKind::Sym_LParen));
 
-    let m = parser.start();
+    let m = p.start();
 
     // Consume the opening parenthesis and the expression inside
-    parser.bump();
-    expr(parser, 0);
+    p.bump();
+    expr(p, 0);
 
     // Consume the closing parenthesis if possible
-    parser.expect(SyntaxKind::Sym_RParen, SyntaxKind::Exp_Paren);
+    p.expect(SyntaxKind::Sym_RParen, SyntaxKind::Exp_Paren);
 
-    m.complete(parser, SyntaxKind::Exp_Paren)
+    m.complete(p, SyntaxKind::Exp_Paren)
 }
 
 #[cfg(test)]

@@ -19,12 +19,12 @@ use crate::lexer::Token;
 /// [`Event`]: crate::parser::event::Parser
 /// [`Parser`]: crate::parser::Parser
 /// [`Sink`]: crate::parser::sink::Sink
-pub struct Source<'tokens, 'source> {
+pub struct Source<'source, 'tokens> {
     tokens: &'tokens [Token<'source>],
     cursor: usize,
 }
 
-impl<'tokens, 'source> Source<'tokens, 'source> {
+impl<'source, 'tokens> Source<'source, 'tokens> {
     /// Construct a new [`Source`] with a given slice of [`Token`]s.
     pub fn new(tokens: &'tokens [Token<'source>]) -> Self {
         Self { tokens, cursor: 0 }

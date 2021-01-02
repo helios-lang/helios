@@ -1,24 +1,30 @@
 use super::*;
 
-pub(super) fn decl(parser: &mut Parser) -> Option<CompletedMarker> {
-    if parser.is_at(SyntaxKind::Kwd_Let) {
-        Some(global_binding(parser))
+pub(super) fn decl<FileId>(p: &mut Parser<FileId>) -> Option<CompletedMarker>
+where
+    FileId: Clone + Default,
+{
+    if p.is_at(SyntaxKind::Kwd_Let) {
+        Some(global_binding(p))
     } else {
-        expr::expr(parser, 0)
+        expr::expr(p, 0)
     }
 }
 
-fn global_binding(parser: &mut Parser) -> CompletedMarker {
-    assert!(parser.is_at(SyntaxKind::Kwd_Let));
-    let m = parser.start();
-    parser.bump();
+fn global_binding<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
+where
+    FileId: Clone + Default,
+{
+    assert!(p.is_at(SyntaxKind::Kwd_Let));
+    let m = p.start();
+    p.bump();
 
-    parser.expect(SyntaxKind::Identifier, SyntaxKind::Dec_GlobalBinding);
-    parser.expect(SyntaxKind::Sym_Eq, SyntaxKind::Dec_GlobalBinding);
+    p.expect(SyntaxKind::Identifier, SyntaxKind::Dec_GlobalBinding);
+    p.expect(SyntaxKind::Sym_Eq, SyntaxKind::Dec_GlobalBinding);
 
-    expr::expr(parser, 0);
+    expr::expr(p, 0);
 
-    m.complete(parser, SyntaxKind::Dec_GlobalBinding)
+    m.complete(p, SyntaxKind::Dec_GlobalBinding)
 }
 
 #[cfg(test)]

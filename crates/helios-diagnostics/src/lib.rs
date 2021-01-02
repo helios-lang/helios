@@ -129,7 +129,7 @@ pub fn emit<'files, F: Files<'files>>(
     let line = &source.as_ref()[line_range].trim_end(); // remove trailing LF
     writeln!(f, "{}{}", gutter.dimmed(), line)?;
 
-    // `col_start` is indexed by 1
+    // `column_start` is indexed by 1
     let offset = " ".repeat(gutter.len() + column_start - 1);
     // The difference of the column positions, or 1, whichever is larger
     let underline_count = std::cmp::max(1, column_end - column_start);

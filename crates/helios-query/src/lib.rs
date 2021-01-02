@@ -107,6 +107,7 @@ mod tests {
         assert_eq!(db.source_position_at_offset(FILE_ID, 31), (4, 0));
     }
 
+    /*
     #[test]
     fn test_all_bindings() {
         fn print_bindings(
@@ -114,8 +115,9 @@ mod tests {
             bindings: Arc<Vec<BindingId>>,
         ) {
             for binding in bindings.iter() {
-                let binding_data = db.lookup_intern_binding(*binding);
-                println!("{:?} => {}", binding, binding_data.identifier);
+                let binding_data: BindingData =
+                    db.lookup_intern_binding(*binding);
+                println!("{:?} => {:?}", binding, binding_data.identifier);
             }
         }
 
@@ -125,4 +127,5 @@ mod tests {
         let bindings = db.all_bindings(FILE_ID);
         print_bindings(&mut db, bindings);
     }
+    */
 }

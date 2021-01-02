@@ -16,9 +16,9 @@ impl Marker {
         }
     }
 
-    pub(crate) fn complete(
+    pub(crate) fn complete<FileId>(
         mut self,
-        parser: &mut Parser,
+        parser: &mut Parser<FileId>,
         kind: SyntaxKind,
     ) -> CompletedMarker {
         self.bomb.defuse();
@@ -42,13 +42,16 @@ pub(crate) struct CompletedMarker {
 }
 
 impl CompletedMarker {
-    pub(crate) fn precede(self, parser: &mut Parser) -> Marker {
-        let new_m = parser.start();
+    pub(crate) fn precede<FileId>(self, p: &mut Parser<FileId>) -> Marker
+    where
+        FileId: Clone + Default,
+    {
+        let new_m = p.start();
 
         if let Event::StartNode {
             ref mut forward_parent,
             ..
-        } = parser.events[self.pos]
+        } = p.events[self.pos]
         {
             *forward_parent = Some(new_m.pos - self.pos);
         } else {

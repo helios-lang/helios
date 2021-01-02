@@ -33,18 +33,23 @@ impl<'a> RequestDispatcher<'a> {
             _ => return Ok(self),
         };
 
+        // let snapshot = self.state.snapshot();
+        // let handle_response: std::thread::JoinHandle<Result<Response>> =
+        //     std::thread::spawn(move || {
+        //         log::trace!("Invoking response handler in separate thread...");
+        //         let result = handler(snapshot, params)?;
+        //         let response = Response::new_ok(id, result);
+
+        //         Ok(response)
+        //     });
+
+        // let response = handle_response.join().expect("Failed to join")?;
+        // log::trace!("Sending response: {:?}", response);
+        // self.state.send(response);
+
         let snapshot = self.state.snapshot();
-        let handle_response: std::thread::JoinHandle<Result<Response>> =
-            std::thread::spawn(move || {
-                log::trace!("Invoking response handler in separate thread...");
-                let result = handler(snapshot, params)?;
-                let response = Response::new_ok(id, result);
-
-                Ok(response)
-            });
-
-        let response = handle_response.join().expect("Failed to join")?;
-        log::trace!("Sending response: {:?}", response);
+        let result = handler(snapshot, params)?;
+        let response = Response::new_ok(id, result);
         self.state.send(response);
 
         Ok(self)

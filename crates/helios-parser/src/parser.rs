@@ -8,38 +8,35 @@ pub(crate) mod source;
 use self::event::Event;
 use self::marker::Marker;
 use self::source::Source;
-use crate::lexer::Token;
-use crate::message::{Message, ParserMessage};
-use crate::FileId;
-use flume::Sender;
+use crate::message::ParserMessage;
+use crate::{lexer::Token, Message};
 use helios_diagnostics::Location;
 use helios_syntax::SyntaxKind;
 
 const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
 
 /// A lazy, lossless, error-tolerant parser for the Helios programming language.
-pub struct Parser<'tokens, 'source> {
+pub struct Parser<'source, 'tokens, FileId> {
     file_id: FileId,
     source: Source<'tokens, 'source>,
     events: Vec<Event>,
     expected_kinds: Vec<SyntaxKind>,
-    messages_tx: Sender<Message>,
+    messages: Vec<Message<FileId>>,
 }
 
-impl<'tokens, 'source> Parser<'tokens, 'source> {
+impl<'source, 'tokens, FileId> Parser<'source, 'tokens, FileId>
+where
+    FileId: Clone + Default,
+{
     /// Constructs a new [`Parser`] with a [`Source`] and a channel that sends
     /// [`Diagnostic`]s.
-    pub fn new(
-        file_id: FileId,
-        source: Source<'tokens, 'source>,
-        messages_tx: Sender<Message>,
-    ) -> Self {
+    pub fn new(file_id: FileId, source: Source<'tokens, 'source>) -> Self {
         Self {
             file_id,
             source,
             events: Vec::new(),
             expected_kinds: Vec::new(),
-            messages_tx,
+            messages: Vec::new(),
         }
     }
 
@@ -50,15 +47,15 @@ impl<'tokens, 'source> Parser<'tokens, 'source> {
     /// return a [`Parse`] containing a root green node.
     ///
     /// [`Parse`]: crate::Parse
-    pub fn parse(mut self) -> Vec<Event> {
+    pub fn parse(mut self) -> (Vec<Event>, Vec<Message<FileId>>) {
         crate::grammar::root(&mut self);
-        self.events
+        (self.events, self.messages)
     }
 }
 
-impl<'tokens, 'source> Parser<'tokens, 'source>
+impl<'source, 'tokens, FileId> Parser<'source, 'tokens, FileId>
 where
-    FileId: Clone,
+    FileId: Clone + Default,
 {
     /// Determines if the next [`SyntaxKind`] is the given `kind`.
     pub(crate) fn is_at(&mut self, kind: SyntaxKind) -> bool {
@@ -118,17 +115,23 @@ where
 
         let expected = std::mem::take(&mut self.expected_kinds);
 
-        self.messages_tx
-            .send(
-                ParserMessage::UnexpectedKind {
-                    location: Location::new(self.file_id.clone(), range),
-                    context: context.into(),
-                    given,
-                    expected,
-                }
-                .into(),
-            )
-            .expect("Failed to send message");
+        // self.messages.push(ParserMessage::UnexpectedKind {
+        //     range,
+        //     context: context.into(),
+        //     given,
+        //     expected,
+        // });
+
+        let message_kind = ParserMessage::UnexpectedKind {
+            context: context.into(),
+            given,
+            expected,
+        };
+
+        self.messages.push(Message::new(
+            message_kind,
+            Location::new(self.file_id.clone(), range),
+        ));
 
         if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
             let m = self.start();

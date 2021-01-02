@@ -57,7 +57,6 @@ fn start_main_loop() -> io::Result<()> {
 
     let mut input = String::new();
     let mut files = SimpleFiles::new();
-    let (messages_tx, messages_rx) = flume::unbounded();
 
     loop {
         write!(stdout, "{}", "> ".blue())?;
@@ -87,25 +86,21 @@ fn start_main_loop() -> io::Result<()> {
             let file_id = files.add("<repl>", input.to_string());
             let file = files.get(file_id).unwrap();
 
-            let parse_result = helios_parser::parse(
-                file_id,
-                file.source(),
-                messages_tx.clone(),
-            );
+            let parse = helios_parser::parse(file_id, file.source());
+            println!("{}", parse.debug_tree().cyan());
 
-            println!("{}", parse_result.debug_tree().cyan());
-        }
+            let mut emitted_ranges = Vec::new();
+            for message in parse.messages() {
+                let diagnostic = Diagnostic::from(message);
 
-        let mut emitted_ranges = Vec::new();
-        for message in messages_rx.try_iter() {
-            let diagnostic = Diagnostic::from(message);
-
-            if !(emitted_ranges.contains(&diagnostic.location)) {
-                emitted_ranges.push(diagnostic.location.clone());
-                helios_diagnostics::emit(&mut stdout, &files, &diagnostic)
-                    .expect("Failed to print diagnostic");
+                if !(emitted_ranges.contains(&diagnostic.location)) {
+                    emitted_ranges.push(diagnostic.location.clone());
+                    helios_diagnostics::emit(&mut stdout, &files, &diagnostic)
+                        .expect("Failed to print diagnostic");
+                }
             }
         }
+
 
         input.clear();
     }

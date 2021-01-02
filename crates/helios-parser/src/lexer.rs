@@ -14,10 +14,7 @@
 //!
 // ! [`parse`]: crate::parse
 
-use crate::message::Message;
-use crate::FileId;
-use crate::{cursor::Cursor, message::LexerMessage};
-use flume::Sender;
+use crate::{cursor::Cursor, message::LexerMessage, Message};
 use helios_diagnostics::Location;
 use helios_syntax::{self, SyntaxKind};
 use std::ops::Range;
@@ -67,23 +64,26 @@ fn is_whitespace(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\r' | '\n')
 }
 
+pub type LexerItem<'source, FileId> = (Token<'source>, Option<Message<FileId>>);
+type LexerReturn<FileId> = (SyntaxKind, Option<Message<FileId>>);
+
 /// The unit of a tokenized Helios source file.
 ///
 /// This structure holds the [`SyntaxKind`] of a token, the text that formed it,
 /// and the range of the token (using `text_size::TextRange`). It is also the
 /// `Item` type of the [`Lexer`] iterator.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Token<'text> {
+pub struct Token<'source> {
     pub kind: SyntaxKind,
-    pub text: &'text str,
+    pub text: &'source str,
     pub range: Range<usize>,
 }
 
-impl<'text> Token<'text> {
+impl<'source> Token<'source> {
     /// Constructs a new [`Token`] with the given kind, text and range.
     pub fn new(
         kind: SyntaxKind,
-        text: &'text str,
+        text: &'source str,
         range: Range<usize>,
     ) -> Self {
         Self { kind, text, range }
@@ -121,30 +121,25 @@ impl Default for LexerMode {
 /// parse a Helios source file.
 ///
 /// [`parse`]: crate::parse
-pub struct Lexer<'source> {
-    #[allow(dead_code)]
+pub struct Lexer<'source, FileId> {
     file_id: FileId,
     cursor: Cursor<'source>,
     mode_stack: Vec<LexerMode>,
-    #[allow(dead_code)]
-    messages_tx: Sender<Message>,
 }
 
-impl<'source> Lexer<'source> {
+impl<'source, FileId> Lexer<'source, FileId>
+where
+    FileId: Clone + Default,
+{
     /// Construct a new [`Lexer`] with a given source text.
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
     /// cursor position to the start.
-    pub fn new(
-        file_id: FileId,
-        source: &'source str,
-        messages_tx: Sender<Message>,
-    ) -> Self {
+    pub fn new(file_id: FileId, source: &'source str) -> Self {
         Self {
             file_id,
             cursor: Cursor::new(source),
             mode_stack: vec![LexerMode::Normal],
-            messages_tx,
         }
     }
 
@@ -161,11 +156,11 @@ impl<'source> Lexer<'source> {
     }
 
     /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
-    fn tokenize_normal(&mut self) -> Option<Token<'source>> {
+    fn tokenize_normal(&mut self) -> Option<LexerItem<'source, FileId>> {
         self.cursor.checkpoint();
         let start = self.current_pos();
 
-        let kind = match self.cursor.advance()? {
+        let (kind, message) = match self.cursor.advance()? {
             c if c == '-' && self.peek() == '-' => self.lex_comment(c),
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
@@ -177,25 +172,20 @@ impl<'source> Lexer<'source> {
         let end = self.current_pos();
         let text = self.cursor.slice();
 
-        Some(Token::new(kind, text, start..end))
+        Some((Token::new(kind, text, start..end), message))
     }
 
-    fn error(&self, character: char, start: usize) -> SyntaxKind {
-        self.messages_tx
-            .send(
-                LexerMessage::UnknownCharacter {
-                    location: Location::new(self.file_id, start..(start + 1)),
-                    character,
-                }
-                .into(),
-            )
-            .expect("Failed to send");
+    fn error(&self, character: char, start: usize) -> LexerReturn<FileId> {
+        let message = Message::new(
+            LexerMessage::UnknownCharacter(character),
+            Location::new(self.file_id.clone(), start..(start + 1)),
+        );
 
-        SyntaxKind::UnknownChar
+        (SyntaxKind::UnknownChar, Some(message))
     }
 }
 
-impl<'source> Lexer<'source> {
+impl<'source, FileId> Lexer<'source, FileId> {
     /// The current mode of the lexer.
     fn current_mode(&self) -> LexerMode {
         self.mode_stack.last().cloned().unwrap_or_default()
@@ -265,31 +255,31 @@ impl<'source> Lexer<'source> {
     }
 }
 
-impl<'source> Lexer<'source> {
+impl<'source, FileId> Lexer<'source, FileId> {
     /// Tokenizes a line comment.
     ///
     /// A line comment starts with two consecutive minus characters (`--`) and
     /// ends at the next line feed (or the end of file, whichever comes first).
     /// This function also determines if it is a documentation comment, which
     /// starts with two minus characters and a pipe character (`--|`).
-    fn lex_comment(&mut self, _: char) -> SyntaxKind {
+    fn lex_comment(&mut self, _: char) -> LexerReturn<FileId> {
         // Consume the second `/`
         self.next_char();
 
         // Check if it is a doc-comment
         if self.peek() == '|' {
             self.consume_while(|c| c != '\n');
-            SyntaxKind::DocComment
+            (SyntaxKind::DocComment, None)
         } else {
             self.consume_while(|c| c != '\n');
-            SyntaxKind::Comment
+            (SyntaxKind::Comment, None)
         }
     }
 
     /// Tokenizes a contiguous series of whitespace delimiters.
-    fn lex_whitespace(&mut self, _: char) -> SyntaxKind {
+    fn lex_whitespace(&mut self, _: char) -> LexerReturn<FileId> {
         self.consume_while(is_whitespace);
-        SyntaxKind::Whitespace
+        (SyntaxKind::Whitespace, None)
     }
 
     /// Tokenizes a valid symbol.
@@ -297,16 +287,16 @@ impl<'source> Lexer<'source> {
     /// _TODO:_ Perhaps we could handle cases with confused symbols, such as
     /// U+037E, the Greek question mark, which looks like a semicolon (compare
     /// ';' with ';').
-    fn lex_symbol(&mut self, symbol: char) -> SyntaxKind {
+    fn lex_symbol(&mut self, symbol: char) -> LexerReturn<FileId> {
         match symbol {
             '?' => {
                 if (self.peek(), self.peek_at(1)) == ('?', '?') {
                     // Consume the next two question marks
                     self.next_char();
                     self.next_char();
-                    SyntaxKind::Kwd_Unimplemented
+                    (SyntaxKind::Kwd_Unimplemented, None)
                 } else {
-                    SyntaxKind::Sym_Question
+                    (SyntaxKind::Sym_Question, None)
                 }
             }
             _ => {
@@ -314,9 +304,9 @@ impl<'source> Lexer<'source> {
                     helios_syntax::symbol_from_chars(&[symbol, self.peek()])
                 {
                     self.next_char();
-                    symbol
+                    (symbol, None)
                 } else {
-                    helios_syntax::symbol_from_char(symbol)
+                    (helios_syntax::symbol_from_char(symbol), None)
                 }
             }
         }
@@ -327,11 +317,11 @@ impl<'source> Lexer<'source> {
     ///
     /// This includes upper- and lower-case letters, decimal digits and the
     /// underscore.
-    fn lex_identifier(&mut self, first_char: char) -> SyntaxKind {
+    fn lex_identifier(&mut self, first_char: char) -> LexerReturn<FileId> {
         let mut string = String::new();
         string.push(first_char);
         string.push_str(self.consume_build(is_identifier_continue));
-        self.lex_keyword_or_identifier(string.as_str())
+        (self.lex_keyword_or_identifier(string.as_str()), None)
     }
 
     /// Attempts to tokenize the provided string into a keyword or identifier.
@@ -374,7 +364,7 @@ impl<'source> Lexer<'source> {
     ///
     /// _NOTE:_ The lexer does not verify if the the number literal is correctly
     /// formatted in its base.
-    fn lex_number(&mut self, c: char) -> SyntaxKind {
+    fn lex_number(&mut self, c: char) -> LexerReturn<FileId> {
         fn is_digit_continue(c: char) -> bool {
             matches!(c, '_' | '0'..='9' | 'a'..='z' | 'A'..='Z')
         }
@@ -385,7 +375,7 @@ impl<'source> Lexer<'source> {
             // we'll consume any digit that may be part of a number (including
             // invalid letters like 'z').
             self.consume_while(is_digit_continue);
-            SyntaxKind::Lit_Integer
+            (SyntaxKind::Lit_Integer, None)
         } else {
             // This number literal is in decimal base, so we'll consume the
             // integer part first.
@@ -399,16 +389,19 @@ impl<'source> Lexer<'source> {
             if self.peek() == '.' && !is_identifier_start(self.peek_at(1)) {
                 self.next_char();
                 self.consume_while(is_digit_continue);
-                SyntaxKind::Lit_Float
+                (SyntaxKind::Lit_Float, None)
             } else {
-                SyntaxKind::Lit_Integer
+                (SyntaxKind::Lit_Integer, None)
             }
         }
     }
 }
 
-impl<'source> Iterator for Lexer<'source> {
-    type Item = Token<'source>;
+impl<'source, FileId> Iterator for Lexer<'source, FileId>
+where
+    FileId: Clone + Default,
+{
+    type Item = LexerItem<'source, FileId>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.current_mode() {
@@ -422,10 +415,8 @@ mod tests {
     use super::*;
 
     fn check(input: &str, kind: SyntaxKind) {
-        let (diagnostics_tx, _) = flume::unbounded();
-        let mut lexer = Lexer::new(0, input, diagnostics_tx);
-
-        let token = lexer.next().unwrap();
+        let mut lexer = Lexer::new(0u8, input);
+        let (token, _) = lexer.next().unwrap();
         assert_eq!(token.kind, kind);
         assert_eq!(token.text, input);
     }

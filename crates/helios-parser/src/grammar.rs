@@ -7,14 +7,17 @@ use helios_syntax::SyntaxKind;
 mod decl;
 mod expr;
 
-pub(crate) fn root(parser: &mut Parser) -> CompletedMarker {
-    let m = parser.start();
+pub(crate) fn root<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
+where
+    FileId: Clone + Default,
+{
+    let m = p.start();
 
-    while !parser.is_at_end() {
-        decl::decl(parser);
+    while !p.is_at_end() {
+        decl::decl(p);
     }
 
-    m.complete(parser, SyntaxKind::Root)
+    m.complete(p, SyntaxKind::Root)
 }
 
 #[cfg(test)]

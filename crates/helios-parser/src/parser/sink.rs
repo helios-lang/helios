@@ -1,6 +1,6 @@
 use super::event::Event;
-use crate::{lexer::Token, Parse};
-use helios_syntax::Language as HeliosLanguage;
+use crate::{Message, Parse, lexer::Token};
+use helios_syntax::HeliosLanguage as HeliosLanguage;
 use rowan::{GreenNodeBuilder, Language};
 
 pub struct Sink<'tokens, 'source> {
@@ -20,7 +20,7 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
         }
     }
 
-    pub fn finish(mut self) -> Parse {
+    pub fn finish<FileId>(mut self, messages: Vec<Message<FileId>>) -> Parse<FileId> {
         use std::mem;
 
         for i in 0..self.events.len() {
@@ -65,7 +65,7 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
             self.eat_trivia();
         }
 
-        Parse::new(self.builder.finish())
+        Parse::new(self.builder.finish(), messages)
     }
 
     fn eat_trivia(&mut self) {

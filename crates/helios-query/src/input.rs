@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use crate::interner::{BindingData, BindingId, Interner};
 use helios_parser::Parse;
 use std::sync::Arc;
@@ -12,10 +14,10 @@ pub trait Input: Interner {
     /// The length of the source's text.
     fn source_len(&self, file_id: FileId) -> usize;
 
-    /// Constructs a parsed syntax tree of the given file.
-    fn parse(&self, file_id: FileId) -> Parse;
+    // /// Constructs a parsed syntax tree of the given file.
+    // fn parse(&self, file_id: FileId) -> Parse;
 
-    fn all_bindings(&self, file_id: FileId) -> Arc<Vec<BindingId>>;
+    // fn all_bindings(&self, file_id: FileId) -> Arc<Vec<BindingId>>;
 }
 
 fn source_len(db: &dyn Input, file_id: FileId) -> usize {
@@ -23,6 +25,7 @@ fn source_len(db: &dyn Input, file_id: FileId) -> usize {
     source.len()
 }
 
+/*
 fn parse(db: &dyn Input, file_id: FileId) -> Parse {
     let source = db.source(file_id);
     let (messages_tx, _) = flume::unbounded();
@@ -33,7 +36,8 @@ fn parse(db: &dyn Input, file_id: FileId) -> Parse {
 fn all_bindings(db: &dyn Input, file_id: FileId) -> Arc<Vec<BindingId>> {
     let tree = db.parse(file_id).debug_tree();
 
-    let bindings: Vec<_> = tree
+    use std::collections::HashSet;
+    let bindings: HashSet<_> = tree
         .split('\n')
         .map(|line| {
             let line = line.trim();
@@ -49,10 +53,12 @@ fn all_bindings(db: &dyn Input, file_id: FileId) -> Arc<Vec<BindingId>> {
         })
         .map(|(_, identifier)| {
             let identifier = identifier.unwrap_or_default();
+            let identifier = identifier.trim_matches('"').to_string();
             let binding_data = BindingData { identifier };
             db.intern_binding(binding_data)
         })
         .collect();
 
-    Arc::new(bindings)
+    Arc::new(bindings.into_iter().collect())
 }
+*/

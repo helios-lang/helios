@@ -1,5 +1,7 @@
 use super::*;
 use crate::state::StateSnapshot;
+// use helios_query::*;
+// use std::sync::Arc;
 
 pub fn initialize(
     _: StateSnapshot,
@@ -34,4 +36,37 @@ pub fn initialize(
 pub fn shutdown(_: StateSnapshot, _: ()) -> Result<()> {
     log::trace!("Shutting down...");
     Ok(())
+}
+
+pub fn completion(
+    _snapshot: StateSnapshot,
+    _: CompletionParams,
+) -> Result<Option<CompletionResponse>> {
+    // let file_id = 0;
+    // let mut completion_items = Vec::new();
+    // let bindings: Arc<Vec<BindingId>> = snapshot.db.all_bindings(file_id);
+    // let source: Arc<String> = snapshot.db.source(file_id);
+    // log::trace!("SOURCE => {:?}", source);
+
+    // for binding in bindings.iter() {
+    //     let binding_data: BindingData =
+    //         snapshot.db.lookup_intern_binding(*binding);
+    //     log::info!("{:?} => {:?}", binding, binding_data);
+
+    //     let completion_item = CompletionItem {
+    //         label: binding_data.identifier,
+    //         kind: Some(CompletionItemKind::Variable),
+    //         ..CompletionItem::default()
+    //     };
+
+    //     completion_items.push(completion_item);
+    // }
+
+    // if completion_items.is_empty() {
+    //     Ok(None)
+    // } else {
+    //     Ok(Some(completion_items.into()))
+    // }
+
+    Ok(None)
 }
