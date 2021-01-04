@@ -1,5 +1,5 @@
 mod dispatcher;
-mod handler;
+mod handlers;
 
 use self::dispatcher::{NotificationDispatcher, RequestDispatcher};
 use crate::error::ProtocolError;
@@ -70,29 +70,25 @@ impl<'a> Server<'a> {
         Ok(())
     }
 
-    fn handle_request(&mut self, request: Request) -> Result<()> {
-        RequestDispatcher::new(request, self.state)
-            .on::<lsp_types::request::Initialize>(handler::initialize)?
-            .on::<lsp_types::request::Shutdown>(handler::shutdown)?
-            .on::<lsp_types::request::Completion>(handler::completion)?
-            .on::<lsp_types::request::HoverRequest>(handler::hover)?
+    fn handle_request(&mut self, req: Request) -> Result<()> {
+        use lsp_types::request::*;
+        RequestDispatcher::new(req, self.state)
+            .on::<Initialize>(handlers::initialize)?
+            .on::<Shutdown>(handlers::shutdown)?
+            .on::<Completion>(handlers::completion)?
+            .on::<HoverRequest>(handlers::hover)?
             .finish();
 
         Ok(())
     }
 
-    fn handle_notification(
-        &mut self,
-        notification: Notification,
-    ) -> Result<()> {
-        NotificationDispatcher::new(notification, self.state)
-            .on::<lsp_types::notification::Initialized>(handler::initialized)
-            .on::<lsp_types::notification::DidOpenTextDocument>(
-                handler::did_open_text_document,
-            )
-            .on::<lsp_types::notification::DidChangeTextDocument>(
-                handler::did_change_text_document,
-            )
+    fn handle_notification(&mut self, not: Notification) -> Result<()> {
+        use lsp_types::notification::*;
+        NotificationDispatcher::new(not, self.state)
+            .on::<Initialized>(handlers::initialized)
+            .on::<DidOpenTextDocument>(handlers::did_open_text_document)
+            .on::<DidChangeTextDocument>(handlers::did_change_text_document)
+            .on::<DidSaveTextDocument>(handlers::did_save_text_document)
             .finish();
 
         Ok(())

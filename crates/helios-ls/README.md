@@ -36,7 +36,7 @@ mentioned.
 
 - [x] `initialize`
 - [x] `textdocument/didOpen`
-- [ ] `textdocument/didChange`
+- [x] `textdocument/didChange`
 - [ ] `textdocument/didSave`
 - [ ] `textdocument/completion`
 - [ ] `textdocument/hover`
