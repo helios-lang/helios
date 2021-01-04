@@ -114,18 +114,19 @@ where
             };
 
         let expected = std::mem::take(&mut self.expected_kinds);
+        let expected_len = expected.len();
 
-        // self.messages.push(ParserMessage::UnexpectedKind {
-        //     range,
-        //     context: context.into(),
-        //     given,
-        //     expected,
-        // });
-
-        let message_kind = ParserMessage::UnexpectedKind {
-            context: context.into(),
-            given,
-            expected,
+        let message_kind = if expected_len == 1 {
+            ParserMessage::MissingKind {
+                context: context.into(),
+                expected: expected[0],
+            }
+        } else {
+            ParserMessage::UnexpectedKind {
+                context: context.into(),
+                given,
+                expected,
+            }
         };
 
         self.messages.push(Message::new(
@@ -133,7 +134,10 @@ where
             Location::new(self.file_id.clone(), range),
         ));
 
-        if !self.is_at_set(&RECOVERY_SET) && !self.is_at_end() {
+        if expected_len > 1
+            && !self.is_at_set(&RECOVERY_SET)
+            && !self.is_at_end()
+        {
             let m = self.start();
             self.bump();
             m.complete(self, SyntaxKind::Error);

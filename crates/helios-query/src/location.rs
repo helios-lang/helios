@@ -15,7 +15,7 @@ pub trait InputLocation: Input {
     fn source_line_range(
         &self,
         file_id: FileId,
-        byte_offset: usize,
+        line_index: usize,
     ) -> Range<usize>;
 
     fn source_line_index(&self, file_id: FileId, byte_offset: usize) -> usize;

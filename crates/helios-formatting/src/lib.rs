@@ -39,7 +39,7 @@ impl Display for FormattedStringSegment {
                 if colorize {
                     write!(f, "{}", code.yellow())
                 } else {
-                    write!(f, "{}", code)
+                    write!(f, "`{}`", code)
                 }
             }
             Self::CodeBlock(block) => {

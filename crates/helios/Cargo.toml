@@ -11,5 +11,5 @@ publish = false
 [dependencies]
 env_logger = "0.7.1"
 helios-build = { version = "0.2.0", path = "../helios-build" }
-helios-repl = { version =  "0.2.2", path = "../helios-repl" }
+helios-repl = { version =  "0.2.0", path = "../helios-repl" }
 log = "0.4.11"

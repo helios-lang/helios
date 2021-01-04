@@ -75,6 +75,7 @@ impl<'a> Server<'a> {
             .on::<lsp_types::request::Initialize>(handler::initialize)?
             .on::<lsp_types::request::Shutdown>(handler::shutdown)?
             .on::<lsp_types::request::Completion>(handler::completion)?
+            .on::<lsp_types::request::HoverRequest>(handler::hover)?
             .finish();
 
         Ok(())

@@ -9,6 +9,6 @@ edition = "2018"
 
 [dependencies]
 expect-test = "1.0.1"
-helios-formatting = { version = "0.1.0", path = "../helios-formatting" }
+helios-formatting = { version = "0.2.0", path = "../helios-formatting" }
 rowan = "0.10.0"
 unicode-xid = "0.2.1"

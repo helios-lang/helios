@@ -201,14 +201,13 @@ name = "helios-build"
 version = "0.2.0"
 dependencies = [
  "colored",
- "flume",
  "helios-diagnostics",
  "helios-parser",
 ]
 
 [[package]]
 name = "helios-diagnostics"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "colored",
  "helios-formatting",
@@ -218,7 +217,7 @@ dependencies = [
 
 [[package]]
 name = "helios-formatting"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "colored",
 ]
@@ -229,12 +228,14 @@ version = "0.2.0"
 dependencies = [
  "env_logger",
  "flume",
+ "helios-diagnostics",
  "helios-query",
  "log",
  "lsp-types",
  "salsa",
  "serde",
  "serde_json",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -243,7 +244,6 @@ version = "0.2.0"
 dependencies = [
  "drop_bomb",
  "expect-test",
- "flume",
  "helios-diagnostics",
  "helios-formatting",
  "helios-syntax",
@@ -267,7 +267,6 @@ name = "helios-repl"
 version = "0.2.2"
 dependencies = [
  "colored",
- "flume",
  "helios-diagnostics",
  "helios-parser",
 ]

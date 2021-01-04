@@ -70,3 +70,7 @@ pub fn completion(
 
     Ok(None)
 }
+
+pub fn hover(_: StateSnapshot, _: HoverParams) -> Result<Option<Hover>> {
+    Ok(None)
+}

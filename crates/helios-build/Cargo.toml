@@ -9,6 +9,5 @@ edition = "2018"
 
 [dependencies]
 colored = "2.0.0"
-flume = "0.10.0"
-helios-diagnostics = { version = "0.1.0", path = "../helios-diagnostics" }
+helios-diagnostics = { version = "0.2.0", path = "../helios-diagnostics" }
 helios-parser = { version = "0.2.0", path = "../helios-parser" }

@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use crate::interner::{BindingData, BindingId, Interner};
+use helios_diagnostics::Diagnostic;
 use helios_parser::Parse;
 use std::sync::Arc;
 
@@ -14,10 +15,10 @@ pub trait Input: Interner {
     /// The length of the source's text.
     fn source_len(&self, file_id: FileId) -> usize;
 
-    // /// Constructs a parsed syntax tree of the given file.
-    // fn parse(&self, file_id: FileId) -> Parse;
+    /// Constructs a parsed syntax tree of the given file.
+    fn parse(&self, file_id: FileId) -> Parse<FileId>;
 
-    // fn all_bindings(&self, file_id: FileId) -> Arc<Vec<BindingId>>;
+    fn diagnostics(&self, file_id: FileId) -> Arc<Vec<Diagnostic<FileId>>>;
 }
 
 fn source_len(db: &dyn Input, file_id: FileId) -> usize {
@@ -25,14 +26,18 @@ fn source_len(db: &dyn Input, file_id: FileId) -> usize {
     source.len()
 }
 
-/*
-fn parse(db: &dyn Input, file_id: FileId) -> Parse {
+fn parse(db: &dyn Input, file_id: FileId) -> Parse<FileId> {
     let source = db.source(file_id);
-    let (messages_tx, _) = flume::unbounded();
-
-    helios_parser::parse(0, &source, messages_tx)
+    helios_parser::parse(file_id, &source)
 }
 
+fn diagnostics(db: &dyn Input, file_id: FileId) -> Arc<Vec<Diagnostic<FileId>>> {
+    let parse = db.parse(file_id);
+    let messages = parse.messages();
+    Arc::new(messages.into_iter().map(|message| message.into()).collect())
+}
+
+/*
 fn all_bindings(db: &dyn Input, file_id: FileId) -> Arc<Vec<BindingId>> {
     let tree = db.parse(file_id).debug_tree();
 
