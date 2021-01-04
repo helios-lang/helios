@@ -48,7 +48,6 @@ fn __build(path: &str) -> Result<()> {
     let parse = helios_parser::parse(file_id, file.source());
     println!("{}", parse.debug_tree().cyan());
 
-    let message_count = parse.messages().len();
     let mut emitted_ranges = Vec::new();
     let mut severities = Vec::new();
 
@@ -71,6 +70,8 @@ fn __build(path: &str) -> Result<()> {
                 .iter()
                 .any(|severity| *severity < Severity::Error)
     };
+
+    let message_count = emitted_ranges.len();
 
     if is_ok {
         Ok(())
