@@ -8,6 +8,7 @@ use crate::state::State;
 use crate::Result;
 use flume::Receiver;
 
+/// The server side of the language server connection.
 pub struct Server<'a> {
     did_initialize: bool,
     receiver: Receiver<Message>,
@@ -15,6 +16,7 @@ pub struct Server<'a> {
 }
 
 impl<'a> Server<'a> {
+    /// Constructs a new `Server` with the given receiver channel and state.
     pub fn new(receiver: Receiver<Message>, state: &'a mut State) -> Self {
         Self {
             did_initialize: false,
@@ -23,6 +25,9 @@ impl<'a> Server<'a> {
         }
     }
 
+    /// Initializes a connection between the server and client, erroring if the
+    /// server doesn't receive an `initialize` request from the client or it
+    /// fails to send an `initialized` response.
     pub fn initialize(mut self) -> Result<Self> {
         match self.receiver.recv()? {
             Message::Request(request) if request.is_initialize() => {
@@ -45,6 +50,7 @@ impl<'a> Server<'a> {
         })
     }
 
+    /// Starts the main loop of the server.
     pub fn run(mut self) -> Result<()> {
         while let Ok(message) = self.receiver.recv() {
             if !self.did_initialize {

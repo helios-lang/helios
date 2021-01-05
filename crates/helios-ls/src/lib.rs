@@ -10,6 +10,7 @@ use state::State;
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Establishes a connection to the client and starts the server.
 pub fn start() {
     if let Err(error) = __start() {
         eprintln!("Error: {}", error);
@@ -17,7 +18,8 @@ pub fn start() {
     }
 }
 
-pub fn __start() -> Result<()> {
+/// Responsible for the server's main loop logic.
+fn __start() -> Result<()> {
     let (connection, threads) = connection::stdio();
 
     let mut state = State::new(connection.sender);

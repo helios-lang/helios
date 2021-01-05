@@ -166,7 +166,7 @@ where
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
             c if is_digit(c) => self.lex_number(c),
-            c => self.error(c, start),
+            c => self.unknown(c, start),
         };
 
         let end = self.current_pos();
@@ -175,7 +175,9 @@ where
         Some((Token::new(kind, text, start..end), message))
     }
 
-    fn error(&self, character: char, start: usize) -> LexerReturn<FileId> {
+    /// Returns a [`SyntaxKind::UnknownChar`] with an error message detailing
+    /// the provided unknown character and its location in the file.
+    fn unknown(&self, character: char, start: usize) -> LexerReturn<FileId> {
         let message = Message::new(
             LexerMessage::UnknownCharacter(character),
             Location::new(self.file_id.clone(), start..(start + 1)),
@@ -212,7 +214,6 @@ impl<'source, FileId> Lexer<'source, FileId> {
     }
 
     /// Returns the current position of the lexer.
-    #[allow(dead_code)]
     pub(crate) fn current_pos(&self) -> usize {
         self.cursor.pos()
     }
@@ -243,8 +244,8 @@ impl<'source, FileId> Lexer<'source, FileId> {
         consumed
     }
 
-    /// Consumes the input while the given `predicate` holds true, building a
-    /// `Vec<char>` for all the characters consumed.
+    /// Consumes the input while the given `predicate` holds true, returning a
+    /// slice over the characters consumed.
     fn consume_build<F>(&mut self, predicate: F) -> &str
     where
         F: Fn(char) -> bool,
@@ -355,6 +356,7 @@ impl<'source, FileId> Lexer<'source, FileId> {
             "val"       => SyntaxKind::Kwd_Val,
             "while"     => SyntaxKind::Kwd_While,
             "with"      => SyntaxKind::Kwd_With,
+            "_"         => SyntaxKind::ReservedIdentifier,
             _           => SyntaxKind::Identifier,
         }
     }
@@ -599,7 +601,9 @@ mod tests {
 
     #[test]
     fn test_lex_identifiers() {
-        check("_", SyntaxKind::Identifier);
+        check("_", SyntaxKind::ReservedIdentifier);
+        check("_a", SyntaxKind::Identifier);
+        
         check("a", SyntaxKind::Identifier);
         check("abc", SyntaxKind::Identifier);
         check("abc123", SyntaxKind::Identifier);

@@ -1,14 +1,14 @@
-/// Prints the usage information of the Helios executable.
+/// Prints the usage information of the Helios-LS executable.
 fn print_usage() {
     println!("{}", include_str!("../usage.txt"));
 }
 
-/// Prints the current version number of the Helios executable.
+/// Prints the current version number of the Helios-LS executable.
 ///
 /// This function will print the version number found in the `Cargo.toml`
 /// file of this package.
 fn print_version() {
-    // TODO: Should we allow retrieving hash to fail?
+    // TODO: We could ignore the hash if we fail to retrieve it
     fn get_env_variables<'a>() -> Option<(&'a str, &'a str)> {
         let version = option_env!("CARGO_PKG_VERSION")?;
         let hash = option_env!("GIT_HASH")?;
@@ -26,10 +26,10 @@ fn main() {
     let mut args = std::env::args();
     args.next(); // Skip path to executable
 
-    match (args.next(), args.next()) {
-        (Some(arg), param) => match (&*arg, param) {
-            ("-h", _) | ("--help", _) => print_usage(),
-            ("-V", _) | ("--version", _) => print_version(),
+    match args.next() {
+        Some(arg) => match &*arg {
+            "-h" | "--help" => print_usage(),
+            "-V" | "--version" => print_version(),
             _ => {
                 eprintln!("ERROR: Unrecognised option `{}`", arg);
                 print_usage()

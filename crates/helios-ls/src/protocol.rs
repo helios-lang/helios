@@ -104,7 +104,6 @@ pub struct Response {
 }
 
 impl Response {
-    #[allow(dead_code)]
     pub fn new_ok(id: impl Into<RequestId>, result: impl Serialize) -> Self {
         Self {
             id: id.into(),

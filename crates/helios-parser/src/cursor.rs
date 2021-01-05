@@ -54,8 +54,7 @@ impl<'source> Cursor<'source> {
     ///
     /// <a name="mark-checkpoint-footnote">1</a>: Technically, the cursor
     /// doesn't “consume” the input (it merely acts as a window over a `&str`),
-    /// however, one could argue that this detail is abstracted away and thus
-    /// doesn't really matter.
+    /// however, this detail is abstracted away and thus doesn't really matter.
     ///
     /// [`Cursor::slice`]: crate::cursor::Cursor::slice
     #[inline]

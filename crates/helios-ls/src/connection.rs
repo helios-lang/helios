@@ -3,23 +3,34 @@ use flume::{Receiver, Sender};
 use std::io;
 use std::thread;
 
+/// A structure that holds the sender and receiver of parsed [`Message`]s.
 pub struct Connection {
+    /// Sender channel responsible for sending [`Message`]s.
     pub sender: Sender<Message>,
+    /// Receiver channel responsible for receiving [`Message`]s.
     pub receiver: Receiver<Message>,
 }
 
 impl Connection {
+    /// Constructs a new `Connection` with the given sender and receiver
+    /// channels.
     pub fn new(sender: Sender<Message>, receiver: Receiver<Message>) -> Self {
         Self { sender, receiver }
     }
 }
 
+/// A structure that holds writer and reader threads for sending data to and
+/// from the client and server.
 pub struct IoThreads {
+    /// The writer thread that writes [`Message`]s to standard output.
     writer: thread::JoinHandle<io::Result<()>>,
+    /// The reader thread that reads parsed [`Message`]s from standard input.
     reader: thread::JoinHandle<io::Result<()>>,
 }
 
 impl IoThreads {
+    /// Waits for both writer and reader threads to finish their tasks before
+    /// attempting to join them both to the current thread.
     pub fn join(self) -> io::Result<()> {
         match self.writer.join() {
             Ok(result) => result?,
@@ -41,6 +52,7 @@ impl IoThreads {
     }
 }
 
+/// Constructs a new connection over standard I/O.
 pub fn stdio() -> (Connection, IoThreads) {
     let (writer_tx, writer_rx) = flume::bounded::<Message>(0);
     let writer = thread::spawn(move || {
