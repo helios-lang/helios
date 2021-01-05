@@ -35,7 +35,7 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    const FILE_ID: usize = 0;
+    const FILE_ID: FileId = FileId(0);
     const SOURCE: &str = "let a = 0\nlet b = 1\n\nlet c = 2\n";
 
     #[test]

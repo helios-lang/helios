@@ -1,13 +1,10 @@
-use crate::Input;
+use crate::{FileId, Input};
 use std::{ops::Range, sync::Arc};
-
-pub type FileId = usize;
 
 #[salsa::query_group(InputLocationDatabase)]
 pub trait InputLocation: Input {
-    /// Calculates the indexes of each line in a file.
-    ///
-    /// The first element in the returned vector will always be `0`.
+    /// The indices of each line in a file. The first element in the returned
+    /// vector will always be `0`.
     fn source_line_indexes(&self, file_id: FileId) -> Arc<Vec<usize>>;
 
     fn source_line_start(&self, file_id: FileId, line_index: usize) -> usize;
@@ -130,7 +127,7 @@ fn source_position_at_offset(
 fn source_offset_at_position(
     db: &dyn InputLocation,
     file_id: FileId,
-    position: (usize, usize)
+    position: (usize, usize),
 ) -> usize {
     let line_indexes = db.source_line_indexes(file_id);
     line_indexes[position.0] + position.1

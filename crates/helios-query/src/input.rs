@@ -5,19 +5,22 @@ use helios_diagnostics::Diagnostic;
 use helios_parser::Parse;
 use std::sync::Arc;
 
-pub type FileId = usize;
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct FileId(pub u32);
 
 #[salsa::query_group(InputDatabase)]
 pub trait Input: Interner {
+    /// The source text of a file.
     #[salsa::input]
     fn source(&self, file_id: FileId) -> Arc<String>;
 
-    /// The length of the source's text.
+    /// The length of a file's source text.
     fn source_len(&self, file_id: FileId) -> usize;
 
-    /// Constructs a parsed syntax tree of the given file.
+    /// The parsed syntax tree of the given file.
     fn parse(&self, file_id: FileId) -> Parse<FileId>;
 
+    /// Diagnostics emitted by the parser for a given file.
     fn diagnostics(&self, file_id: FileId) -> Arc<Vec<Diagnostic<FileId>>>;
 }
 
@@ -31,39 +34,11 @@ fn parse(db: &dyn Input, file_id: FileId) -> Parse<FileId> {
     helios_parser::parse(file_id, &source)
 }
 
-fn diagnostics(db: &dyn Input, file_id: FileId) -> Arc<Vec<Diagnostic<FileId>>> {
+fn diagnostics(
+    db: &dyn Input,
+    file_id: FileId,
+) -> Arc<Vec<Diagnostic<FileId>>> {
     let parse = db.parse(file_id);
     let messages = parse.messages();
     Arc::new(messages.into_iter().map(|message| message.into()).collect())
 }
-
-/*
-fn all_bindings(db: &dyn Input, file_id: FileId) -> Arc<Vec<BindingId>> {
-    let tree = db.parse(file_id).debug_tree();
-
-    use std::collections::HashSet;
-    let bindings: HashSet<_> = tree
-        .split('\n')
-        .map(|line| {
-            let line = line.trim();
-            let split = line.split(' ').collect::<Vec<_>>();
-
-            let kind = split.get(0).unwrap().to_string();
-            let text = split.get(1).map(|s| s.to_string());
-
-            (kind, text)
-        })
-        .filter(|(kind, source)| {
-            kind.starts_with("Identifier") && source.is_some()
-        })
-        .map(|(_, identifier)| {
-            let identifier = identifier.unwrap_or_default();
-            let identifier = identifier.trim_matches('"').to_string();
-            let binding_data = BindingData { identifier };
-            db.intern_binding(binding_data)
-        })
-        .collect();
-
-    Arc::new(bindings.into_iter().collect())
-}
-*/

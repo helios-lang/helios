@@ -80,7 +80,7 @@ fn positions_from_range(
     (start, end)
 }
 
-/// The `initialized` notification is sent from the client to the server after
+/// The initialized notification is sent from the client to the server after
 /// the client received the result of the `initialize` request but before the
 /// client is sending any other request or notification to the server.
 pub fn initialized(_: &mut State, _: InitializedParams) {
@@ -95,7 +95,7 @@ pub fn did_open_text_document(
     params: DidOpenTextDocumentParams,
 ) {
     // We need to generate a new file id when we open a document
-    let file_id = 0;
+    let file_id = FileId(0);
     let source = Arc::new(params.text_document.text);
     state.db.set_source(file_id, source);
 
@@ -113,7 +113,7 @@ pub fn did_change_text_document(
     state: &mut State,
     params: DidChangeTextDocumentParams,
 ) {
-    let file_id = 0;
+    let file_id = FileId(0);
     let old_source: Arc<String> = state.db.source(file_id);
     let new_source = apply_content_changes(&old_source, params.content_changes);
 
@@ -191,50 +191,70 @@ mod tests {
 
     #[test]
     fn test_apply_content_changes() {
-        let old_text = "let a = 1";
+        macro_rules! changes {
+            (
+                $(
+                    $changed_text:tt @ $s_l:tt:$s_c:tt => $e_l:tt:$e_c:tt
+                ),*
+                $(,)?
+            ) => {{
+                type ChangeEvent = TextDocumentContentChangeEvent;
+                let mut changes: Vec<ChangeEvent> = Vec::new();
 
-        // "let 🍕 = 1"
-        let event_1 = serde_json::json!({
-            "text": "🍕",
-            "range": {
-                "start": { "line": 0, "character": 4 },
-                "end": { "line": 0, "character": 5 },
-            }
-        });
+                $(
+                    let change_event = serde_json::json!({
+                        "text": $changed_text,
+                        "range": {
+                            "start": { "line": $s_l, "character": $s_c },
+                            "end": { "line": $e_l, "character": $e_c },
+                        }
+                    });
 
-        // "let 🍕🚀 = 1"
-        let event_2 = serde_json::json!({
-            "text": "🚀",
-            "range": {
-                "start": { "line": 0, "character": 6 },
-                "end": { "line": 0, "character": 6 },
-            }
-        });
+                    changes.push(serde_json::from_value(change_event).unwrap());
+                )*
 
-        // "let 🍕\n🚀 = 1"
-        let event_3 = serde_json::json!({
-            "text": "\n",
-            "range": {
-                "start": { "line": 0, "character": 6 },
-                "end": { "line": 0, "character": 6 },
-            }
-        });
+                changes
+            }};
+        }
 
-        // "let 🍕\n.🚀 = 1"
-        let event_4 = serde_json::json!({
-            "text": ".",
-            "range": {
-                "start": { "line": 1, "character": 0 },
-                "end": { "line": 1, "character": 0 },
-            }
-        });
+        macro_rules! check {
+            (
+                $old_text:tt,
+                $changed_text:tt @ $s_l:tt:$s_c:tt => $e_l:tt:$e_c:tt,
+                $expected_text:tt
+            ) => {{
+                let new_text = apply_content_changes(
+                    $old_text,
+                    changes![$changed_text @ $s_l:$s_c => $e_l:$e_c],
+                );
+                assert_eq!(new_text, $expected_text);
+                $expected_text
+            }};
+            ($old_text:tt, $changes:expr, $expected_text:tt) => {{
+                let new_text = apply_content_changes($old_text, $changes);
+                assert_eq!(new_text, $expected_text);
+                $expected_text
+            }};
+        }
 
-        let content_changes = vec![event_1, event_2, event_3, event_4]
-            .into_iter()
-            .map(|event| serde_json::from_value(event).unwrap())
-            .collect();
+        // Check at every change event
+        let text = "let a = 1";
+        let text = check!(text, "🍕" @ 0:4 => 0:5, "let 🍕 = 1");
+        let text = check!(text, "🚀" @ 0:6 => 0:6, "let 🍕🚀 = 1");
+        let text = check!(text, "\n" @ 0:6 => 0:6, "let 🍕\n🚀 = 1");
+        let text = check!(text, "." @  1:0 => 1:0, "let 🍕\n.🚀 = 1");
+        assert_eq!(text, "let 🍕\n.🚀 = 1");
 
-        let new_text = apply_content_changes(old_text, content_changes);
-        assert_eq!(new_text, "let 🍕\n.🚀 = 1".to_string());
+        // Check after all change events
+        check!(
+            "let a = 1",
+            changes![
+                "🍕" @ 0:4 => 0:5,
+                "🚀" @ 0:6 => 0:6,
+                "\n" @ 0:6 => 0:6,
+                "." @ 1:0 => 1:0,
+            ],
+            "let 🍕\n.🚀 = 1"
+        );
     }
 }
