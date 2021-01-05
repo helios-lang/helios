@@ -7,6 +7,7 @@ use helios_query::*;
 use std::ops::Range;
 use std::sync::Arc;
 
+// FIXME: See `positions_from_range`.
 fn publish_diagnostics(
     state: &mut State,
     file_id: FileId,
@@ -66,6 +67,7 @@ fn publish_diagnostics(
     state.send(Notification::new("textDocument/publishDiagnostics", params));
 }
 
+// FIXME: These positions assume a UTF-8 input, which the LSP does not provide.
 fn positions_from_range(
     state: &mut State,
     file_id: FileId,
@@ -242,7 +244,7 @@ mod tests {
         let text = check!(text, "🍕" @ 0:4 => 0:5, "let 🍕 = 1");
         let text = check!(text, "🚀" @ 0:6 => 0:6, "let 🍕🚀 = 1");
         let text = check!(text, "\n" @ 0:6 => 0:6, "let 🍕\n🚀 = 1");
-        let text = check!(text, "." @  1:0 => 1:0, "let 🍕\n.🚀 = 1");
+        let text = check!(text, "." @ 1:0 => 1:0, "let 🍕\n.🚀 = 1");
         assert_eq!(text, "let 🍕\n.🚀 = 1");
 
         // Check after all change events
