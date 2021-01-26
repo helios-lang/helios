@@ -295,7 +295,7 @@ impl<'source, FileId> Lexer<'source, FileId> {
                     // Consume the next two question marks
                     self.next_char();
                     self.next_char();
-                    (SyntaxKind::Kwd_Unimplemented, None)
+                    (SyntaxKind::Placeholder, None)
                 } else {
                     (SyntaxKind::Sym_Question, None)
                 }
@@ -332,28 +332,28 @@ impl<'source, FileId> Lexer<'source, FileId> {
             "alias"     => SyntaxKind::Kwd_Alias,
             "and"       => SyntaxKind::Kwd_And,
             "as"        => SyntaxKind::Kwd_As,
-            "begin"     => SyntaxKind::Kwd_Begin,
+            "case"      => SyntaxKind::Kwd_Case,
             "else"      => SyntaxKind::Kwd_Else,
-            "end"       => SyntaxKind::Kwd_End,
-            "export"    => SyntaxKind::Kwd_Export,
-            "external"  => SyntaxKind::Kwd_External,
+            "enum"      => SyntaxKind::Kwd_Enum,
+            "extend"    => SyntaxKind::Kwd_Extend,
             "for"       => SyntaxKind::Kwd_For,
             "forall"    => SyntaxKind::Kwd_Forall,
+            "func"      => SyntaxKind::Kwd_Func,
             "if"        => SyntaxKind::Kwd_If,
             "import"    => SyntaxKind::Kwd_Import,
             "in"        => SyntaxKind::Kwd_In,
             "let"       => SyntaxKind::Kwd_Let,
-            "loop"      => SyntaxKind::Kwd_Loop,
-            "match"     => SyntaxKind::Kwd_Match,
             "module"    => SyntaxKind::Kwd_Module,
             "not"       => SyntaxKind::Kwd_Not,
             "of"        => SyntaxKind::Kwd_Of,
             "or"        => SyntaxKind::Kwd_Or,
+            "range"     => SyntaxKind::Kwd_Range,
             "rec"       => SyntaxKind::Kwd_Rec,
             "ref"       => SyntaxKind::Kwd_Ref,
-            "then"      => SyntaxKind::Kwd_Then,
+            "struct"    => SyntaxKind::Kwd_Struct,
+            "subtype"   => SyntaxKind::Kwd_Subtype,
             "type"      => SyntaxKind::Kwd_Type,
-            "val"       => SyntaxKind::Kwd_Val,
+            "var"       => SyntaxKind::Kwd_Var,
             "while"     => SyntaxKind::Kwd_While,
             "with"      => SyntaxKind::Kwd_With,
             "_"         => SyntaxKind::ReservedIdentifier,
@@ -440,32 +440,31 @@ mod tests {
 
     #[test]
     fn test_lex_keywords() {
-        check("???", SyntaxKind::Kwd_Unimplemented);
         check("alias", SyntaxKind::Kwd_Alias);
         check("and", SyntaxKind::Kwd_And);
         check("as", SyntaxKind::Kwd_As);
-        check("begin", SyntaxKind::Kwd_Begin);
+        check("case", SyntaxKind::Kwd_Case);
         check("else", SyntaxKind::Kwd_Else);
-        check("end", SyntaxKind::Kwd_End);
-        check("export", SyntaxKind::Kwd_Export);
-        check("external", SyntaxKind::Kwd_External);
+        check("enum", SyntaxKind::Kwd_Enum);
+        check("extend", SyntaxKind::Kwd_Extend);
         check("for", SyntaxKind::Kwd_For);
         check("forall", SyntaxKind::Kwd_Forall);
+        check("func", SyntaxKind::Kwd_Func);
         check("if", SyntaxKind::Kwd_If);
         check("import", SyntaxKind::Kwd_Import);
         check("in", SyntaxKind::Kwd_In);
         check("let", SyntaxKind::Kwd_Let);
-        check("loop", SyntaxKind::Kwd_Loop);
-        check("match", SyntaxKind::Kwd_Match);
         check("module", SyntaxKind::Kwd_Module);
         check("not", SyntaxKind::Kwd_Not);
         check("of", SyntaxKind::Kwd_Of);
         check("or", SyntaxKind::Kwd_Or);
+        check("range", SyntaxKind::Kwd_Range);
         check("rec", SyntaxKind::Kwd_Rec);
         check("ref", SyntaxKind::Kwd_Ref);
-        check("then", SyntaxKind::Kwd_Then);
+        check("struct", SyntaxKind::Kwd_Struct);
+        check("subtype", SyntaxKind::Kwd_Subtype);
         check("type", SyntaxKind::Kwd_Type);
-        check("val", SyntaxKind::Kwd_Val);
+        check("var", SyntaxKind::Kwd_Var);
         check("while", SyntaxKind::Kwd_While);
         check("with", SyntaxKind::Kwd_With);
     }
@@ -510,6 +509,8 @@ mod tests {
         check("]", SyntaxKind::Sym_RBracket);
         check("(", SyntaxKind::Sym_LParen);
         check(")", SyntaxKind::Sym_RParen);
+
+        check("???", SyntaxKind::Placeholder);
     }
 
     #[test]
@@ -603,7 +604,7 @@ mod tests {
     fn test_lex_identifiers() {
         check("_", SyntaxKind::ReservedIdentifier);
         check("_a", SyntaxKind::Identifier);
-        
+
         check("a", SyntaxKind::Identifier);
         check("abc", SyntaxKind::Identifier);
         check("abc123", SyntaxKind::Identifier);

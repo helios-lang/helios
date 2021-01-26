@@ -8,12 +8,17 @@ use std::ops::Range;
 use std::sync::Arc;
 
 // FIXME: See `positions_from_range`.
+#[allow(unused)]
+#[allow(unreachable_code)]
 fn publish_diagnostics(
     state: &mut State,
     file_id: FileId,
     uri: Url,
     version: Option<i32>,
 ) {
+    // Just return for now
+    return;
+
     let mut emitted_ranges = Vec::new();
     let mut diagnostics = Vec::new();
     let h_diagnostics: Arc<Vec<HDiagnostic<_>>> = state.db.diagnostics(file_id);
@@ -185,6 +190,13 @@ fn range_over(bytes: &Vec<u16>, range: lsp_types::Range) -> Range<usize> {
 /// the document was saved in the client.
 pub fn did_save_text_document(_: &mut State, _: DidSaveTextDocumentParams) {
     // Nothing to do...
+}
+
+pub fn did_change_configuration(
+    _: &mut State,
+    params: DidChangeConfigurationParams,
+) {
+    log::trace!("{:?}", params);
 }
 
 #[cfg(test)]

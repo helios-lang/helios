@@ -95,6 +95,7 @@ impl<'a> Server<'a> {
             .on::<DidOpenTextDocument>(handlers::did_open_text_document)
             .on::<DidChangeTextDocument>(handlers::did_change_text_document)
             .on::<DidSaveTextDocument>(handlers::did_save_text_document)
+            .on::<DidChangeConfiguration>(handlers::did_change_configuration)
             .finish();
 
         Ok(())

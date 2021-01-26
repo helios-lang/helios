@@ -68,29 +68,28 @@ pub enum SyntaxKind {
     Kwd_Alias,
     Kwd_And,
     Kwd_As,
-    Kwd_Begin,
+    Kwd_Case,
     Kwd_Else,
-    Kwd_End,
-    Kwd_Export,
-    Kwd_External,
+    Kwd_Enum,
+    Kwd_Extend,
     Kwd_For,
     Kwd_Forall,
+    Kwd_Func,
     Kwd_If,
     Kwd_Import,
     Kwd_In,
     Kwd_Let,
-    Kwd_Loop,
-    Kwd_Match,
     Kwd_Module,
     Kwd_Not,
     Kwd_Of,
     Kwd_Or,
+    Kwd_Range,
     Kwd_Rec,
     Kwd_Ref,
-    Kwd_Then,
+    Kwd_Struct,
+    Kwd_Subtype,
     Kwd_Type,
-    Kwd_Unimplemented,
-    Kwd_Val,
+    Kwd_Var,
     Kwd_While,
     Kwd_With,
 
@@ -156,6 +155,7 @@ pub enum SyntaxKind {
     Identifier,
     ReservedIdentifier,
 
+    Placeholder,
     UnknownChar,
     Error,
     Root, // this should be last
@@ -263,35 +263,34 @@ impl SyntaxKind {
 
     pub fn description(self) -> Option<String> {
         let s = match self {
+            // keywords
             SyntaxKind::Kwd_Alias => "alias",
             SyntaxKind::Kwd_And => "and",
             SyntaxKind::Kwd_As => "as",
-            SyntaxKind::Kwd_Begin => "begin",
+            SyntaxKind::Kwd_Case => "case",
             SyntaxKind::Kwd_Else => "else",
-            SyntaxKind::Kwd_End => "end",
-            SyntaxKind::Kwd_Export => "export",
-            SyntaxKind::Kwd_External => "external",
+            SyntaxKind::Kwd_Enum => "enum",
+            SyntaxKind::Kwd_Extend => "extend",
             SyntaxKind::Kwd_For => "for",
             SyntaxKind::Kwd_Forall => "forall",
+            SyntaxKind::Kwd_Func => "func",
             SyntaxKind::Kwd_If => "if",
             SyntaxKind::Kwd_Import => "import",
             SyntaxKind::Kwd_In => "in",
             SyntaxKind::Kwd_Let => "let",
-            SyntaxKind::Kwd_Loop => "loop",
-            SyntaxKind::Kwd_Match => "match",
             SyntaxKind::Kwd_Module => "module",
             SyntaxKind::Kwd_Not => "not",
             SyntaxKind::Kwd_Of => "of",
             SyntaxKind::Kwd_Or => "or",
+            SyntaxKind::Kwd_Range => "range",
             SyntaxKind::Kwd_Rec => "rec",
             SyntaxKind::Kwd_Ref => "ref",
-            SyntaxKind::Kwd_Then => "then",
+            SyntaxKind::Kwd_Struct => "struct",
             SyntaxKind::Kwd_Type => "type",
-            SyntaxKind::Kwd_Unimplemented => "unimplemented",
-            SyntaxKind::Kwd_Val => "val",
+            SyntaxKind::Kwd_Var => "var",
             SyntaxKind::Kwd_While => "while",
             SyntaxKind::Kwd_With => "with",
-
+            // symbols
             SyntaxKind::Sym_Ampersand => "ampersand",
             SyntaxKind::Sym_Asterisk => "asterisk",
             SyntaxKind::Sym_At => "at",
@@ -326,17 +325,21 @@ impl SyntaxKind {
             SyntaxKind::Sym_LBrace | SyntaxKind::Sym_RBrace => "brace",
             SyntaxKind::Sym_LBracket | SyntaxKind::Sym_RBracket => "bracket",
             SyntaxKind::Sym_LParen | SyntaxKind::Sym_RParen => "parenthesis",
+            // literals
             SyntaxKind::Lit_Character => "character",
             SyntaxKind::Lit_Float => "float",
             SyntaxKind::Lit_Integer => "integer",
             SyntaxKind::Lit_String => "string",
+            // expressions
             SyntaxKind::Exp_Binary => "binary",
             SyntaxKind::Exp_Literal => "literal",
             SyntaxKind::Exp_Paren => "parenthesized",
             SyntaxKind::Exp_UnaryPrefix => "unary prefixed",
             SyntaxKind::Exp_UnaryPostfix => "unary postfixed",
             SyntaxKind::Exp_VariableRef => "variable reference",
+            // declarations
             SyntaxKind::Dec_GlobalBinding => "global binding",
+            // other
             SyntaxKind::DocComment => "documentation",
             SyntaxKind::ReservedIdentifier => "reserved",
             _ => return None,
@@ -355,6 +358,7 @@ impl SyntaxKind {
             kind if kind.is_comment() => "comment",
             kind if kind.is_identifier() => "identifier",
             SyntaxKind::Whitespace => "whitespace",
+            SyntaxKind::Placeholder => "placeholder",
             SyntaxKind::UnknownChar => "unknown character",
             SyntaxKind::Error => "error",
             _ => unreachable!("Unreachable kind: {:?}", self),
@@ -608,9 +612,8 @@ mod tests {
         use SyntaxKind::*;
 
         check(Kwd_Alias, "the alias keyword");
-        check(Kwd_Match, "the match keyword");
+        check(Kwd_Case, "the case keyword");
         check(Kwd_With, "the with keyword");
-        check(Kwd_Unimplemented, "the unimplemented keyword");
 
         check(Sym_Ampersand, "an ampersand symbol (`&`)");
         check(Sym_ForwardSlash, "a forward slash symbol (`/`)");
@@ -645,6 +648,7 @@ mod tests {
 
         check(Identifier, "an identifier (such as `foo`)");
         check(ReservedIdentifier, "a reserved identifier");
+        check(Placeholder, "a placeholder");
         check(Error, "an error");
     }
 }
