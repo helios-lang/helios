@@ -49,7 +49,6 @@ impl<'source, 'tokens> Source<'source, 'tokens> {
         self.peek_kind_raw()
     }
 
-    #[allow(dead_code)]
     pub fn peek_token(&mut self) -> Option<&Token> {
         self.eat_trivia();
         self.peek_token_raw()

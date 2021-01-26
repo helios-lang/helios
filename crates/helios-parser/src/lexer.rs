@@ -90,25 +90,6 @@ impl<'source> Token<'source> {
     }
 }
 
-/// An enumeration of all the possible modes the [`Lexer`] may be in.
-///
-/// Because the grammar of the Helios programming language is not context-free
-/// (at the moment), it is necessary for the lexer to know its context. As a
-/// result, the lexer stores all the current modes in a LIFO stack. This would
-/// allow it to behave a little differently depending on its location in the
-/// source text.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum LexerMode {
-    /// The default, normal mode.
-    Normal,
-}
-
-impl Default for LexerMode {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-
 /// A lazy, lossless lexer for the Helios programming language.
 ///
 /// This lexer works with `char`s to seamlessly work with Unicode characters. It
@@ -124,7 +105,6 @@ impl Default for LexerMode {
 pub struct Lexer<'source, FileId> {
     file_id: FileId,
     cursor: Cursor<'source>,
-    mode_stack: Vec<LexerMode>,
 }
 
 impl<'source, FileId> Lexer<'source, FileId>
@@ -139,40 +119,7 @@ where
         Self {
             file_id,
             cursor: Cursor::new(source),
-            mode_stack: vec![LexerMode::Normal],
         }
-    }
-
-    /// Pushes a new [`LexerMode`] to the mode stack.
-    #[allow(dead_code)]
-    pub fn push_mode(&mut self, mode: LexerMode) {
-        self.mode_stack.push(mode);
-    }
-
-    /// Pops off the last [`LexerMode`] from the mode stack.
-    #[allow(dead_code)]
-    pub fn pop_mode(&mut self) -> Option<LexerMode> {
-        self.mode_stack.pop()
-    }
-
-    /// Starts tokenizing the input in [`LexerMode::Normal`] mode.
-    fn tokenize_normal(&mut self) -> Option<LexerItem<'source, FileId>> {
-        self.cursor.checkpoint();
-        let start = self.current_pos();
-
-        let (kind, message) = match self.cursor.advance()? {
-            c if c == '#' => self.lex_comment(c),
-            c if is_whitespace(c) => self.lex_whitespace(c),
-            c if is_symbol(c) => self.lex_symbol(c),
-            c if is_identifier_start(c) => self.lex_identifier(c),
-            c if is_digit(c) => self.lex_number(c),
-            c => self.unknown(c, start),
-        };
-
-        let end = self.current_pos();
-        let text = self.cursor.slice();
-
-        Some((Token::new(kind, text, start..end), message))
     }
 
     /// Returns a [`SyntaxKind::UnknownChar`] with an error message detailing
@@ -188,11 +135,6 @@ where
 }
 
 impl<'source, FileId> Lexer<'source, FileId> {
-    /// The current mode of the lexer.
-    fn current_mode(&self) -> LexerMode {
-        self.mode_stack.last().cloned().unwrap_or_default()
-    }
-
     /// Retrieves the next character in the iterator.
     fn next_char(&mut self) -> Option<char> {
         self.cursor.advance()
@@ -403,9 +345,22 @@ where
     type Item = LexerItem<'source, FileId>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.current_mode() {
-            LexerMode::Normal => self.tokenize_normal(),
-        }
+        self.cursor.checkpoint();
+        let start = self.current_pos();
+
+        let (kind, message) = match self.cursor.advance()? {
+            c if c == '#' => self.lex_comment(c),
+            c if is_whitespace(c) => self.lex_whitespace(c),
+            c if is_symbol(c) => self.lex_symbol(c),
+            c if is_identifier_start(c) => self.lex_identifier(c),
+            c if is_digit(c) => self.lex_number(c),
+            c => self.unknown(c, start),
+        };
+
+        let end = self.current_pos();
+        let text = self.cursor.slice();
+
+        Some((Token::new(kind, text, start..end), message))
     }
 }
 
@@ -505,6 +460,7 @@ mod tests {
         check("<-", SyntaxKind::Sym_LThinArrow);
         check("->", SyntaxKind::Sym_RThinArrow);
         check("=>", SyntaxKind::Sym_ThickArrow);
+        check(":=", SyntaxKind::Sym_Walrus);
 
         check("{", SyntaxKind::Sym_LBrace);
         check("}", SyntaxKind::Sym_RBrace);
