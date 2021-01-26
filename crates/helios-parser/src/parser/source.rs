@@ -39,7 +39,6 @@ impl<'source, 'tokens> Source<'source, 'tokens> {
         Some(token)
     }
 
-    #[allow(dead_code)]
     pub(crate) fn last_token_range(&self) -> Option<Range<usize>> {
         self.tokens.last().map(|Token { range, .. }| range.clone())
     }

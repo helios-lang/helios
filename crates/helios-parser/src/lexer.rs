@@ -12,7 +12,7 @@
 //! Refer to [`Lexer`]'s and [`Token`]'s documentation for more information on
 //! how tokenization is done.
 //!
-// ! [`parse`]: crate::parse
+//! [`parse`]: crate::parse
 
 use crate::{cursor::Cursor, message::LexerMessage, Message};
 use helios_diagnostics::Location;
