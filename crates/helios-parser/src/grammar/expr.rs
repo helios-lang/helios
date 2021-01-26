@@ -413,30 +413,30 @@ mod tests {
         check(
             "
 1
-  + 1 -- Add one
-  + 10 -- Add ten",
-            expect![[r#"
-                Root@0..37
+  + 1 # Add one
+  + 10 # Add ten",
+            expect![[r##"
+                Root@0..35
                   Whitespace@0..1 "\n"
-                  Exp_Binary@1..37
-                    Exp_Binary@1..22
+                  Exp_Binary@1..35
+                    Exp_Binary@1..21
                       Exp_Literal@1..5
                         Lit_Integer@1..2 "1"
                         Whitespace@2..5 "\n  "
                       Sym_Plus@5..6 "+"
                       Whitespace@6..7 " "
-                      Exp_Literal@7..22
+                      Exp_Literal@7..21
                         Lit_Integer@7..8 "1"
                         Whitespace@8..9 " "
-                        Comment@9..19 "-- Add one"
-                        Whitespace@19..22 "\n  "
-                    Sym_Plus@22..23 "+"
-                    Whitespace@23..24 " "
-                    Exp_Literal@24..37
-                      Lit_Integer@24..26 "10"
-                      Whitespace@26..27 " "
-                      Comment@27..37 "-- Add ten"
-            "#]],
+                        Comment@9..18 "# Add one"
+                        Whitespace@18..21 "\n  "
+                    Sym_Plus@21..22 "+"
+                    Whitespace@22..23 " "
+                    Exp_Literal@23..35
+                      Lit_Integer@23..25 "10"
+                      Whitespace@25..26 " "
+                      Comment@26..35 "# Add ten"
+            "##]],
         );
     }
 }

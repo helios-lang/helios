@@ -161,7 +161,7 @@ where
         let start = self.current_pos();
 
         let (kind, message) = match self.cursor.advance()? {
-            c if c == '-' && self.peek() == '-' => self.lex_comment(c),
+            c if c == '#' => self.lex_comment(c),
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),
             c if is_identifier_start(c) => self.lex_identifier(c),
@@ -259,16 +259,13 @@ impl<'source, FileId> Lexer<'source, FileId> {
 impl<'source, FileId> Lexer<'source, FileId> {
     /// Tokenizes a line comment.
     ///
-    /// A line comment starts with two consecutive minus characters (`--`) and
-    /// ends at the next line feed (or the end of file, whichever comes first).
-    /// This function also determines if it is a documentation comment, which
-    /// starts with two minus characters and a pipe character (`--|`).
+    /// A line comment starts with a pound/hashtag (`#`) and ends at the next
+    /// line feed or the end of file, whichever comes first. This function also
+    /// handles documentation comments, which start with two pounds (`##`) or
+    /// the familiar shebang sequence (`#!`).
     fn lex_comment(&mut self, _: char) -> LexerReturn<FileId> {
-        // Consume the second `/`
-        self.next_char();
-
         // Check if it is a doc-comment
-        if self.peek() == '|' {
+        if self.peek() == '#' || self.peek() == '!' {
             self.consume_while(|c| c != '\n');
             (SyntaxKind::DocComment, None)
         } else {
@@ -426,16 +423,22 @@ mod tests {
     #[test]
     fn test_lex_line_comment() {
         // Normal line comments
-        check("--", SyntaxKind::Comment);
-        check("--abc", SyntaxKind::Comment);
-        check("-- abc 123", SyntaxKind::Comment);
-        check("-- This is a random line comment", SyntaxKind::Comment);
+        check("#", SyntaxKind::Comment);
+        check("#abc", SyntaxKind::Comment);
+        check("# abc 123", SyntaxKind::Comment);
+        check("# This is a random line comment", SyntaxKind::Comment);
 
         // Documentation comments
-        check("--|", SyntaxKind::DocComment);
-        check("--|abc", SyntaxKind::DocComment);
-        check("--| abc 123", SyntaxKind::DocComment);
-        check("--| This is a random line comment", SyntaxKind::DocComment);
+        check("##", SyntaxKind::DocComment);
+        check("##abc", SyntaxKind::DocComment);
+        check("## abc 123", SyntaxKind::DocComment);
+        check("## This is a random line comment", SyntaxKind::DocComment);
+
+        // Module comments
+        check("#!", SyntaxKind::DocComment);
+        check("#!abc", SyntaxKind::DocComment);
+        check("#! abc 123", SyntaxKind::DocComment);
+        check("#! This is a random line comment", SyntaxKind::DocComment);
     }
 
     #[test]
@@ -489,7 +492,7 @@ mod tests {
         check("%", SyntaxKind::Sym_Percent);
         check("|", SyntaxKind::Sym_Pipe);
         check("+", SyntaxKind::Sym_Plus);
-        check("#", SyntaxKind::Sym_Pound);
+        // check("#", SyntaxKind::Sym_Pound);
         check("?", SyntaxKind::Sym_Question);
         check(";", SyntaxKind::Sym_Semicolon);
         check("£", SyntaxKind::Sym_Sterling);
