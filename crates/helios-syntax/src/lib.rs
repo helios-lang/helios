@@ -125,6 +125,7 @@ pub enum SyntaxKind {
     Sym_LThinArrow,
     Sym_RThinArrow,
     Sym_ThickArrow,
+    Sym_Walrus,
 
     Sym_LBrace,
     Sym_RBrace,
@@ -322,6 +323,7 @@ impl SyntaxKind {
             SyntaxKind::Sym_LThinArrow => "leftwards thin arrow",
             SyntaxKind::Sym_RThinArrow => "rightwards thin arrow",
             SyntaxKind::Sym_ThickArrow => "thick arrow",
+            SyntaxKind::Sym_Walrus => "walrus",
             SyntaxKind::Sym_LBrace | SyntaxKind::Sym_RBrace => "brace",
             SyntaxKind::Sym_LBracket | SyntaxKind::Sym_RBracket => "bracket",
             SyntaxKind::Sym_LParen | SyntaxKind::Sym_RParen => "parenthesis",
@@ -400,6 +402,7 @@ impl SyntaxKind {
             SyntaxKind::Sym_LThinArrow => "<-",
             SyntaxKind::Sym_RThinArrow => "->",
             SyntaxKind::Sym_ThickArrow => "=>",
+            SyntaxKind::Sym_Walrus => ":=",
             SyntaxKind::Sym_LBrace => "{",
             SyntaxKind::Sym_RBrace => "}",
             SyntaxKind::Sym_LBracket => "[",
@@ -440,9 +443,9 @@ impl Display for SyntaxKind {
 
 /// An array of all the keywords defined in the Helios grammar.
 pub const KEYWORDS: &[&str] = &[
-    "alias", "and", "as", "begin", "else", "end", "export", "external", "for",
-    "forall", "if", "import", "in", "let", "loop", "match", "module", "not",
-    "of", "or", "rec", "ref", "then", "type", "val", "while", "with",
+    "alias", "and", "as", "case", "else", "enum", "extend", "for", "forall",
+    "if", "import", "in", "let", "module", "not", "of", "or", "range", "rec",
+    "ref", "struct", "subtype", "type", "var", "while", "with",
 ];
 
 /// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
@@ -516,6 +519,7 @@ pub fn symbol_from_chars(chars: &[char]) -> Option<SyntaxKind> {
         ['<', '-'] => Some(SyntaxKind::Sym_LThinArrow),
         ['-', '>'] => Some(SyntaxKind::Sym_RThinArrow),
         ['=', '>'] => Some(SyntaxKind::Sym_ThickArrow),
+        [':', '='] => Some(SyntaxKind::Sym_Walrus),
         _ => None,
     }
 }
@@ -576,6 +580,7 @@ mod tests {
         check!(['<', '-'] => Sym_LThinArrow);
         check!(['-', '>'] => Sym_RThinArrow);
         check!(['=', '>'] => Sym_ThickArrow);
+        check!([':', '='] => Sym_Walrus);
     }
 
     #[test]
@@ -619,6 +624,7 @@ mod tests {
         check(Sym_ForwardSlash, "a forward slash symbol (`/`)");
         check(Sym_Lt, "a less than symbol (`<`)");
         check(Sym_LtEq, "a less than equal symbol (`<=`)");
+        check(Sym_Walrus, "a walrus symbol (`:=`)");
 
         check(Sym_LBrace, "an opening curly brace symbol (`{`)");
         check(Sym_LBracket, "an opening square bracket symbol (`[`)");
