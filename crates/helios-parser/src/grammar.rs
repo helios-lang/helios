@@ -40,7 +40,7 @@ mod tests {
                     Whitespace@7..8 " "
                     Exp_Literal@8..10
                       Lit_Integer@8..9 "1"
-                      Whitespace@9..10 "\n"
+                      Newline@9..10 "\n"
                   Exp_VariableRef@10..11
                     Identifier@10..11 "a"
             "#]],

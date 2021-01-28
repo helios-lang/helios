@@ -417,19 +417,19 @@ mod tests {
   + 10 # Add ten",
             expect![[r##"
                 Root@0..35
-                  Whitespace@0..1 "\n"
+                  Newline@0..1 "\n"
                   Exp_Binary@1..35
                     Exp_Binary@1..21
                       Exp_Literal@1..5
                         Lit_Integer@1..2 "1"
-                        Whitespace@2..5 "\n  "
+                        Newline@2..5 "\n  "
                       Sym_Plus@5..6 "+"
                       Whitespace@6..7 " "
                       Exp_Literal@7..21
                         Lit_Integer@7..8 "1"
                         Whitespace@8..9 " "
                         Comment@9..18 "# Add one"
-                        Whitespace@18..21 "\n  "
+                        Newline@18..21 "\n  "
                     Sym_Plus@21..22 "+"
                     Whitespace@22..23 " "
                     Exp_Literal@23..35

@@ -61,7 +61,7 @@ fn is_digit(c: char) -> bool {
 
 /// Checks if the given character is a whitespace delimiter.
 fn is_whitespace(c: char) -> bool {
-    matches!(c, ' ' | '\t' | '\r' | '\n')
+    matches!(c, ' ' | '\t' | '\r')
 }
 
 pub type LexerItem<'source, FileId> = (Token<'source>, Option<Message<FileId>>);
@@ -199,6 +199,13 @@ impl<'source, FileId> Lexer<'source, FileId> {
 }
 
 impl<'source, FileId> Lexer<'source, FileId> {
+    fn lex_newline(&mut self, _: char) -> LexerReturn<FileId> {
+        // We only count spaces as indentation sigils.
+        // TODO: Emit an error if we find a TAB character here.
+        self.consume_while(|c| c == ' ');
+        (SyntaxKind::Newline, None)
+    }
+
     /// Tokenizes a line comment.
     ///
     /// A line comment starts with a pound/hashtag (`#`) and ends at the next
@@ -349,6 +356,7 @@ where
         let start = self.current_pos();
 
         let (kind, message) = match self.cursor.advance()? {
+            c if c == '\n' => self.lex_newline(c),
             c if c == '#' => self.lex_comment(c),
             c if is_whitespace(c) => self.lex_whitespace(c),
             c if is_symbol(c) => self.lex_symbol(c),

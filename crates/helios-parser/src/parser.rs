@@ -197,7 +197,7 @@ mod tests {
             expect![[r##"
                 Root@0..16
                   Comment@0..15 "# hello, world!"
-                  Whitespace@15..16 "\n"
+                  Newline@15..16 "\n"
             "##]],
         );
     }
@@ -211,11 +211,11 @@ mod tests {
 ",
             expect![[r##"
                 Root@0..40
-                  Whitespace@0..1 "\n"
+                  Newline@0..1 "\n"
                   Comment@1..16 "# hello, world!"
-                  Whitespace@16..17 "\n"
+                  Newline@16..17 "\n"
                   Comment@17..39 "# this is another line"
-                  Whitespace@39..40 "\n"
+                  Newline@39..40 "\n"
             "##]],
         );
     }

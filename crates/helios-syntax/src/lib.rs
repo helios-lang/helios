@@ -153,6 +153,10 @@ pub enum SyntaxKind {
     DocComment,
     Whitespace,
 
+    Indent,
+    Dedent,
+    Newline,
+
     Identifier,
     ReservedIdentifier,
 
@@ -175,7 +179,10 @@ impl SyntaxKind {
     #[inline]
     pub fn is_trivia(self) -> bool {
         use SyntaxKind::*;
-        matches!(self, Comment | DocComment | Whitespace)
+        matches!(
+            self,
+            Comment | DocComment | Whitespace | Indent | Dedent | Newline
+        )
     }
 
     /// Determines if the [`SyntaxKind`] is a keyword.
@@ -241,6 +248,7 @@ impl SyntaxKind {
             | SyntaxKind::Sym_LParen
             | SyntaxKind::Lit_Integer
             | SyntaxKind::Exp_Unnamed
+            | SyntaxKind::Indent
             | SyntaxKind::Identifier
             | SyntaxKind::UnknownChar
             | SyntaxKind::Error => Article::An,
@@ -359,6 +367,9 @@ impl SyntaxKind {
             kind if kind.is_declaration() => "declaration",
             kind if kind.is_comment() => "comment",
             kind if kind.is_identifier() => "identifier",
+            SyntaxKind::Indent => "indent",
+            SyntaxKind::Dedent => "dedent",
+            SyntaxKind::Newline => "new line",
             SyntaxKind::Whitespace => "whitespace",
             SyntaxKind::Placeholder => "placeholder",
             SyntaxKind::UnknownChar => "unknown character",
@@ -651,6 +662,10 @@ mod tests {
         check(Comment, "a comment");
         check(DocComment, "a documentation comment");
         check(Whitespace, "a whitespace");
+
+        check(Indent, "an indent");
+        check(Dedent, "a dedent");
+        check(Newline, "a new line");
 
         check(Identifier, "an identifier (such as `foo`)");
         check(ReservedIdentifier, "a reserved identifier");

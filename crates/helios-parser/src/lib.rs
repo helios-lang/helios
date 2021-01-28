@@ -12,15 +12,15 @@ mod lexer;
 pub mod message;
 mod parser;
 
-pub use self::message::*;
-
 use self::lexer::{Lexer, Token};
+pub use self::message::*;
 use self::parser::sink::Sink;
 use self::parser::source::Source;
 use self::parser::Parser;
-use helios_syntax::SyntaxNode;
+use helios_syntax::{SyntaxKind, SyntaxNode};
 use rowan::GreenNode;
 
+/// Tokenizes the given source text.
 pub fn tokenize<FileId>(
     file_id: FileId,
     source: &str,
@@ -40,6 +40,90 @@ where
 
     (tokens, errors)
 }
+
+#[allow(dead_code)]
+fn process_indentations(tokens: Vec<Token>) -> Vec<Token> {
+    macro_rules! last {
+        ($stack:expr) => {
+            *$stack.last().unwrap_or(&0)
+        };
+    }
+
+    let mut processed_tokens = tokens.clone();
+    let mut indent_stack = vec![0];
+
+    for (i, token) in tokens.iter().enumerate() {
+        if token.kind == SyntaxKind::Newline {
+            // Skip the newline character and count the number of spaces left.
+            let curr_indent = token.text[1..].len();
+            let last_indent = last!(indent_stack);
+
+            if curr_indent > last_indent {
+                indent_stack.push(curr_indent);
+                processed_tokens[i].kind = SyntaxKind::Indent;
+            } else if curr_indent < last_indent {
+                let mut dedents = Vec::new();
+                let curr_indent = curr_indent;
+
+                // If our current indent is still smaller than the last indent
+                // level, we'll continue popping and inserting a zero-width
+                // `Dedent` token.
+                while curr_indent < last!(indent_stack) {
+                    indent_stack.pop();
+
+                    if indent_stack.is_empty() {
+                        break;
+                    }
+
+                    dedents.push(Token::new(
+                        SyntaxKind::Dedent,
+                        token.text,
+                        token.range.end..token.range.end,
+                    ))
+                }
+
+                // Replace the current `Newline` token with the appropriate
+                // number of dedents.
+                processed_tokens.splice(i..(i + 1), dedents);
+            }
+        }
+    }
+
+    // Push the remaining number of `Dedent` tokens left.
+    let last_token_range = processed_tokens.last().unwrap().range.clone();
+    while let Some(indent) = indent_stack.pop() {
+        // We won't push a `Dedent` token if we're at the 0th column.
+        if indent == 0 {
+            break;
+        }
+
+        processed_tokens.push(Token::new(
+            SyntaxKind::Dedent,
+            "",
+            last_token_range.end..last_token_range.end,
+        ))
+    }
+
+    processed_tokens
+}
+
+// #[test]
+// fn test_whitespace() {
+//     let source = "\
+// let
+//   x = 1
+//   y = 2
+//   z = 3
+// let
+//   a =
+//     x + y
+//   b = a * 2";
+//     let (tokens, _) = tokenize(0u8, source);
+//     let tokens = process_indentations(tokens);
+//     for token in tokens {
+//         println!("{:?}", token);
+//     }
+// }
 
 /// The entry point of the parsing process.
 ///

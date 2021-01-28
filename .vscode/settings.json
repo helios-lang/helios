@@ -1,5 +1,4 @@
 {
-  "editor.fontFamily": "'JetBrains Mono', 'IBM Plex Mono', Menlo, Monaco, 'Courier New', monospace",
   "editor.formatOnSave": true,
   "editor.rulers": [80, 120],
   "editor.snippetSuggestions": "none",
