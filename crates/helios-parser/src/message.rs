@@ -69,6 +69,7 @@ impl From<ParserMessage> for MessageKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum LexerMessage {
     UnknownCharacter(char),
+    InvalidIndentation { expected: usize, found: usize },
 }
 
 impl LexerMessage {
@@ -93,6 +94,9 @@ impl LexerMessage {
                     .location(location)
                     .description(description)
                     .message(message)
+            }
+            LexerMessage::InvalidIndentation { .. } => {
+                todo!()
             }
         }
     }
