@@ -42,93 +42,138 @@ where
     (tokens, errors)
 }
 
-#[allow(dead_code)]
-#[allow(unused)]
-fn process_indentations(tokens: Vec<Token>) -> Vec<Token> {
-    macro_rules! last {
-        ($stack:expr) => {
-            *$stack.last().unwrap_or(&0)
-        };
-    }
-
+/// Processes indentation for a given vector of tokens by inserting indent and
+/// dedent tokens where appropriate and returning a new vector with these
+/// changes.
+///
+/// Since the [`Lexer`] structure and the [`tokenize`] function only emit
+/// `Newline` tokens on every line feed it encounters, any subsequent operations
+/// that require a tokenized output with indentation tokens (such as the parser)
+/// cannot use their outputs. This function is able to act as an intermediary by
+/// processing these indentations for you. It is ideal to call this function
+/// right after tokenizing.
+fn process_indents<'source>(
+    source: &'source str,
+    tokens: Vec<Token<'source>>,
+) -> Vec<Token<'source>> {
+    // Our resulting vector will have at least the same size as the input vector
+    // (in the case that there is no indentation to be processed).
     let mut processed_tokens = Vec::with_capacity(tokens.capacity());
-    let mut tokens = tokens.into_iter();
     let mut indent_stack = vec![0];
 
-    while let Some(token) = tokens.next() {
-        if token.kind == SyntaxKind::Newline {
-            let curr_indent = token.text[1..].len();
+    let mut i = 0;
+    while i < tokens.len() {
+        // TODO: assert!(indent_stack.is_sorted());
+        let curr_token = tokens[i].clone();
 
-            match curr_indent.cmp(&last!(indent_stack)) {
+        if curr_token.kind == SyntaxKind::Newline {
+            // Skip the newline character and count the number of spaces.
+            let curr_indent = curr_token.text[1..].len();
+            let last_indent = indent_stack.last().unwrap_or(&0);
+
+            match curr_indent.cmp(last_indent) {
+                // We didn't indent or dedent, so just push the token as is.
                 Ordering::Equal => {
-                    processed_tokens.push(token);
+                    processed_tokens.push(curr_token);
+                    i += 1;
                 }
+                // We've indented, so we'll push an indent token.
                 Ordering::Greater => {
                     indent_stack.push(curr_indent);
                     processed_tokens.push(Token {
                         kind: SyntaxKind::Indent,
-                        ..token
+                        ..curr_token
                     });
+                    i += 1;
                 }
-                Ordering::Less => loop {
-                    indent_stack.pop();
-                    let older_indent = &last!(indent_stack);
+                // We've dedent-ed, so we'll push as many dedent tokens needed
+                // to make the current indentation level.
+                Ordering::Less => {
+                    'emit_dedents: loop {
+                        // We won't push a dedent token just yet because we need
+                        // to make sure the current indent is NOT greater than
+                        // the second-last indent (`new_last_indent`).
+                        let old_indent = indent_stack.pop().unwrap();
+                        let new_last_indent = indent_stack.last().unwrap_or(&0);
 
-                    match curr_indent.cmp(older_indent) {
-                        Ordering::Equal => {
-                            processed_tokens.push(Token {
-                                kind: SyntaxKind::Dedent,
-                                ..token.clone()
-                            });
-                            break;
-                        }
-                        Ordering::Less => {
-                            continue;
-                        }
-                        Ordering::Greater => {
-                            let start = token.range.start;
-                            let mut end = token.range.end;
+                        match curr_indent.cmp(new_last_indent) {
+                            // We can emit a dedent token for the old indent and
+                            // continue this loop.
+                            Ordering::Less => {
+                                processed_tokens.push(Token {
+                                    kind: SyntaxKind::Dedent,
+                                    ..curr_token.clone()
+                                });
+                                continue 'emit_dedents;
+                            }
+                            // We can emit a dedent token for the old indent and
+                            // break out of this loop.
+                            Ordering::Equal => {
+                                processed_tokens.push(Token {
+                                    kind: SyntaxKind::Dedent,
+                                    ..curr_token.clone()
+                                });
 
-                            while let Some(token) = tokens.next() {
-                                if token.kind == SyntaxKind::Newline {
-                                    break;
+                                // We've finished dealing with the current
+                                // token, so we'll increment `i`.
+                                i += 1;
+                                break 'emit_dedents;
+                            }
+                            // The current indent is between the second-last
+                            // and the last indents, signifying an incorrect
+                            // dedent. Thus, we'll invalidate the whole line and
+                            // emit an error token instead.
+                            Ordering::Greater => {
+                                let start = curr_token.range.start;
+                                let mut end = curr_token.range.end;
+
+                                // Skip the current newline token.
+                                i += 1;
+
+                                // Skip until we find the next newline token.
+                                while i < tokens.len() {
+                                    if tokens[i].kind == SyntaxKind::Newline {
+                                        break;
+                                    }
+
+                                    end = tokens[i].range.end;
+                                    i += 1;
                                 }
 
-                                end = token.range.end;
+                                processed_tokens.push(Token {
+                                    kind: SyntaxKind::Error,
+                                    text: &source[start..end],
+                                    range: start..end,
+                                });
+
+                                // Put the old indent back as an indentation
+                                // error doesn't indicate a dedent.
+                                indent_stack.push(old_indent);
+                                break 'emit_dedents;
                             }
-
-                            processed_tokens.push(Token {
-                                kind: SyntaxKind::Error,
-                                text: "",
-                                range: start..end,
-                            });
-
-                            break;
                         }
                     }
-                },
+                }
             }
         } else {
-            processed_tokens.push(token);
+            // Push the token as is.
+            processed_tokens.push(curr_token);
+            i += 1;
         }
     }
 
-    processed_tokens
-}
+    let end = processed_tokens.last().map(|t| t.range.end).unwrap_or(0);
+    while let Some(indent) = indent_stack.pop() {
+        // We won't emit a dedent token for the first column.
+        if indent == 0 {
+            break;
+        }
 
-#[test]
-fn test_whitespace() {
-    let source = "\
-let
-  a = 1
-  b = 2
-  c = 3
-let
-  x = a";
-    let (tokens, _) = tokenize(0u8, source);
-    for token in process_indentations(tokens) {
-        println!("{:?}", token);
+        // Zero-width dedent token.
+        processed_tokens.push(Token::new(SyntaxKind::Dedent, "", end..end));
     }
+
+    processed_tokens
 }
 
 /// The entry point of the parsing process.
@@ -141,6 +186,7 @@ where
     FileId: Clone + Default,
 {
     let (tokens, mut messages) = tokenize(file_id.clone(), source);
+    let tokens = process_indents(source, tokens);
     let source = Source::new(&tokens);
 
     let parser = Parser::new(file_id, source);
