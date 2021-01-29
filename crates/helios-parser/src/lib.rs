@@ -52,7 +52,7 @@ where
 /// cannot use their outputs. This function is able to act as an intermediary by
 /// processing these indentations for you. It is ideal to call this function
 /// right after tokenizing.
-fn process_indents<'source>(
+pub fn process_indents<'source>(
     source: &'source str,
     tokens: Vec<Token<'source>>,
 ) -> Vec<Token<'source>> {

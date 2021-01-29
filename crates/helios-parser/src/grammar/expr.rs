@@ -422,7 +422,7 @@ mod tests {
                     Exp_Binary@1..21
                       Exp_Literal@1..5
                         Lit_Integer@1..2 "1"
-                        Newline@2..5 "\n  "
+                        Indent@2..5 "\n  "
                       Sym_Plus@5..6 "+"
                       Whitespace@6..7 " "
                       Exp_Literal@7..21
@@ -436,6 +436,7 @@ mod tests {
                       Lit_Integer@23..25 "10"
                       Whitespace@25..26 " "
                       Comment@26..35 "# Add ten"
+                      Dedent@35..35 ""
             "##]],
         );
     }
