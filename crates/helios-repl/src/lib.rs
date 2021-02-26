@@ -37,8 +37,8 @@ fn print_logo_banner() -> io::Result<()> {
                 line.yellow().bold(),
                 format!(
                     "Type {} to exit, {} for help",
-                    "#exit".blue(),
-                    "#help".blue()
+                    ":exit".blue(),
+                    ":help".blue()
                 )
                 .italic()
             ),
@@ -68,7 +68,7 @@ fn start_main_loop() -> io::Result<()> {
             continue;
         }
 
-        if input.trim().starts_with("#") {
+        if input.trim().starts_with(":") {
             let input = input[1..].trim();
             match input {
                 "exit" => break,

@@ -23,6 +23,7 @@ where
     p.expect(SyntaxKind::Sym_Eq, SyntaxKind::Dec_GlobalBinding);
 
     expr::expr(p, 0);
+    p.expect(SyntaxKind::Newline, SyntaxKind::Dec_GlobalBinding);
 
     m.complete(p, SyntaxKind::Dec_GlobalBinding)
 }

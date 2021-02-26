@@ -234,3 +234,58 @@ fn check(input: &str, expected_tree: expect_test::Expect) {
     let parse = parse(0u8, input);
     expected_tree.assert_eq(&parse.debug_tree());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn check(input: &str, expected_tokens: Vec<Token>) {
+        let (tokens, _) = tokenize(0u8, input);
+        let tokens = process_indents(input, tokens);
+        assert_eq!(tokens, expected_tokens);
+    }
+
+    #[test]
+    fn test_tokenize_empty_input() {
+        check("", vec![]);
+    }
+
+    #[test]
+    fn test_tokenize_simple_input() {
+        check(
+            "let x = 1",
+            vec![
+                Token::new(SyntaxKind::Kwd_Let, "let", 0..3),
+                Token::new(SyntaxKind::Whitespace, " ", 3..4),
+                Token::new(SyntaxKind::Identifier, "x", 4..5),
+                Token::new(SyntaxKind::Whitespace, " ", 5..6),
+                Token::new(SyntaxKind::Sym_Eq, "=", 6..7),
+                Token::new(SyntaxKind::Whitespace, " ", 7..8),
+                Token::new(SyntaxKind::Lit_Integer, "1", 8..9),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_tokenize_indented_input() {
+        check(
+            "let\n  x = 1\n  y = 2",
+            vec![
+                Token::new(SyntaxKind::Kwd_Let, "let", 0..3),
+                Token::new(SyntaxKind::Indent, "\n  ", 3..6),
+                Token::new(SyntaxKind::Identifier, "x", 6..7),
+                Token::new(SyntaxKind::Whitespace, " ", 7..8),
+                Token::new(SyntaxKind::Sym_Eq, "=", 8..9),
+                Token::new(SyntaxKind::Whitespace, " ", 9..10),
+                Token::new(SyntaxKind::Lit_Integer, "1", 10..11),
+                Token::new(SyntaxKind::Newline, "\n  ", 11..14),
+                Token::new(SyntaxKind::Identifier, "y", 14..15),
+                Token::new(SyntaxKind::Whitespace, " ", 15..16),
+                Token::new(SyntaxKind::Sym_Eq, "=", 16..17),
+                Token::new(SyntaxKind::Whitespace, " ", 17..18),
+                Token::new(SyntaxKind::Lit_Integer, "2", 18..19),
+                Token::new(SyntaxKind::Dedent, "", 19..19),
+            ],
+        );
+    }
+}

@@ -65,33 +65,31 @@ macro_rules! Sym {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[repr(u16)]
 pub enum SyntaxKind {
-    Kwd_Alias,
     Kwd_And,
     Kwd_As,
     Kwd_Case,
     Kwd_Else,
     Kwd_Enum,
-    Kwd_Extend,
     Kwd_For,
     Kwd_Forall,
     Kwd_Func,
     Kwd_If,
+    Kwd_Impl,
     Kwd_Import,
     Kwd_In,
+    Kwd_Iter,
     Kwd_Let,
     Kwd_Module,
     Kwd_Not,
     Kwd_Of,
     Kwd_Or,
     Kwd_Range,
-    Kwd_Rec,
-    Kwd_Ref,
-    Kwd_Struct,
-    Kwd_Subtype,
+    Kwd_Record,
     Kwd_Type,
     Kwd_Var,
     Kwd_While,
     Kwd_With,
+    Kwd_Yield,
 
     Sym_Ampersand,
     Sym_Asterisk,
@@ -112,7 +110,6 @@ pub enum SyntaxKind {
     Sym_Percent,
     Sym_Pipe,
     Sym_Plus,
-    Sym_Pound,
     Sym_Question,
     Sym_Semicolon,
     Sym_Sterling,
@@ -140,6 +137,7 @@ pub enum SyntaxKind {
     Lit_String,
 
     Exp_Binary,
+    Exp_Indented,
     Exp_Literal,
     Exp_Paren,
     Exp_UnaryPrefix,
@@ -179,16 +177,13 @@ impl SyntaxKind {
     #[inline]
     pub fn is_trivia(self) -> bool {
         use SyntaxKind::*;
-        matches!(
-            self,
-            Comment | DocComment | Whitespace | Indent | Dedent | Newline
-        )
+        matches!(self, Comment | DocComment | Whitespace | Newline)
     }
 
     /// Determines if the [`SyntaxKind`] is a keyword.
     #[inline]
     pub fn is_keyword(self) -> bool {
-        self >= SyntaxKind::Kwd_Alias && self <= SyntaxKind::Kwd_With
+        self >= SyntaxKind::Kwd_And && self <= SyntaxKind::Kwd_Yield
     }
 
     /// Determines if the [`SyntaxKind`] is a symbol.
@@ -247,6 +242,7 @@ impl SyntaxKind {
             | SyntaxKind::Sym_LBracket
             | SyntaxKind::Sym_LParen
             | SyntaxKind::Lit_Integer
+            | SyntaxKind::Exp_Indented
             | SyntaxKind::Exp_Unnamed
             | SyntaxKind::Indent
             | SyntaxKind::Identifier
@@ -273,32 +269,31 @@ impl SyntaxKind {
     pub fn description(self) -> Option<String> {
         let s = match self {
             // keywords
-            SyntaxKind::Kwd_Alias => "alias",
             SyntaxKind::Kwd_And => "and",
             SyntaxKind::Kwd_As => "as",
             SyntaxKind::Kwd_Case => "case",
             SyntaxKind::Kwd_Else => "else",
             SyntaxKind::Kwd_Enum => "enum",
-            SyntaxKind::Kwd_Extend => "extend",
             SyntaxKind::Kwd_For => "for",
             SyntaxKind::Kwd_Forall => "forall",
             SyntaxKind::Kwd_Func => "func",
             SyntaxKind::Kwd_If => "if",
+            SyntaxKind::Kwd_Impl => "impl",
             SyntaxKind::Kwd_Import => "import",
             SyntaxKind::Kwd_In => "in",
+            SyntaxKind::Kwd_Iter => "iter",
             SyntaxKind::Kwd_Let => "let",
             SyntaxKind::Kwd_Module => "module",
             SyntaxKind::Kwd_Not => "not",
             SyntaxKind::Kwd_Of => "of",
             SyntaxKind::Kwd_Or => "or",
             SyntaxKind::Kwd_Range => "range",
-            SyntaxKind::Kwd_Rec => "rec",
-            SyntaxKind::Kwd_Ref => "ref",
-            SyntaxKind::Kwd_Struct => "struct",
+            SyntaxKind::Kwd_Record => "record",
             SyntaxKind::Kwd_Type => "type",
             SyntaxKind::Kwd_Var => "var",
             SyntaxKind::Kwd_While => "while",
             SyntaxKind::Kwd_With => "with",
+            SyntaxKind::Kwd_Yield => "yield",
             // symbols
             SyntaxKind::Sym_Ampersand => "ampersand",
             SyntaxKind::Sym_Asterisk => "asterisk",
@@ -319,7 +314,6 @@ impl SyntaxKind {
             SyntaxKind::Sym_Percent => "percent",
             SyntaxKind::Sym_Pipe => "pipe",
             SyntaxKind::Sym_Plus => "plus",
-            SyntaxKind::Sym_Pound => "pound",
             SyntaxKind::Sym_Question => "question mark",
             SyntaxKind::Sym_Semicolon => "semicolon",
             SyntaxKind::Sym_Sterling => "sterling",
@@ -342,6 +336,7 @@ impl SyntaxKind {
             SyntaxKind::Lit_String => "string",
             // expressions
             SyntaxKind::Exp_Binary => "binary",
+            SyntaxKind::Exp_Indented => "indented",
             SyntaxKind::Exp_Literal => "literal",
             SyntaxKind::Exp_Paren => "parenthesized",
             SyntaxKind::Exp_UnaryPrefix => "unary prefixed",
@@ -401,7 +396,6 @@ impl SyntaxKind {
             SyntaxKind::Sym_Percent => "%",
             SyntaxKind::Sym_Pipe => "|",
             SyntaxKind::Sym_Plus => "+",
-            SyntaxKind::Sym_Pound => "#",
             SyntaxKind::Sym_Question => "?",
             SyntaxKind::Sym_Semicolon => ";",
             SyntaxKind::Sym_Sterling => "£",
@@ -454,9 +448,10 @@ impl Display for SyntaxKind {
 
 /// An array of all the keywords defined in the Helios grammar.
 pub const KEYWORDS: &[&str] = &[
-    "alias", "and", "as", "case", "else", "enum", "extend", "for", "forall",
-    "if", "import", "in", "let", "module", "not", "of", "or", "range", "rec",
-    "ref", "struct", "subtype", "type", "var", "while", "with",
+    "and", "as", "case", "else", "enum", "for", "forall", "func", "if", "impl",
+    "import", "in", "iter", "let", "module", "not", "of", "or", "range",
+    "record", "return", "test", "trait", "type", "var", "while", "with",
+    "yield",
 ];
 
 /// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
@@ -493,7 +488,6 @@ pub fn symbol_from_char(c: char) -> SyntaxKind {
         '%' => SyntaxKind::Sym_Percent,
         '|' => SyntaxKind::Sym_Pipe,
         '+' => SyntaxKind::Sym_Plus,
-        '#' => SyntaxKind::Sym_Pound,
         '?' => SyntaxKind::Sym_Question,
         ';' => SyntaxKind::Sym_Semicolon,
         '£' => SyntaxKind::Sym_Sterling,
@@ -568,7 +562,6 @@ mod tests {
         check!('%' => Sym_Percent);
         check!('|' => Sym_Pipe);
         check!('+' => Sym_Plus);
-        check!('#' => Sym_Pound);
         check!('?' => Sym_Question);
         check!(';' => Sym_Semicolon);
         check!('£' => Sym_Sterling);
@@ -600,7 +593,7 @@ mod tests {
         assert!(SyntaxKind::DocComment.is_trivia());
         assert!(SyntaxKind::Whitespace.is_trivia());
 
-        assert!(!SyntaxKind::Kwd_Alias.is_trivia());
+        assert!(!SyntaxKind::Kwd_And.is_trivia());
         assert!(!SyntaxKind::Sym_Ampersand.is_trivia());
         assert!(!SyntaxKind::Lit_Character.is_trivia());
         assert!(!SyntaxKind::Root.is_trivia());
@@ -614,7 +607,7 @@ mod tests {
         assert!(SyntaxKind::Sym_LParen.is_symbol());
         assert!(SyntaxKind::Sym_RParen.is_symbol());
 
-        assert!(!SyntaxKind::Kwd_Alias.is_symbol());
+        assert!(!SyntaxKind::Kwd_And.is_symbol());
         assert!(!SyntaxKind::Lit_Character.is_symbol());
         assert!(!SyntaxKind::Root.is_symbol());
     }
@@ -627,9 +620,12 @@ mod tests {
 
         use SyntaxKind::*;
 
-        check(Kwd_Alias, "the alias keyword");
-        check(Kwd_Case, "the case keyword");
-        check(Kwd_With, "the with keyword");
+        check(Kwd_And, "the and keyword");
+        check(Kwd_Enum, "the enum keyword");
+        check(Kwd_Impl, "the impl keyword");
+        check(Kwd_Module, "the module keyword");
+        check(Kwd_Record, "the record keyword");
+        check(Kwd_Yield, "the yield keyword");
 
         check(Sym_Ampersand, "an ampersand symbol (`&`)");
         check(Sym_ForwardSlash, "a forward slash symbol (`/`)");
@@ -650,6 +646,7 @@ mod tests {
         check(Lit_String, "a string literal (such as `\"hello, world!\"`)");
 
         check(Exp_Binary, "a binary expression");
+        check(Exp_Indented, "an indented expression");
         check(Exp_Literal, "a literal expression");
         check(Exp_Paren, "a parenthesized expression");
         check(Exp_UnaryPrefix, "a unary prefixed expression");

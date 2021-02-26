@@ -275,33 +275,31 @@ impl<'source, FileId> Lexer<'source, FileId> {
     #[rustfmt::skip]
     fn lex_keyword_or_identifier(&mut self, slice: &str) -> SyntaxKind {
         match slice {
-            "alias"     => SyntaxKind::Kwd_Alias,
             "and"       => SyntaxKind::Kwd_And,
             "as"        => SyntaxKind::Kwd_As,
             "case"      => SyntaxKind::Kwd_Case,
             "else"      => SyntaxKind::Kwd_Else,
             "enum"      => SyntaxKind::Kwd_Enum,
-            "extend"    => SyntaxKind::Kwd_Extend,
             "for"       => SyntaxKind::Kwd_For,
             "forall"    => SyntaxKind::Kwd_Forall,
             "func"      => SyntaxKind::Kwd_Func,
             "if"        => SyntaxKind::Kwd_If,
+            "impl"      => SyntaxKind::Kwd_Impl,
             "import"    => SyntaxKind::Kwd_Import,
             "in"        => SyntaxKind::Kwd_In,
+            "iter"      => SyntaxKind::Kwd_Iter,
             "let"       => SyntaxKind::Kwd_Let,
             "module"    => SyntaxKind::Kwd_Module,
             "not"       => SyntaxKind::Kwd_Not,
             "of"        => SyntaxKind::Kwd_Of,
             "or"        => SyntaxKind::Kwd_Or,
             "range"     => SyntaxKind::Kwd_Range,
-            "rec"       => SyntaxKind::Kwd_Rec,
-            "ref"       => SyntaxKind::Kwd_Ref,
-            "struct"    => SyntaxKind::Kwd_Struct,
-            "subtype"   => SyntaxKind::Kwd_Subtype,
+            "record"    => SyntaxKind::Kwd_Record,
             "type"      => SyntaxKind::Kwd_Type,
             "var"       => SyntaxKind::Kwd_Var,
             "while"     => SyntaxKind::Kwd_While,
             "with"      => SyntaxKind::Kwd_With,
+            "yield"     => SyntaxKind::Kwd_Yield,
             "_"         => SyntaxKind::ReservedIdentifier,
             _           => SyntaxKind::Identifier,
         }
@@ -406,33 +404,31 @@ mod tests {
 
     #[test]
     fn test_lex_keywords() {
-        check("alias", SyntaxKind::Kwd_Alias);
         check("and", SyntaxKind::Kwd_And);
         check("as", SyntaxKind::Kwd_As);
         check("case", SyntaxKind::Kwd_Case);
         check("else", SyntaxKind::Kwd_Else);
         check("enum", SyntaxKind::Kwd_Enum);
-        check("extend", SyntaxKind::Kwd_Extend);
         check("for", SyntaxKind::Kwd_For);
         check("forall", SyntaxKind::Kwd_Forall);
         check("func", SyntaxKind::Kwd_Func);
         check("if", SyntaxKind::Kwd_If);
+        check("impl", SyntaxKind::Kwd_Impl);
         check("import", SyntaxKind::Kwd_Import);
         check("in", SyntaxKind::Kwd_In);
+        check("iter", SyntaxKind::Kwd_Iter);
         check("let", SyntaxKind::Kwd_Let);
         check("module", SyntaxKind::Kwd_Module);
         check("not", SyntaxKind::Kwd_Not);
         check("of", SyntaxKind::Kwd_Of);
         check("or", SyntaxKind::Kwd_Or);
         check("range", SyntaxKind::Kwd_Range);
-        check("rec", SyntaxKind::Kwd_Rec);
-        check("ref", SyntaxKind::Kwd_Ref);
-        check("struct", SyntaxKind::Kwd_Struct);
-        check("subtype", SyntaxKind::Kwd_Subtype);
+        check("record", SyntaxKind::Kwd_Record);
         check("type", SyntaxKind::Kwd_Type);
         check("var", SyntaxKind::Kwd_Var);
         check("while", SyntaxKind::Kwd_While);
         check("with", SyntaxKind::Kwd_With);
+        check("yield", SyntaxKind::Kwd_Yield);
     }
 
     #[test]
@@ -455,7 +451,6 @@ mod tests {
         check("%", SyntaxKind::Sym_Percent);
         check("|", SyntaxKind::Sym_Pipe);
         check("+", SyntaxKind::Sym_Plus);
-        // check("#", SyntaxKind::Sym_Pound);
         check("?", SyntaxKind::Sym_Question);
         check(";", SyntaxKind::Sym_Semicolon);
         check("£", SyntaxKind::Sym_Sterling);
