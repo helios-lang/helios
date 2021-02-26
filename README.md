@@ -12,8 +12,8 @@ there are some key features that I want to implement in Helios one day:
 - An advanced static type system with type inference
 - Static memory management with ownership semantics
 - Seamless editor integration with exceptional error recovery and diagnostics
-- Ability to compile platform-agnostic executables and libraries with
-  near-native performance
+- Ability to compile source code to platform-agnostic executables and libraries
+  with near-native performance
 - Effortless interoperability with existing C libraries
 
 ## Disclaimer
