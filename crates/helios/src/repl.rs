@@ -78,7 +78,10 @@ fn start_main_loop() -> io::Result<()> {
             match input {
                 "exit" => break,
                 "help" => {
-                    println!("{}", "Help is not available at the moment".blue())
+                    println!(
+                        "{}",
+                        "Sorry, help is unavailable at the moment".blue()
+                    )
                 }
                 command => {
                     let msg = format!("Unknown command: `{}`", command).red();

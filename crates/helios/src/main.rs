@@ -4,13 +4,15 @@ use helios::repl::HeliosReplOpts;
 
 #[derive(Clap)]
 #[clap(version = "0.2.0")]
+#[allow(unused)]
 struct HeliosOpts {
     /// Enables quiet mode (no output to stdout)
     #[clap(short = 'q', long = "quiet")]
     quiet: bool,
-    /// Prints diagnostic output to stdout
+    /// The verbosity of the output to stdout
     #[clap(short = 'v', long = "verbose")]
     verbose: bool,
+    /// Recognized subcommands
     #[clap(subcommand)]
     subcommand: HeliosSubcommand,
 }
@@ -25,8 +27,6 @@ fn main() {
     env_logger::init();
 
     let opts = HeliosOpts::parse();
-    println!("quiet: {}", opts.quiet);
-    println!("verbose: {}", opts.verbose);
 
     match opts.subcommand {
         HeliosSubcommand::Build(build_opts) => {
@@ -34,7 +34,7 @@ fn main() {
             helios::build::build(&*build_opts.file);
         }
         HeliosSubcommand::Repl(_repl_opts) => {
-            log::trace!("Starting REPL...");
+            log::trace!("Starting new REPL session...");
             helios::repl::start();
         }
     }
