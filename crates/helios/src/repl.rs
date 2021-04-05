@@ -1,5 +1,6 @@
 //! REPL support for the Helios programming language.
 
+use clap::Clap;
 use colored::*;
 use helios_diagnostics::files::SimpleFiles;
 use helios_diagnostics::Diagnostic;
@@ -13,6 +14,10 @@ const LOGO_BANNER: &[&str] = &[
     r"      /_/  /_/\___/_/_/\___/____/     ",
     r"",
 ];
+
+/// Starts a new REPL session
+#[derive(Clap)]
+pub struct HeliosReplOpts {}
 
 fn print_logo_banner() -> io::Result<()> {
     for (i, line) in LOGO_BANNER.iter().enumerate() {
@@ -100,7 +105,6 @@ fn start_main_loop() -> io::Result<()> {
                 }
             }
         }
-
 
         input.clear();
     }

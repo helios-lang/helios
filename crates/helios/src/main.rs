@@ -1,53 +1,41 @@
-/// Prints a formatted error message to standard error.
-fn print_error(message: impl Into<String>) {
-    eprintln!("ERROR: {}\n", message.into())
+use clap::Clap;
+use helios::build::HeliosBuildOpts;
+use helios::repl::HeliosReplOpts;
+
+#[derive(Clap)]
+#[clap(version = "0.2.0")]
+struct HeliosOpts {
+    /// Enables quiet mode (no output to stdout)
+    #[clap(short = 'q', long = "quiet")]
+    quiet: bool,
+    /// Prints diagnostic output to stdout
+    #[clap(short = 'v', long = "verbose")]
+    verbose: bool,
+    #[clap(subcommand)]
+    subcommand: HeliosSubcommand,
 }
 
-/// Prints the usage information of the Helios executable.
-fn print_usage() {
-    println!("{}", include_str!("../usage.txt"));
-}
-
-/// Prints the current version number of the Helios executable.
-///
-/// This function will print the version number found in the `Cargo.toml`
-/// file of this package.
-fn print_version() {
-    if let Some(version) = option_env!("CARGO_PKG_VERSION") {
-        println!("helios {}", version);
-    } else {
-        print_error("Failed to get version of executable");
-    }
+#[derive(Clap)]
+enum HeliosSubcommand {
+    Build(HeliosBuildOpts),
+    Repl(HeliosReplOpts),
 }
 
 fn main() {
     env_logger::init();
-    let mut args = std::env::args();
-    args.next(); // Skip path to executable
 
-    match (args.next(), args.next()) {
-        (Some(arg), param) => match (&*arg, param) {
-            ("-h", _) | ("--help", _) => print_usage(),
-            ("-V", _) | ("--version", _) => print_version(),
-            ("build", None) => {
-                print_error("Missing argument for subcommand `build`");
-                print_usage();
-            }
-            ("build", Some(ref file_name)) => {
-                log::trace!("Starting build process...");
-                helios_build::build(file_name)
-            }
-            ("repl", _) => {
-                log::trace!("Starting REPL...");
-                helios_repl::start()
-            }
-            _ => {
-                let message =
-                    format!("Unrecognised option or subcommand `{}`", arg);
-                print_error(message);
-                print_usage()
-            }
-        },
-        _ => print_usage(),
+    let opts = HeliosOpts::parse();
+    println!("quiet: {}", opts.quiet);
+    println!("verbose: {}", opts.verbose);
+
+    match opts.subcommand {
+        HeliosSubcommand::Build(build_opts) => {
+            log::trace!("Starting build process...");
+            helios::build::build(&*build_opts.file);
+        }
+        HeliosSubcommand::Repl(_repl_opts) => {
+            log::trace!("Starting REPL...");
+            helios::repl::start();
+        }
     }
 }

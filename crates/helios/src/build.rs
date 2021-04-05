@@ -1,7 +1,15 @@
+use clap::Clap;
 use colored::*;
 use helios_diagnostics::files::SimpleFiles;
 use helios_diagnostics::{Diagnostic, Severity};
 use std::fmt::Display;
+
+/// Compiling support for Helios files
+#[derive(Clap)]
+pub struct HeliosBuildOpts {
+    /// The entry point file for the program to be built
+    pub file: String,
+}
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -31,7 +39,7 @@ impl Display for Error {
                 )
             }
             Self::IoError(error) => {
-                write!(f, "An IO error occurred: {}", error)
+                write!(f, "Failed to build due to an IO error: {}", error)
             }
         }
     }

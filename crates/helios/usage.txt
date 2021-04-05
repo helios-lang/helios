@@ -1,9 +1,0 @@
-USAGE: helios [OPTIONS] [SUBCOMMAND]
-
-OPTIONS:
-  -h, --help      Display this message
-  -V, --version   Print version information
-
-SUBCOMMAND:
-  build <file>    Compile the given <file>
-  repl            Start a new REPL session
