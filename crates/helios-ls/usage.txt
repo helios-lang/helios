@@ -1,5 +1,0 @@
-USAGE: helios-ls [OPTIONS]
-
-OPTIONS:
-  -h, --help      Display this message
-  -V, --version   Print version information

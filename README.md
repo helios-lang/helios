@@ -36,6 +36,6 @@ Attribution 4.0 International License][cc-license].
 
 [apache-license]: http://www.apache.org/licenses/LICENSE-2.0
 [badge]: https://github.com/helios-lang/helios/workflows/CI/badge.svg
-[ci]: https://github.com/helios-lang/helios/actions?query=workflow:%22CI%22
 [cc-license]: http://creativecommons.org/licenses/by/4.0/
+[ci]: https://github.com/helios-lang/helios/actions?query=workflow:%22CI%22
 [email]: mailto:taseen00.islam@gmail.com

@@ -114,7 +114,7 @@ pub fn emit<'files, F: Files<'files>>(
                 textwrap::Options::with_termwidth(),
             )
         };
-    };
+    }
 
     let location_str =
         format!("-> src/Foo.he:{}:{}", line_number, column_start);
