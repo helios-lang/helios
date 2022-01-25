@@ -31,29 +31,27 @@ impl FormattedStringSegment {
 impl Display for FormattedStringSegment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let colorize = colored::control::SHOULD_COLORIZE.should_colorize();
-
         match self {
             Self::LineBreak => write!(f, "\n\n"),
-            Self::Text(text) => write!(f, "{}", text),
+            Self::Text(text) => write!(f, "{text}"),
             Self::Code(code) => {
                 if colorize {
                     write!(f, "{}", code.yellow())
                 } else {
-                    write!(f, "`{}`", code)
+                    write!(f, "`{code}`")
                 }
             }
             Self::CodeBlock(block) => {
                 if colorize {
                     write!(f, "    {}", block.yellow())
                 } else {
-                    write!(f, "    {}", block)
+                    write!(f, "    {block}")
                 }
             }
             Self::List(lines) => {
                 for line in lines {
-                    write!(f, "    {}\n", line)?;
+                    write!(f, "    {line}\n")?;
                 }
-
                 Ok(())
             }
         }
@@ -142,30 +140,29 @@ impl From<&str> for FormattedString {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_formatter() {
-        println!();
-        let text = FormattedString::new()
-            .text("The 2nd argument for the function ")
-            .code("foo")
-            .text(" expected a value of type:")
-            .code_block("Core.Vec.t char")
-            .text("But I received a value of type:")
-            .code_block("Core.String.t")
-            .text("Perhaps you meant one of these?")
-            .list(
-                ["Foo.a", "Foo.Bar.b", "Foo.Bar.Baz.c", "Quux.d"]
-                    .iter()
-                    .map(|s| FormattedString::new().code(*s).text(" (info)"))
-                    .collect::<Vec<_>>(),
-            )
-            .finish();
-
-        println!("{}", text);
-        println!();
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     #[test]
+//     fn test_formatter() {
+//         println!();
+//         let text = FormattedString::new()
+//             .text("The 2nd argument for the function ")
+//             .code("foo")
+//             .text(" expected a value of type:")
+//             .code_block("Vector Char")
+//             .text("But I received a value of type:")
+//             .code_block("String")
+//             .text("Here's a list of random types:")
+//             .list(
+//                 ["Foo.T", "Foo.Bar.T", "Foo.Bar.Baz.T", "Quux.T"]
+//                     .iter()
+//                     .map(|s| FormattedString::new().code(*s).text(" (info)"))
+//                     .collect::<Vec<_>>(),
+//             )
+//             .finish();
+//
+//         println!("{text}\n");
+//     }
+// }
