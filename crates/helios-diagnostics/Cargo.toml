@@ -9,4 +9,4 @@ edition = "2021"
 colored = "2.0.0"
 helios-formatting = { version = "0.2.0", path = "../helios-formatting" }
 text-size = "1.1.0"
-textwrap = { version = "0.13.1", features = ["terminal_size"] }
+textwrap = { version = "0.14.2", features = ["terminal_size"] }

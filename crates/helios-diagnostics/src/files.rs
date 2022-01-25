@@ -1,6 +1,7 @@
-use crate::{Error, Result};
 use std::fmt::Display;
 use std::ops::Range;
+
+use crate::{Error, Result};
 
 fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
@@ -24,23 +25,31 @@ pub trait Files<'a> {
     type Name: 'a + Display;
     type Source: 'a + AsRef<str>;
 
+    /// The name of the current file.
     fn name(&'a self, id: Self::FileId) -> Result<Self::Name>;
 
+    /// The string content of the current file.
     fn source(&'a self, id: Self::FileId) -> Result<Self::Source>;
 
+    /// Returns the index of the line (zero-indexed) of a file at the given
+    /// byte index.
     fn line_index(
         &'a self,
         id: Self::FileId,
         byte_index: usize,
     ) -> Result<usize>;
 
+    /// Returns the range of the line at the given line index. The provided
+    /// line index must be zero-indexed (i.e. to refer to the first line, the
+    /// line index must be `0`).
     fn line_range(
         &'a self,
         id: Self::FileId,
         line_index: usize,
     ) -> Result<Range<usize>>;
 
-    /// User-facing line number.
+    /// Returns the user-facing number for the current line index. The first
+    /// line will be represented as `1`, not `0`.
     fn line_number(
         &'a self,
         _: Self::FileId,
@@ -49,6 +58,8 @@ pub trait Files<'a> {
         Ok(line_index + 1)
     }
 
+    /// Returns the index of the column (zero-indexed) of a file at the given
+    /// line and byte indexes.
     fn column_index(
         &'a self,
         id: Self::FileId,
@@ -63,7 +74,8 @@ pub trait Files<'a> {
         Ok(column_index)
     }
 
-    /// User-facing column number.
+    /// Returns the user-facing number of the column index at the given line and
+    /// byte indexes. The first column will be represented as `1`, not `0`.
     fn column_number(
         &'a self,
         id: Self::FileId,

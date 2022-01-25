@@ -114,7 +114,7 @@ fn start_main_loop() -> io::Result<()> {
 /// Starts a new REPL session.
 pub fn start() {
     match start_main_loop() {
-        Ok(_) => println!("{}", "Goodbye...".blue()),
+        Ok(_) => println!("{}", "Goodbye!".blue()),
         Err(error) => eprintln!("An error occurred: {error}"),
     }
 }

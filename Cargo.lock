@@ -54,7 +54,7 @@ dependencies = [
  "os_str_bytes",
  "strsim",
  "termcolor",
- "textwrap 0.14.2",
+ "textwrap",
 ]
 
 [[package]]
@@ -166,7 +166,7 @@ dependencies = [
  "colored",
  "helios-formatting",
  "text-size",
- "textwrap 0.13.4",
+ "textwrap",
 ]
 
 [[package]]
@@ -529,20 +529,15 @@ checksum = "288cb548dbe72b652243ea797201f3d481a0609a967980fcc5b2315ea811560a"
 
 [[package]]
 name = "textwrap"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd05616119e612a8041ef58f2b578906cc2531a6069047ae092cfb86a325d835"
-dependencies = [
- "smawk",
- "terminal_size",
- "unicode-width",
-]
-
-[[package]]
-name = "textwrap"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0066c8d12af8b5acd21e00547c3797fde4e8677254a7ee429176ccebbe93dd80"
+dependencies = [
+ "smawk",
+ "terminal_size",
+ "unicode-linebreak",
+ "unicode-width",
+]
 
 [[package]]
 name = "triomphe"
@@ -553,6 +548,15 @@ dependencies = [
  "memoffset",
  "serde",
  "stable_deref_trait",
+]
+
+[[package]]
+name = "unicode-linebreak"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a52dcaab0c48d931f7cc8ef826fa51690a08e1ea55117ef26f89864f532383f"
+dependencies = [
+ "regex",
 ]
 
 [[package]]

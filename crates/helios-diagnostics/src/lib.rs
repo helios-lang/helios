@@ -1,10 +1,11 @@
 pub mod diagnostic;
 pub mod files;
 
-pub use crate::diagnostic::*;
 use colored::*;
-use files::Files;
 use std::{fmt::Display, io::Write};
+
+pub use crate::diagnostic::*;
+use crate::files::Files;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -73,7 +74,7 @@ pub fn emit<'files, F: Files<'files>>(
             let remaining_len = textwrap::termwidth()
                 .checked_sub(msg.len())
                 .unwrap_or_default();
-            format!("{}{}", msg, "-".repeat(remaining_len))
+            format!("{msg}{}", "-".repeat(remaining_len))
         };
 
         match severity {
@@ -126,7 +127,7 @@ pub fn emit<'files, F: Files<'files>>(
 
     let gutter = format!("{:>4} | ", line_number);
     let line = &source.as_ref()[line_range].trim_end(); // remove trailing LF
-    writeln!(f, "{}{}", gutter.dimmed(), line)?;
+    writeln!(f, "{}{line}", gutter.dimmed())?;
 
     // `column_start` is indexed by 1
     let offset = " ".repeat(gutter.len() + column_start - 1);
@@ -134,12 +135,12 @@ pub fn emit<'files, F: Files<'files>>(
     let underline_count = std::cmp::max(1, column_end - column_start);
     // Underline string repeated `underline_count` times
     let underline = underline.repeat(underline_count).color(color);
-    writeln!(f, "{}{}", offset, underline)?;
+    writeln!(f, "{offset}{underline}")?;
 
     writeln!(f, "{}\n", wrap!(diagnostic.message).trim_end())?;
 
     if let Some(hint) = &diagnostic.hint {
-        writeln!(f, "{}\n", wrap!("{}: {}", "Hint".underline(), hint))?;
+        writeln!(f, "{}\n", wrap!("{}: {hint}", "Hint".underline()))?;
     }
 
     Ok(())
