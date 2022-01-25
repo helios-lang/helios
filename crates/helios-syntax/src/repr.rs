@@ -65,21 +65,21 @@ impl Display for HumanReadableRepr {
         write!(f, "{} ", self.article)?;
 
         if let Some(qualifier) = &self.qualifier {
-            write!(f, "{} ", qualifier)?;
+            write!(f, "{qualifier} ")?;
         }
 
         if let Some(description) = &self.description {
-            write!(f, "{} ", description)?;
+            write!(f, "{description} ")?;
         }
 
         write!(f, "{}", self.kind)?;
 
         if let Some(code_repr) = &self.code_repr {
-            write!(f, " (`{}`)", code_repr)?;
+            write!(f, " (`{code_repr}`)")?;
         }
 
         if let Some(example) = &self.example {
-            write!(f, " (such as `{}`)", example)?;
+            write!(f, " (such as `{example}`)")?;
         }
 
         Ok(())

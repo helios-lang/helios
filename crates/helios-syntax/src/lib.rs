@@ -339,8 +339,8 @@ impl SyntaxKind {
             SyntaxKind::Exp_Indented => "indented",
             SyntaxKind::Exp_Literal => "literal",
             SyntaxKind::Exp_Paren => "parenthesized",
-            SyntaxKind::Exp_UnaryPrefix => "unary prefixed",
-            SyntaxKind::Exp_UnaryPostfix => "unary postfixed",
+            SyntaxKind::Exp_UnaryPrefix => "prefixed unary",
+            SyntaxKind::Exp_UnaryPostfix => "postfixed unary",
             SyntaxKind::Exp_VariableRef => "variable reference",
             // declarations
             SyntaxKind::Dec_GlobalBinding => "global binding",
@@ -425,7 +425,7 @@ impl SyntaxKind {
             SyntaxKind::Lit_Character => "'a'",
             SyntaxKind::Lit_Float => "123.456",
             SyntaxKind::Lit_Integer => "123",
-            SyntaxKind::Lit_String => "\"hello, world!\"",
+            SyntaxKind::Lit_String => r#""hello, world!""#,
             SyntaxKind::Identifier => "foo",
             _ => return None,
         };
@@ -454,7 +454,7 @@ pub const KEYWORDS: &[&str] = &[
     "yield",
 ];
 
-/// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
+/// Creates a new symbol variant of [`SyntaxKind`] that corresponds to the given
 /// character.
 ///
 /// This function panics if an invalid character is given.
@@ -500,11 +500,11 @@ pub fn symbol_from_char(c: char) -> SyntaxKind {
         ']' => SyntaxKind::Sym_RBracket,
         '(' => SyntaxKind::Sym_LParen,
         ')' => SyntaxKind::Sym_RParen,
-        _ => panic!("Character `{}` is not a valid Symbol", c),
+        _ => panic!("Character `{c}` is not a valid Symbol"),
     }
 }
 
-/// Create a new symbol variant of [`SyntaxKind`] that corresponds to the given
+/// Creates a new symbol variant of [`SyntaxKind`] that corresponds to the given
 /// sequence of characters.
 ///
 /// # Examples
@@ -649,8 +649,8 @@ mod tests {
         check(Exp_Indented, "an indented expression");
         check(Exp_Literal, "a literal expression");
         check(Exp_Paren, "a parenthesized expression");
-        check(Exp_UnaryPrefix, "a unary prefixed expression");
-        check(Exp_UnaryPostfix, "a unary postfixed expression");
+        check(Exp_UnaryPrefix, "a prefixed unary expression");
+        check(Exp_UnaryPostfix, "a postfixed unary expression");
         check(Exp_VariableRef, "a variable reference expression");
         check(Exp_Unnamed, "an expression");
 

@@ -3,7 +3,7 @@ name = "helios-syntax"
 version = "0.2.0"
 license = "Apache-2.0"
 authors = ["Ta-Seen Islam <taseen00.islam@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,4 +11,4 @@ edition = "2018"
 expect-test = "1.0.1"
 helios-formatting = { version = "0.2.0", path = "../helios-formatting" }
 rowan = "0.10.0"
-unicode-xid = "0.2.1"
+unicode-xid = "0.2.2"
