@@ -22,14 +22,13 @@ impl Display for Error {
             Self::MissingFile => write!(f, "missing file"),
             Self::OutOfBounds { given, max } => write!(
                 f,
-                "the provided index ({}) is outside the maximum index of {}",
-                given, max
+                "the provided index ({given}) is outside the maximum index of {max}",
             ),
             Self::IoError(error) => {
-                write!(f, "an IO error occurred: {}", error)
+                write!(f, "an IO error occurred: {error}")
             }
-            Self::FmtError(error) => {
-                write!(f, "a formatting error occurred: {}", error)
+            Self::FmtError(error) =>{
+                write!(f, "a formatting error occurred: {error}")
             }
         }
     }
