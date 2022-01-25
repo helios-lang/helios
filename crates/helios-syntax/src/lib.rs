@@ -2,9 +2,10 @@ mod lang;
 mod repr;
 
 use helios_formatting::FormattedString;
-pub use lang::HeliosLanguage;
 use repr::{Article, HumanReadableRepr};
 use std::fmt::{self, Display};
+
+pub use lang::HeliosLanguage;
 
 pub type SyntaxNode = rowan::SyntaxNode<HeliosLanguage>;
 pub type SyntaxToken = rowan::SyntaxToken<HeliosLanguage>;

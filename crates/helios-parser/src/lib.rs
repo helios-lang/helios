@@ -12,14 +12,15 @@ mod lexer;
 pub mod message;
 mod parser;
 
+use helios_syntax::{SyntaxKind, SyntaxNode};
+use rowan::GreenNode;
+use std::cmp::Ordering;
+
 use self::lexer::{Lexer, Token};
 pub use self::message::*;
 use self::parser::sink::Sink;
 use self::parser::source::Source;
 use self::parser::Parser;
-use helios_syntax::{SyntaxKind, SyntaxNode};
-use rowan::GreenNode;
-use std::cmp::Ordering;
 
 /// Tokenizes the given source text.
 pub fn tokenize<FileId>(

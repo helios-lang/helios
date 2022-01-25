@@ -124,9 +124,9 @@ dependencies = [
 
 [[package]]
 name = "expect-test"
-version = "1.1.0"
+version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2300477aab3a378f2ca00a4fbd4dc713654ab7ed790e4017493cb33656280633"
+checksum = "7e3e6b28dccda91d8742195c71fbda412112c0c77febf56bf3d895d68b19db16"
 dependencies = [
  "dissimilar",
  "once_cell",
@@ -248,7 +248,6 @@ dependencies = [
 name = "helios-syntax"
 version = "0.2.0"
 dependencies = [
- "expect-test",
  "helios-formatting",
  "rowan",
  "unicode-xid",

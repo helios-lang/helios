@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies]
 drop_bomb = "0.1.5"
-expect-test = "1.0.1"
+expect-test = "1.2.2"
 helios-diagnostics = { version = "0.2.0", path = "../helios-diagnostics" }
 helios-formatting = { version = "0.2.0", path = "../helios-formatting" }
 helios-syntax = { version = "0.2.0", path = "../helios-syntax" }
