@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 
-#[allow(dead_code)]
 pub type Cancelable<T> = Result<T, Cancelled>;
 
 #[derive(Debug)]
