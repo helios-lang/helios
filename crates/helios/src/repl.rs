@@ -1,6 +1,5 @@
 //! REPL support for the Helios programming language.
 
-use clap::Clap;
 use colored::*;
 use helios_diagnostics::files::SimpleFiles;
 use helios_diagnostics::Diagnostic;
@@ -16,7 +15,7 @@ const LOGO_BANNER: &[&str] = &[
 ];
 
 /// Starts a new REPL session
-#[derive(Clap)]
+#[derive(clap::Parser)]
 pub struct HeliosReplOpts {}
 
 fn print_logo_banner() -> io::Result<()> {
@@ -66,7 +65,6 @@ fn start_main_loop() -> io::Result<()> {
     loop {
         write!(stdout, "{}", "> ".blue())?;
         stdout.flush()?;
-
         stdin.read_line(&mut input)?;
 
         if input.trim().is_empty() {
@@ -84,11 +82,10 @@ fn start_main_loop() -> io::Result<()> {
                     )
                 }
                 command => {
-                    let msg = format!("Unknown command: `{}`", command).red();
-                    eprintln!("{}", msg)
+                    let msg = format!("Unknown command: `{command}`").red();
+                    eprintln!("{msg}");
                 }
             }
-
             println!()
         } else {
             let file_id = files.add("<repl>", input.to_string());
@@ -100,7 +97,6 @@ fn start_main_loop() -> io::Result<()> {
             let mut emitted_ranges = Vec::new();
             for message in parse.messages() {
                 let diagnostic = Diagnostic::from(message);
-
                 if !(emitted_ranges.contains(&diagnostic.location)) {
                     emitted_ranges.push(diagnostic.location.clone());
                     helios_diagnostics::emit(&mut stdout, &files, &diagnostic)
@@ -119,6 +115,6 @@ fn start_main_loop() -> io::Result<()> {
 pub fn start() {
     match start_main_loop() {
         Ok(_) => println!("{}", "Goodbye...".blue()),
-        Err(error) => eprintln!("An error occurred: {}", error),
+        Err(error) => eprintln!("An error occurred: {error}"),
     }
 }

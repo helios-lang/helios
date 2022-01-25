@@ -1,11 +1,10 @@
-use clap::Clap;
 use colored::*;
 use helios_diagnostics::files::SimpleFiles;
 use helios_diagnostics::{Diagnostic, Severity};
 use std::fmt::Display;
 
 /// Compiling support for Helios files
-#[derive(Clap)]
+#[derive(clap::Parser)]
 pub struct HeliosBuildOpts {
     /// The entry point file for the program to be built
     pub file: String,
@@ -31,15 +30,14 @@ impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BuildError(count) => {
+                let suffix = if *count == 1 { "" } else { "s" };
                 write!(
                     f,
-                    "Failed to build due to {} previous error{}",
-                    count,
-                    if *count == 1 { "" } else { "s" }
+                    "Failed to build due to {count} previous error{suffix}"
                 )
             }
             Self::IoError(error) => {
-                write!(f, "Failed to build due to an IO error: {}", error)
+                write!(f, "Failed to build due to an IO error: {error}")
             }
         }
     }

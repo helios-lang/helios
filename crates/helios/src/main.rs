@@ -1,23 +1,23 @@
-use clap::Clap;
+use clap::Parser;
+
 use helios::build::HeliosBuildOpts;
 use helios::repl::HeliosReplOpts;
 
-#[derive(Clap)]
+#[derive(Parser)]
 #[clap(version = "0.2.0")]
-#[allow(unused)]
 struct HeliosOpts {
     /// Enables quiet mode (no output to stdout)
-    #[clap(short = 'q', long = "quiet")]
+    #[clap(short, long)]
     quiet: bool,
     /// The verbosity of the output to stdout
-    #[clap(short = 'v', long = "verbose")]
+    #[clap(short, long)]
     verbose: bool,
     /// Recognized subcommands
     #[clap(subcommand)]
     subcommand: HeliosSubcommand,
 }
 
-#[derive(Clap)]
+#[derive(Parser)]
 enum HeliosSubcommand {
     Build(HeliosBuildOpts),
     Repl(HeliosReplOpts),
