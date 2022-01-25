@@ -5,13 +5,14 @@ pub(crate) mod marker;
 pub(crate) mod sink;
 pub(crate) mod source;
 
+use helios_diagnostics::Location;
+use helios_syntax::SyntaxKind;
+
 use self::event::Event;
 use self::marker::Marker;
 use self::source::Source;
-use crate::message::ParserMessage;
-use crate::{lexer::Token, Message};
-use helios_diagnostics::Location;
-use helios_syntax::SyntaxKind;
+use crate::lexer::Token;
+use crate::{Message, ParserMessage};
 
 const RECOVERY_SET: [SyntaxKind; 1] = [SyntaxKind::Kwd_Let];
 

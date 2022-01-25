@@ -16,11 +16,11 @@ use helios_syntax::{SyntaxKind, SyntaxNode};
 use rowan::GreenNode;
 use std::cmp::Ordering;
 
-use self::lexer::{Lexer, Token};
-pub use self::message::*;
-use self::parser::sink::Sink;
-use self::parser::source::Source;
-use self::parser::Parser;
+use crate::lexer::{Lexer, Token};
+pub use crate::message::*;
+use crate::parser::sink::Sink;
+use crate::parser::source::Source;
+use crate::parser::Parser;
 
 /// Tokenizes the given source text.
 pub fn tokenize<FileId>(

@@ -14,11 +14,13 @@
 //!
 //! [`parse`]: crate::parse
 
-use crate::{cursor::Cursor, message::LexerMessage, Message};
 use helios_diagnostics::Location;
 use helios_syntax::{self, SyntaxKind};
 use std::ops::Range;
 use unicode_xid::UnicodeXID;
+
+use crate::cursor::Cursor;
+use crate::message::{LexerMessage, Message};
 
 /// Checks if the given character is a valid start of an identifier. A valid
 /// start of an identifier is any Unicode code point that satisfies the

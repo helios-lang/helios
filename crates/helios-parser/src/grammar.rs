@@ -1,11 +1,12 @@
 //! Module responsible for describing how to parse nodes.
 
-use crate::parser::marker::CompletedMarker;
-use crate::parser::Parser;
-use helios_syntax::SyntaxKind;
-
 mod decl;
 mod expr;
+
+use helios_syntax::SyntaxKind;
+
+use crate::parser::marker::CompletedMarker;
+use crate::parser::Parser;
 
 pub(crate) fn root<FileId>(p: &mut Parser<FileId>) -> CompletedMarker
 where
@@ -24,7 +25,7 @@ where
 // mod tests {
 //     use crate::check;
 //     use expect_test::expect;
-
+//
 //     #[test]
 //     fn test_parse_multiple_declarations() {
 //         check(

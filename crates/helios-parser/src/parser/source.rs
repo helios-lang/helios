@@ -1,6 +1,5 @@
-use std::ops::Range;
-
 use helios_syntax::SyntaxKind;
+use std::ops::Range;
 
 use crate::lexer::Token;
 

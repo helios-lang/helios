@@ -1,7 +1,9 @@
-use super::event::Event;
-use crate::{Message, Parse, lexer::Token};
-use helios_syntax::HeliosLanguage as HeliosLanguage;
+use helios_syntax::HeliosLanguage;
 use rowan::{GreenNodeBuilder, Language};
+
+use crate::lexer::Token;
+use crate::parser::event::Event;
+use crate::{Message, Parse};
 
 pub struct Sink<'tokens, 'source> {
     tokens: &'tokens [Token<'source>],
@@ -20,7 +22,10 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
         }
     }
 
-    pub fn finish<FileId>(mut self, messages: Vec<Message<FileId>>) -> Parse<FileId> {
+    pub fn finish<FileId>(
+        mut self,
+        messages: Vec<Message<FileId>>,
+    ) -> Parse<FileId> {
         use std::mem;
 
         for i in 0..self.events.len() {

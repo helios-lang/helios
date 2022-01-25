@@ -1,7 +1,8 @@
-use super::event::Event;
-use super::Parser;
 use drop_bomb::DropBomb;
 use helios_syntax::SyntaxKind;
+
+use super::Event;
+use super::Parser;
 
 pub(crate) struct Marker {
     pos: usize,
