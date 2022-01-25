@@ -3,10 +3,11 @@ pub mod input;
 pub mod interner;
 pub mod location;
 
+use std::fmt::{self, Debug};
+
 pub use crate::input::*;
 pub use crate::interner::*;
 pub use crate::location::*;
-use std::fmt::{self, Debug};
 
 #[salsa::database(InputLocationDatabase, InputDatabase, InternerDatabase)]
 #[derive(Default)]

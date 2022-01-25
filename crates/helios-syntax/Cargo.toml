@@ -5,8 +5,6 @@ license = "Apache-2.0"
 authors = ["Ta-Seen Islam <taseen00.islam@gmail.com>"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 helios-formatting = { version = "0.2.0", path = "../helios-formatting" }
 rowan = "0.10.0"
