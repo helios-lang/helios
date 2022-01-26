@@ -5,7 +5,9 @@ use colored::*;
 use std::{fmt::Display, io::Write};
 
 pub use crate::diagnostic::*;
-use crate::files::Files;
+pub use crate::files::*;
+
+use crate::files::FileInspector;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -49,7 +51,7 @@ impl From<std::fmt::Error> for Error {
     }
 }
 
-pub fn emit<'files, F: Files<'files>>(
+pub fn emit<'files, F: FileInspector<'files>>(
     f: &mut dyn Write,
     files: &'files F,
     diagnostic: &Diagnostic<F::FileId>,
@@ -64,8 +66,8 @@ pub fn emit<'files, F: Files<'files>>(
 
     let line_index = files.line_index(file_id, error_range.start)?;
     let line_range = files.line_range(file_id, line_index)?;
+    let line_number = line_index + 1;
 
-    let line_number = files.line_number(file_id, line_index)?;
     let column_start = files.column_number(file_id, line_index, error_start)?;
     let column_end = files.column_number(file_id, line_index, error_end)?;
 
@@ -116,8 +118,7 @@ pub fn emit<'files, F: Files<'files>>(
         };
     }
 
-    let location_str =
-        format!("-> src/Foo.he:{}:{}", line_number, column_start);
+    let location_str = format!("-> (repl):{}:{}", line_number, column_start);
     writeln!(f, "{}", header.color(color))?;
     writeln!(f, "{}\n", location_str.color(color))?;
 

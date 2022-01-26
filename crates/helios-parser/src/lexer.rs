@@ -1,11 +1,11 @@
 //! Tokenizing Helios source files.
 //!
 //! The showrunner of this module is the [`Lexer`] type. It essentially takes
-//! a given input, representing a Helios source, and provides an [`Iterator`] of
-//! [`Token`]s.
+//! a given input, representing a Helios source file, and provides an
+//! [`Iterator`] of [`Token`]s.
 //!
 //! The lexer aims to be as error-tolerant and UTF-8 friendly as possible (the
-//! latter of which is enforced by Rust's `char` types). It is also lossless,
+//! latter of which is enforced by Rust's `char` type). It is also lossless,
 //! meaning that it represents the original text exactly as it is (including
 //! whitespace and comments).
 //!
@@ -95,13 +95,12 @@ impl<'source> Token<'source> {
 /// A lazy, lossless lexer for the Helios programming language.
 ///
 /// This lexer works with `char`s to seamlessly work with Unicode characters. It
-/// also implements the [`Iterator`] trait, which means that it is lazy in
-/// nature. This allows it to only tokenize as much of the source text as
-/// required.
+/// also implements the [`Iterator`] trait, meaning that tokenization happens
+/// lazily (i.e. the whole source text is not tokenized read at once).
 ///
 /// This structure shouldn't need to be manipulated manually. It is instead
-/// strongly recommended to call the [`parse`] function to properly tokenize and
-/// parse a Helios source file.
+/// strongly recommended to call the [`parse`] function which abstracts over the
+/// tokenization and parsing processes of a Helios program.
 ///
 /// [`parse`]: crate::parse
 pub struct Lexer<'source, FileId> {
@@ -113,7 +112,7 @@ impl<'source, FileId> Lexer<'source, FileId>
 where
     FileId: Clone + Default,
 {
-    /// Construct a new [`Lexer`] with a given source text.
+    /// Construct a new [`Lexer`] with a reference to the source text.
     ///
     /// The lexer will initialise with the default [`LexerMode`] and set the
     /// cursor position to the start.

@@ -4,7 +4,7 @@
 //! for parsing a given input and returning a concrete syntax tree (CST) with
 //! the [`rowan`] library.
 //!
-//! [`rowan`]: https://docs.rs/rowan/0.10.0/rowan
+//! [`rowan`]: https://docs.rs/rowan/0.15.3/rowan
 
 mod cursor;
 mod grammar;

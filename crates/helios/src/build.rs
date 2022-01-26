@@ -1,6 +1,5 @@
 use colored::*;
-use helios_diagnostics::files::SimpleFiles;
-use helios_diagnostics::{Diagnostic, Severity};
+use helios_diagnostics::{Diagnostic, ManyFiles, Severity};
 use std::fmt::Display;
 
 /// Compiling support for Helios files
@@ -46,7 +45,7 @@ impl Display for Error {
 fn __build(path: &str) -> Result<()> {
     let source = std::fs::read_to_string(path)?;
     let mut stdout = std::io::stdout();
-    let mut files = SimpleFiles::new();
+    let mut files = ManyFiles::new();
 
     let file_id = files.add(path, source);
     let file = files.get(file_id).unwrap();

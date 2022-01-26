@@ -1,8 +1,7 @@
 //! REPL support for the Helios programming language.
 
 use colored::*;
-use helios_diagnostics::files::SimpleFiles;
-use helios_diagnostics::Diagnostic;
+use helios_diagnostics::{Diagnostic, ManyFiles};
 use std::io::{self, Write};
 
 const LOGO_BANNER: &[&str] = &[
@@ -60,7 +59,7 @@ fn start_main_loop() -> io::Result<()> {
     let mut stdout = io::stdout();
 
     let mut input = String::new();
-    let mut files = SimpleFiles::new();
+    let mut files = ManyFiles::new();
 
     loop {
         write!(stdout, "{}", "> ".blue())?;
