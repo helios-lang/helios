@@ -51,9 +51,9 @@ impl From<std::fmt::Error> for Error {
     }
 }
 
-pub fn emit<'files, F: FileInspector<'files>>(
+pub fn emit<'a, F: FileInspector<'a>>(
     f: &mut dyn Write,
-    files: &'files F,
+    files: &'a F,
     diagnostic: &Diagnostic<F::FileId>,
 ) -> Result<()> {
     let file_id = diagnostic.location.file_id;

@@ -20,17 +20,18 @@ fn column_index(
         .count()
 }
 
-/// A trait to inspect a file's source, lines and columns.
+/// A trait to inspect the texts, lines and columns of files.
 ///
-/// This trait provides methods to get line and column indexes and numbers.
-/// `*_index` methods provide familiar zero-indexed values that are to be used
-/// internally, whereas `*_number` provide values from `1` that are suitable to
-/// be shown to users on the front-end.
+/// This trait's primary purpose is to get the line and column positions of a
+/// particular file. There are two types of methods: `*_index` methods, which
+/// provide familiar zero-indexed values that are to be used internally; and
+/// `*_number` methods, which provide values indexed from `1` suitable to be
+/// shown to users on the front-end.
 ///
 /// The structs [`OneFile`] and [`ManyFiles`] implement this trait. One thing to
 /// note about [`OneFile`] is that since it only handles a single file, it makes
 /// no sense to also provide the file id to the methods of this trait. This is
-/// why the associated type `FileId` is set to an empty tuple (`()`).
+/// why the associated type `FileId` is set to the empty tuple (`()`).
 pub trait FileInspector<'a> {
     type FileId: Copy + PartialEq;
     type Name: 'a + Display;
@@ -187,9 +188,15 @@ where
         _: Self::FileId,
         byte_index: usize,
     ) -> Result<usize> {
-        Ok(self.line_indexes.binary_search(&byte_index).unwrap_or_else(
-            |expected_position| expected_position.checked_sub(1).unwrap_or(0),
-        ))
+        // Because `line_indexes` is already sorted, we'll do a binary search
+        // to get the expected position of the line index. It's most likely the
+        // given `byte_index` will NOT be in the vector (meaning `byte_index`
+        // is somewhere inside a line), so we'll decrement the expected position
+        // by one to get the line's actual index.
+        Ok(self
+            .line_indexes
+            .binary_search(&byte_index)
+            .unwrap_or_else(|expected| expected.checked_sub(1).unwrap_or(0)))
     }
 
     fn line_range(
@@ -198,10 +205,16 @@ where
         line_index: usize,
     ) -> Result<Range<usize>> {
         let line_start = self.line_start(line_index)?;
-        let next_line_index = min(line_index + 1, self.line_count(())? - 1);
-        let next_line_start = self.line_start(next_line_index)?;
+        let next_line_start = min(line_index + 1, self.line_count(())? - 1);
+        let line_end = if next_line_start == line_index {
+            // We're already at the last line, so we'll set `line_end` to the
+            // remaining length of the source text.
+            self.source.as_ref().len()
+        } else {
+            self.line_start(next_line_start)?
+        };
 
-        Ok(line_start..next_line_start)
+        Ok(line_start..line_end)
     }
 }
 
@@ -274,104 +287,125 @@ where
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_one_file() {
-        let source = "let a = 0\nlet b = 1\r\nlet c = 3\r\n\nfoo\n";
-        let file = OneFile::new("file.hl", source);
-        let indexes = [
-            0,  // "let a = 0\n"
-            10, // "let b = 1\r\n"
-            21, // "let c = 2\r\n"
-            32, // "\n"
-            33, // "foo"
-            37, // "\n"
-        ];
+    const FILE_A_NAME: &str = "a.hl";
+    const FILE_B_NAME: &str = "b.hl";
 
-        assert_eq!(file.name(), &"file.hl");
-        assert_eq!(file.source(), &source);
+    const FILE_A_SOURCE: &str = "let a = 0\nlet b = 1\r\nlet x = 2\r\n\nfoo\n";
+    const FILE_B_SOURCE: &str = "let x = 0\r\nlet y = 1\n\n\r\nlet z =\nbar";
 
-        assert_eq!(file.line_indexes, indexes);
-        assert_eq!(file.line_count(()), Ok(indexes.len()));
+    const FILE_A_LINE_INDEXES: &[usize] = &[
+        0,  // "let a = 0\n"
+        10, // "let b = 1\r\n"
+        21, // "let c = 2\r\n"
+        32, // "\n"
+        33, // "foo"
+        37, // "\n"
+    ];
 
-        assert_eq!(file.line_index((), 0), Ok(0));
-        assert_eq!(file.line_index((), 1), Ok(0));
-        assert_eq!(file.line_index((), 5), Ok(0));
-        assert_eq!(file.line_index((), 9), Ok(0));
-        assert_eq!(file.line_index((), 10), Ok(1));
-        assert_eq!(file.line_index((), 11), Ok(1));
-        assert_eq!(file.line_index((), 14), Ok(1));
-        assert_eq!(file.line_index((), 20), Ok(1));
-        assert_eq!(file.line_index((), 21), Ok(2));
-        assert_eq!(file.line_index((), 22), Ok(2));
-        assert_eq!(file.line_index((), 26), Ok(2));
-        assert_eq!(file.line_index((), 31), Ok(2));
-        assert_eq!(file.line_index((), 32), Ok(3));
-        assert_eq!(file.line_index((), 33), Ok(4));
-        assert_eq!(file.line_index((), 34), Ok(4));
-        assert_eq!(file.line_index((), 36), Ok(4));
-        assert_eq!(file.line_index((), 37), Ok(5));
+    const FILE_B_LINE_INDEXES: &[usize] = &[
+        0,  // "let x = 0\r\n"
+        11, // "let y = 1\n"
+        21, // "\n"
+        22, // "\r\n"
+        24, // "let z =\n"
+        32, // "bar"
+    ];
 
-        assert_eq!(file.line_range((), 0), Ok(0..10));
-        assert_eq!(file.line_range((), 1), Ok(10..21));
-        assert_eq!(file.line_range((), 2), Ok(21..32));
-        assert_eq!(file.line_range((), 3), Ok(32..33));
-        assert_eq!(file.line_range((), 4), Ok(33..37));
-        assert_eq!(file.line_range((), 5), Ok(37..37));
+    fn check_line_indexes_and_ranges<
+        Name: Clone + Display,
+        Source: AsRef<str>,
+    >(
+        file: &OneFile<Name, Source>,
+        indexes: &[usize],
+    ) {
+        for (line_idx, byte_idx) in indexes.iter().enumerate() {
+            let line_start = *byte_idx;
+            assert_eq!(file.line_start(line_idx), Ok(line_start));
+            assert_eq!(file.line_index((), line_start), Ok(line_idx));
+            assert_eq!(file.line_number((), line_start), Ok(line_idx + 1));
 
-        // for (line_idx, byte_idx) in indexes.iter().enumerate() {
-        //     assert_eq!(file.line_start(line_idx), Ok(*byte_idx));
-        //     assert_eq!(file.line_index((), *byte_idx), Ok(line_idx));
-        //     assert_eq!(file.line_number((), *byte_idx), Ok(line_idx + 1));
+            // FIXME: This implementation is very similar to
+            // `OneFile::line_range`, which means we can't verify if the
+            // implementation itself is correct.
+            let line_end = {
+                let next_line_start =
+                    indexes.get(line_idx + 1).copied().unwrap_or_else(|| {
+                        indexes.last().copied().unwrap_or_default()
+                    });
 
-        //     let next_byte_idx = indexes
-        //         .get(line_idx + 1)
-        //         .copied()
-        //         .unwrap_or_else(|| indexes.last().copied().unwrap_or_default());
-        //     assert_eq!(
-        //         file.line_range((), line_idx),
-        //         Ok(*byte_idx..next_byte_idx)
-        //     );
-        // }
+                if next_line_start == line_start {
+                    // We're already at the last line, so we'll return the
+                    // remaining length of the source text.
+                    file.source().as_ref().len()
+                } else {
+                    next_line_start
+                }
+            };
 
+            let expected_line_range = line_start..line_end;
+            assert_eq!(file.line_range((), line_idx), Ok(expected_line_range));
+
+            // Since we already checked the line index at `byte_idx`, we start
+            // checking 5 positions after. It won't matter if the new index
+            // turns out to be larger than than `next_byte_idx` since the range
+            // will be empty (and thus this for loop won't run).
+            for inner_idx in ((line_start + 5)..line_end).step_by(5) {
+                assert_eq!(file.line_index((), inner_idx), Ok(line_idx));
+            }
+        }
+
+        // This should return `Error::OutOfBounds`.
         assert!(file.line_start(indexes.len()).is_err());
+    }
+
+    fn check_last_line_is_empty<Name: Clone + Display, Source: AsRef<str>>(
+        file: &OneFile<Name, Source>,
+        indexes: &[usize],
+        expected: bool,
+    ) {
+        assert_eq!(
+            file.line_range((), indexes.len() - 1)
+                .map(|range| range.is_empty()),
+            Ok(expected)
+        );
+    }
+
+    #[test]
+    fn test_one_file_a() {
+        let file_a = OneFile::new(FILE_A_NAME, FILE_A_SOURCE);
+        assert_eq!(file_a.name(), &FILE_A_NAME);
+        assert_eq!(file_a.source(), &FILE_A_SOURCE);
+        assert_eq!(file_a.line_indexes, FILE_A_LINE_INDEXES);
+        assert_eq!(file_a.line_count(()), Ok(FILE_A_LINE_INDEXES.len()));
+        check_line_indexes_and_ranges(&file_a, FILE_A_LINE_INDEXES);
+        check_last_line_is_empty(&file_a, FILE_A_LINE_INDEXES, true);
+    }
+
+    #[test]
+    fn test_one_file_b() {
+        let file_b = OneFile::new(FILE_B_NAME, FILE_B_SOURCE);
+        assert_eq!(file_b.name(), &FILE_B_NAME);
+        assert_eq!(file_b.source(), &FILE_B_SOURCE);
+        assert_eq!(file_b.line_indexes, FILE_B_LINE_INDEXES);
+        assert_eq!(file_b.line_count(()), Ok(FILE_B_LINE_INDEXES.len()));
+        check_line_indexes_and_ranges(&file_b, FILE_B_LINE_INDEXES);
+        check_last_line_is_empty(&file_b, FILE_B_LINE_INDEXES, false);
     }
 
     #[test]
     fn test_many_files() {
         let mut files = ManyFiles::new();
-        let foo = files.add("foo.hl", "Hello\nworld!\n\rSecret: 123\n\n456");
-        let bar = files.add("bar.hl", "Goodbye\r\nworld!\n\r\r");
+        let file_a = files.add(FILE_A_NAME, FILE_A_SOURCE);
+        let file_b = files.add(FILE_B_NAME, FILE_B_SOURCE);
 
-        assert_eq!(files.line_count(foo), Ok(5));
-        assert_eq!(files.line_count(bar), Ok(3));
+        assert!(files.get(file_a).is_ok());
+        assert_eq!(files.name(file_a), Ok(FILE_A_NAME));
+        assert_eq!(files.source(file_a), Ok(FILE_A_SOURCE));
+        assert_eq!(files.line_count(file_a), Ok(FILE_A_LINE_INDEXES.len()));
 
-        assert_eq!(files.line_index(foo, 5), Ok(0));
-        assert_eq!(files.line_index(foo, 10), Ok(1));
-        assert_eq!(files.line_index(foo, 15), Ok(2));
-        assert_eq!(files.line_index(foo, 20), Ok(2));
-        assert_eq!(files.line_index(foo, 26), Ok(3));
-        assert_eq!(files.line_index(foo, 27), Ok(4));
-        assert_eq!(files.line_index(foo, 30), Ok(4));
-        assert!(files.line_index(foo, 31).is_ok());
-
-        assert_eq!(files.line_index(bar, 5), Ok(0));
-        assert_eq!(files.line_index(bar, 10), Ok(1));
-        assert_eq!(files.line_index(bar, 15), Ok(1));
-        assert!(files.line_index(bar, 19).is_ok());
-
-        // Hello$world!$_Secret: 123$$456
-        // Goodbye_$world!$__
-
-        assert_eq!(files.line_range(foo, 0), Ok(0..6));
-        assert_eq!(files.line_range(foo, 1), Ok(6..13));
-        assert_eq!(files.line_range(foo, 2), Ok(13..26));
-        assert_eq!(files.line_range(foo, 3), Ok(26..27));
-        // assert_eq!(files.line_range(foo, 4), Ok(27..30)); // FAIL
-        assert!(files.line_range(foo, 5).is_err());
-
-        assert_eq!(files.line_range(bar, 0), Ok(0..9));
-        assert_eq!(files.line_range(bar, 1), Ok(9..16));
-        // assert_eq!(files.line_range(bar, 2), Ok(16..19)); // FAIL
-        assert!(files.line_range(bar, 3).is_err());
+        assert!(files.get(file_b).is_ok());
+        assert_eq!(files.name(file_b), Ok(FILE_B_NAME));
+        assert_eq!(files.source(file_b), Ok(FILE_B_SOURCE));
+        assert_eq!(files.line_count(file_b), Ok(FILE_B_LINE_INDEXES.len()));
     }
 }
