@@ -53,23 +53,24 @@ impl From<std::fmt::Error> for Error {
 
 pub fn emit<'a, F: FileInspector<'a>>(
     f: &mut dyn Write,
-    files: &'a F,
+    inspector: &'a F,
     diagnostic: &Diagnostic<F::FileId>,
 ) -> Result<()> {
     let file_id = diagnostic.location.file_id;
-    let source = files.source(file_id)?;
+    let file_name = inspector.name(file_id)?;
+    let source = inspector.source(file_id)?;
 
     let severity = diagnostic.severity;
     let error_range = diagnostic.location.range.clone();
     let error_start = error_range.start;
     let error_end = error_range.end;
 
-    let line_index = files.line_index(file_id, error_range.start)?;
-    let line_range = files.line_range(file_id, line_index)?;
+    let line_index = inspector.line_index(file_id, error_range.start)?;
+    let line_range = inspector.line_range(file_id, line_index)?;
     let line_number = line_index + 1;
 
-    let column_start = files.column_number(file_id, line_index, error_start)?;
-    let column_end = files.column_number(file_id, line_index, error_end)?;
+    let column_start = inspector.column_number(file_id, error_start)?;
+    let column_end = inspector.column_number(file_id, error_end)?;
 
     let (color, header, underline) = {
         let make_header = |msg: String| {
@@ -118,7 +119,7 @@ pub fn emit<'a, F: FileInspector<'a>>(
         };
     }
 
-    let location_str = format!("-> (repl):{}:{}", line_number, column_start);
+    let location_str = format!("-> {file_name}:{line_number}:{column_start}");
     writeln!(f, "{}", header.color(color))?;
     writeln!(f, "{}\n", location_str.color(color))?;
 
@@ -126,7 +127,7 @@ pub fn emit<'a, F: FileInspector<'a>>(
         writeln!(f, "{}\n", wrap!(description))?;
     }
 
-    let gutter = format!("{:>4} | ", line_number);
+    let gutter = format!("{line_number:>4} | ");
     let line = &source.as_ref()[line_range].trim_end(); // remove trailing LF
     writeln!(f, "{}{line}", gutter.dimmed())?;
 

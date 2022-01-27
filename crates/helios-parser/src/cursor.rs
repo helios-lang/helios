@@ -200,8 +200,12 @@ mod tests {
         assert_eq!(cursor.advance(), Some('r'));
         assert_eq!(cursor.advance(), Some('l'));
         assert_eq!(cursor.advance(), Some('d'));
+        assert_eq!(cursor.slice(), ", world");
+
+        cursor.checkpoint();
         assert_eq!(cursor.advance(), Some('!'));
-        assert_eq!(cursor.slice(), ", world!");
+        assert_eq!(cursor.advance(), None);
+        assert_eq!(cursor.slice(), "!");
     }
 
     #[test]
@@ -225,7 +229,11 @@ mod tests {
         assert_eq!(cursor.advance(), Some('r'));
         assert_eq!(cursor.advance(), Some('l'));
         assert_eq!(cursor.advance(), Some('∂'));
+        assert_eq!(cursor.slice(), ", wørl∂");
+
+        cursor.checkpoint();
         assert_eq!(cursor.advance(), Some('¿'));
-        assert_eq!(cursor.slice(), ", wørl∂¿");
+        assert_eq!(cursor.advance(), None);
+        assert_eq!(cursor.slice(), "¿");
     }
 }

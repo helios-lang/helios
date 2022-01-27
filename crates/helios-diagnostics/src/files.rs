@@ -4,20 +4,12 @@ use std::ops::Range;
 
 use crate::{Error, Result};
 
+/// Generates all the byte indexes where a line feed character (`'\n'`) appears.
+///
+/// Carriage returns (`'\r'`) are treated as ordinary characters to keep things
+/// simple and platform-agnostic.
 fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
-}
-
-fn column_index(
-    source: &str,
-    line_range: Range<usize>,
-    byte_index: usize,
-) -> usize {
-    let end_index = min(byte_index, min(line_range.end, source.len()));
-
-    (line_range.start..end_index)
-        .filter(|index| source.is_char_boundary(index + 1))
-        .count()
 }
 
 /// A trait to inspect the texts, lines and columns of files.
@@ -77,20 +69,39 @@ pub trait FileInspector<'a> {
         line_index: usize,
     ) -> Result<Range<usize>>;
 
-    /// Returns the column index of a file at the given line and byte indexes.
+    /// Returns the column index of a file at the given byte index.
     ///
     /// Note that the returned value will be zero-indexed (i.e this method will
     /// return `0` for the first column).
+    ///
+    /// Regardless if you call this method with [`OneFile`] or [`ManyFiles`],
+    /// this method will not throw if the byte index is out of bounds – it will
+    /// simply return `0`.
     fn column_index(
         &'a self,
         id: Self::FileId,
-        line_index: usize,
         byte_index: usize,
     ) -> Result<usize> {
         let source = self.source(id)?;
+        let source_len = source.as_ref().len();
+
+        let line_index = self.line_index(id, byte_index)?;
         let line_range = self.line_range(id, line_index)?;
-        let column_index =
-            column_index(source.as_ref(), line_range, byte_index);
+
+        // If the current line's range is empty, we must be looking at an empty
+        // line (i.e. a LF immediately followed by EOF). If this is the case,
+        // we'll get the last line's range and get its last column position
+        // (i.e. the index of the LF character).
+        if line_range.is_empty() {
+            let last_line_index = line_index.checked_sub(1).unwrap_or_default();
+            let last_line_range = self.line_range(id, last_line_index)?;
+            return Ok(last_line_range.end);
+        }
+
+        let end_index = min(byte_index, min(line_range.end, source_len));
+        let column_index = (line_range.start..end_index)
+            .filter(|index| source.as_ref().is_char_boundary(index + 1))
+            .count();
 
         Ok(column_index)
     }
@@ -100,10 +111,9 @@ pub trait FileInspector<'a> {
     fn column_number(
         &'a self,
         id: Self::FileId,
-        line_index: usize,
         byte_index: usize,
     ) -> Result<usize> {
-        Ok(self.column_index(id, line_index, byte_index)? + 1)
+        Ok(self.column_index(id, byte_index)? + 1)
     }
 }
 
@@ -221,6 +231,13 @@ where
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ManyFilesId(usize);
 
+/// An abstraction over multiple related Helios source files.
+///
+/// Use this struct to inspect a Helios program that consists of multiple files
+/// (e.g. a binary or library package).
+///
+/// This struct implements [`FileInspector`]. Please refer to its documentation
+/// to find out what you can inspect.
 pub struct ManyFiles<Name, Source> {
     files: Vec<OneFile<Name, Source>>,
 }
