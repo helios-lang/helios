@@ -291,7 +291,7 @@ mod tests {
     const FILE_B_NAME: &str = "b.hl";
 
     const FILE_A_SOURCE: &str = "let a = 0\nlet b = 1\r\nlet x = 2\r\n\nfoo\n";
-    const FILE_B_SOURCE: &str = "let x = 0\r\nlet y = 1\n\n\r\nlet z =\nbar";
+    const FILE_B_SOURCE: &str = "let x = 0\r\nlet y = 1\n\r\nlet z =\n\r\rbar";
 
     const FILE_A_LINE_INDEXES: &[usize] = &[
         0,  // "let a = 0\n"
@@ -305,10 +305,9 @@ mod tests {
     const FILE_B_LINE_INDEXES: &[usize] = &[
         0,  // "let x = 0\r\n"
         11, // "let y = 1\n"
-        21, // "\n"
-        22, // "\r\n"
-        24, // "let z =\n"
-        32, // "bar"
+        21, // "\r\n"
+        23, // "let z =\n"
+        31, // "\r\rbar"
     ];
 
     fn check_line_indexes_and_ranges<
