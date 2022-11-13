@@ -73,12 +73,12 @@ pub fn process_indents<'source>(
             let last_indent = indent_stack.last().unwrap_or(&0);
 
             match curr_indent.cmp(last_indent) {
-                // We didn't indent or dedent, so just push the token as is.
+                // We haven't indented or dedented, so push the token as-is.
                 Ordering::Equal => {
                     processed_tokens.push(curr_token);
                     i += 1;
                 }
-                // We've indented, so we'll push an indent token.
+                // We've indented, so we'll push an `Indent` token.
                 Ordering::Greater => {
                     indent_stack.push(curr_indent);
                     processed_tokens.push(Token {
@@ -87,8 +87,8 @@ pub fn process_indents<'source>(
                     });
                     i += 1;
                 }
-                // We've dedent-ed, so we'll push as many dedent tokens needed
-                // to make the current indentation level.
+                // We've dedented, so we'll push as many `Dedent` tokens
+                // necessary to get the new indentation level.
                 Ordering::Less => {
                     'emit_dedents: loop {
                         // We won't push a dedent token just yet because we need
@@ -157,12 +157,13 @@ pub fn process_indents<'source>(
                 }
             }
         } else {
-            // Push the token as is.
+            // Push the token as-is.
             processed_tokens.push(curr_token);
             i += 1;
         }
     }
 
+    // Emit any remainder dedents required.
     let end = processed_tokens.last().map(|t| t.range.end).unwrap_or(0);
     while let Some(indent) = indent_stack.pop() {
         // We won't emit a dedent token for the first column.

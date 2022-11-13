@@ -1,8 +1,8 @@
 //! Tokenizing Helios source files.
 //!
-//! The showrunner of this module is the [`Lexer`] type. It essentially takes
-//! a given input, representing a Helios source file, and provides an
-//! [`Iterator`] of [`Token`]s.
+//! The showrunner of this module is the [`Lexer`] struct. It essentially takes
+//! a given input representing a Helios source file and provides an
+//! [`Iterator`] of [`Token`]s for it.
 //!
 //! The lexer aims to be as error-tolerant and UTF-8 friendly as possible (the
 //! latter of which is enforced by Rust's `char` type). It is also lossless,
@@ -22,22 +22,22 @@ use unicode_xid::UnicodeXID;
 use crate::cursor::Cursor;
 use crate::message::{LexerMessage, Message};
 
-/// Checks if the given character is a valid start of an identifier. A valid
-/// start of an identifier is any Unicode code point that satisfies the
-/// `XID_Start` property.
+/// Determines whether or not the given character is a valid beginning of an
+/// identifier. A valid start of an identifier is any Unicode code point that
+/// satisfies the `XID_Start` property.
 fn is_identifier_start(c: char) -> bool {
-    // Fast-path for ASCII identifiers
+    // Fast-path for ASCII characters
     ('a' <= c && c <= 'z')
         || ('A' <= c && c <= 'Z')
         || c == '_'
         || c.is_xid_start()
 }
 
-/// Checks if the given character is a valid continuation of an identifier.
-/// A valid continuation of an identifier is any Unicode code point that
-/// satisfies the `XID_Continue` property.
+/// Determines whether or not the given character is a valid continuation of an
+/// identifier. A valid continuation of an identifier is any Unicode code point
+/// that satisfies the `XID_Continue` property.
 fn is_identifier_continue(c: char) -> bool {
-    // Fast-path for ASCII identifiers
+    // Fast-path for ASCII characters
     ('a' <= c && c <= 'z')
         || ('A' <= c && c <= 'Z')
         || ('0' <= c && c <= '9')
@@ -45,7 +45,7 @@ fn is_identifier_continue(c: char) -> bool {
         || c.is_xid_continue()
 }
 
-/// Checks if the given character is a recognised symbol.
+/// Determines whether or not the given character is a recognised symbol.
 #[rustfmt::skip]
 fn is_symbol(c: char) -> bool {
     match c {
@@ -56,24 +56,28 @@ fn is_symbol(c: char) -> bool {
     }
 }
 
-/// Checks if the given character is a digit.
+/// Determines whether or not the given character is a digit.
 fn is_digit(c: char) -> bool {
     matches!(c, '0'..='9')
 }
 
-/// Checks if the given character is a whitespace delimiter.
+/// Checks whether or not the given character is a whitespace delimiter.
 fn is_whitespace(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\r')
 }
 
+/// A tuple of a tokenized token and possibly a diagnostic message if there was
+/// an issue during the tokenization process.
 pub type LexerItem<'source, FileId> = (Token<'source>, Option<Message<FileId>>);
+
+/// Internal type returned by all tokenization methods in the lexer.
 type LexerReturn<FileId> = (SyntaxKind, Option<Message<FileId>>);
 
 /// The unit of a tokenized Helios source file.
 ///
 /// This structure holds the [`SyntaxKind`] of a token, the text that formed it,
-/// and the range of the token (using `text_size::TextRange`). It is also the
-/// `Item` type of the [`Lexer`] iterator.
+/// and its range in the source code (using `text_size::TextRange`). It is also
+/// the `Item` type of the [`Lexer`] iterator.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Token<'source> {
     pub kind: SyntaxKind,
@@ -96,11 +100,11 @@ impl<'source> Token<'source> {
 ///
 /// This lexer works with `char`s to seamlessly work with Unicode characters. It
 /// also implements the [`Iterator`] trait, meaning that tokenization happens
-/// lazily (i.e. the whole source text is not tokenized read at once).
+/// lazily (i.e. the whole source text is not tokenized at once).
 ///
 /// This structure shouldn't need to be manipulated manually. It is instead
 /// strongly recommended to call the [`parse`] function which abstracts over the
-/// tokenization and parsing processes of a Helios program.
+/// tokenization and parsing processes of a Helios source.
 ///
 /// [`parse`]: crate::parse
 pub struct Lexer<'source, FileId> {
@@ -163,7 +167,6 @@ impl<'source, FileId> Lexer<'source, FileId> {
 
     /// Attempts to consume the next character if it matches the provided
     /// character `c`. Returns a `bool` indicating if it was successful or not.
-    #[allow(dead_code)]
     fn consume(&mut self, c: char) -> bool {
         if self.peek() == c {
             self.next_char();
@@ -330,7 +333,7 @@ impl<'source, FileId> Lexer<'source, FileId> {
 
             // If there is a dot after the integer part, and the next character
             // after it does NOT start an identifier, then this must be a float
-            // literal. Otherwise, it may be a field access (e.g. `10.foo`)
+            // literal. Otherwise, it may be a field access (e.g. `10.foo`),
             // which isn't valid anyway, but we don't need to worry about it
             // here in the lexer.
             if self.peek() == '.' && !is_identifier_start(self.peek_at(1)) {

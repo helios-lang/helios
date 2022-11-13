@@ -25,7 +25,6 @@ enum HeliosSubcommand {
 
 fn main() {
     env_logger::init();
-
     let opts = HeliosOpts::parse();
     match opts.subcommand {
         HeliosSubcommand::Build(build_opts) => {

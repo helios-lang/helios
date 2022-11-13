@@ -3,11 +3,9 @@
   "editor.rulers": [80, 120],
   "editor.snippetSuggestions": "none",
   "editor.tabSize": 4,
-  "rust-analyzer.inlayHints.enable": false,
-  "rust-analyzer.inlayHints.parameterHints": false,
-  "rust-analyzer.lens.implementations": false,
+  "editor.inlayHints.enabled": "offUnlessPressed",
   "[rust]": {
     "editor.detectIndentation": false,
-    "editor.tabSize": 4,
-  },
+    "editor.tabSize": 4
+  }
 }
