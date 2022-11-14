@@ -4,6 +4,7 @@
   "editor.snippetSuggestions": "none",
   "editor.tabSize": 4,
   "editor.inlayHints.enabled": "offUnlessPressed",
+  "rust-analyzer.checkOnSave.command": "clippy",
   "[rust]": {
     "editor.detectIndentation": false,
     "editor.tabSize": 4

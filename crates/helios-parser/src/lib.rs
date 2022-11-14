@@ -36,7 +36,7 @@ where
     for (token, error) in Lexer::new(file_id, source) {
         tokens.push(token);
         if let Some(error) = error {
-            errors.push(error.into());
+            errors.push(error);
         }
     }
 

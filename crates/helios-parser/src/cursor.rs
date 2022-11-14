@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn test_cursor_empty() {
-        let mut cursor = Cursor::new("".into());
+        let mut cursor = Cursor::new("");
         assert_eq!(cursor.source_len(), 0);
 
         // Peeking out-of-bounds character
@@ -131,8 +131,8 @@ mod tests {
 
         // Try to consume out-of-bounds character
         assert_eq!(cursor.advance(), None);
-        assert_eq!(cursor.is_at_end(), true);
         assert_eq!(cursor.pos(), 0);
+        assert!(cursor.is_at_end());
     }
 
     #[test]
@@ -150,8 +150,8 @@ mod tests {
         assert_eq!(cursor.advance(), Some('a'));
         assert_eq!(cursor.advance(), Some('b'));
         assert_eq!(cursor.advance(), Some('c'));
-        assert_eq!(cursor.is_at_end(), false);
         assert_eq!(cursor.pos(), 3);
+        assert!(!cursor.is_at_end());
 
         // Peeking next three characters
         assert_eq!(cursor.remaining_len(), 3);
@@ -163,8 +163,8 @@ mod tests {
         assert_eq!(cursor.advance(), Some('1'));
         assert_eq!(cursor.advance(), Some('2'));
         assert_eq!(cursor.advance(), Some('3'));
-        assert_eq!(cursor.is_at_end(), true);
         assert_eq!(cursor.pos(), 6);
+        assert!(cursor.is_at_end());
 
         // Peeking out-of-bounds character
         assert_eq!(cursor.remaining_len(), 0);
@@ -172,8 +172,8 @@ mod tests {
 
         // Try to consume out-of-bounds character
         assert_eq!(cursor.advance(), None);
-        assert_eq!(cursor.is_at_end(), true);
         assert_eq!(cursor.pos(), 6);
+        assert!(cursor.is_at_end());
     }
 
     #[test]

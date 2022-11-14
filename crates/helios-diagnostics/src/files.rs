@@ -8,7 +8,7 @@ use crate::{Error, Result};
 ///
 /// Carriage returns (`'\r'`) are treated as ordinary characters to keep things
 /// simple and platform-agnostic.
-fn line_indexes<'a>(source: &'a str) -> impl 'a + Iterator<Item = usize> {
+fn line_indexes(source: &str) -> impl '_ + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }
 
@@ -206,7 +206,7 @@ where
         Ok(self
             .line_indexes
             .binary_search(&byte_index)
-            .unwrap_or_else(|expected| expected.checked_sub(1).unwrap_or(0)))
+            .unwrap_or_else(|expected| expected.saturating_sub(1)))
     }
 
     fn line_range(
@@ -259,6 +259,16 @@ where
 
     pub fn get(&self, file_id: ManyFilesId) -> Result<&OneFile<Name, Source>> {
         self.files.get(file_id.0).ok_or(Error::MissingFile)
+    }
+}
+
+impl<'a, Name, Source> Default for ManyFiles<Name, Source>
+where
+    Name: 'a + std::fmt::Display + Clone,
+    Source: 'a + AsRef<str>,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

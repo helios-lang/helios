@@ -70,7 +70,7 @@ fn start_main_loop() -> io::Result<()> {
             continue;
         }
 
-        if input.trim().starts_with(":") {
+        if input.trim().starts_with(':') {
             let input = input[1..].trim();
             match input {
                 "exit" => break,

@@ -85,8 +85,7 @@ impl<'tokens, 'source> Sink<'tokens, 'source> {
 
     fn token(&mut self) {
         let Token { kind, text, .. } = self.tokens[self.cursor];
-        self.builder
-            .token(HeliosLanguage::kind_to_raw(kind), text.into());
+        self.builder.token(HeliosLanguage::kind_to_raw(kind), text);
         self.cursor += 1;
     }
 }

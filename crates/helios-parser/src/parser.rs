@@ -70,7 +70,7 @@ where
     ) -> Option<&'a SyntaxKind> {
         self.expected_kinds.extend(kinds);
         self.peek()
-            .map_or(None, |kind| kinds.iter().find(|&&it| kind == it))
+            .and_then(|kind| kinds.iter().find(|&&it| kind == it))
     }
 
     /// Peeks the next [`SyntaxKind`] token without consuming it.

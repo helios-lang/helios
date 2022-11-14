@@ -50,7 +50,7 @@ impl Display for FormattedStringSegment {
             }
             Self::List(lines) => {
                 for line in lines {
-                    write!(f, "    {line}\n")?;
+                    writeln!(f, "    {line}")?;
                 }
                 Ok(())
             }

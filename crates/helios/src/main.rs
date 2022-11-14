@@ -29,7 +29,7 @@ fn main() {
     match opts.subcommand {
         HeliosSubcommand::Build(build_opts) => {
             log::trace!("Starting build process...");
-            helios::build::build(&*build_opts.file);
+            helios::build::build(&build_opts.file);
         }
         HeliosSubcommand::Repl(_repl_opts) => {
             log::trace!("Starting new REPL session...");

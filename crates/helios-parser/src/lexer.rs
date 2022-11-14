@@ -27,9 +27,9 @@ use crate::message::{LexerMessage, Message};
 /// satisfies the `XID_Start` property.
 fn is_identifier_start(c: char) -> bool {
     // Fast-path for ASCII characters
-    ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || c == '_'
+    c == '_'
+        || ('a'..='z').contains(&c)
+        || ('A'..='Z').contains(&c)
         || c.is_xid_start()
 }
 
@@ -38,22 +38,22 @@ fn is_identifier_start(c: char) -> bool {
 /// that satisfies the `XID_Continue` property.
 fn is_identifier_continue(c: char) -> bool {
     // Fast-path for ASCII characters
-    ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || ('0' <= c && c <= '9')
-        || c == '_'
+    c == '_'
+        || ('a'..='z').contains(&c)
+        || ('A'..='Z').contains(&c)
+        || ('0'..='9').contains(&c)
         || c.is_xid_continue()
 }
 
 /// Determines whether or not the given character is a recognised symbol.
 #[rustfmt::skip]
 fn is_symbol(c: char) -> bool {
-    match c {
+    matches!(
+        c,
         '&' | '*' | '@' | '!' | '^' | ':' | ',' | '$' | '.' | '–' | '—' | '=' |
         '-' | '%' | '+' | '#' | '?' | ';' | '£' | '~' | '|' | '/' | '\\'| '<' |
-        '>' | '{' | '}' | '[' | ']' | '(' | ')' => true,
-        _ => false,
-    }
+        '>' | '{' | '}' | '[' | ']' | '(' | ')'
+    )
 }
 
 /// Determines whether or not the given character is a digit.
@@ -167,6 +167,7 @@ impl<'source, FileId> Lexer<'source, FileId> {
 
     /// Attempts to consume the next character if it matches the provided
     /// character `c`. Returns a `bool` indicating if it was successful or not.
+    #[allow(dead_code)]
     fn consume(&mut self, c: char) -> bool {
         if self.peek() == c {
             self.next_char();

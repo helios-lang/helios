@@ -40,5 +40,5 @@ fn diagnostics(
 ) -> Arc<Vec<Diagnostic<FileId>>> {
     let parse = db.parse(file_id);
     let messages = parse.messages();
-    Arc::new(messages.into_iter().map(|message| message.into()).collect())
+    Arc::new(messages.iter().map(|message| message.into()).collect())
 }

@@ -84,7 +84,7 @@ fn source_line_index(
 ) -> usize {
     db.source_line_indexes(file_id)
         .binary_search(&byte_offset)
-        .unwrap_or_else(|expected| expected.checked_sub(1).unwrap_or(0))
+        .unwrap_or_else(|expected| expected.saturating_sub(1))
 }
 
 fn source_column_index(

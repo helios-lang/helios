@@ -53,29 +53,23 @@ where
 {
     let mut lhs = lhs(p)?;
 
-    loop {
-        // Peek the next `SyntaxKind`, assuming it's an operator
-        if let Some(operator) = p.is_at_either(INFIX_OPS) {
-            // Get the left and right binding power of the operator
-            let (left_bp, right_bp) = infix_binding_power(*operator);
+    // Continuously build expressions if the next token is an infix operator
+    while let Some(operator) = p.is_at_either(INFIX_OPS) {
+        // Get the left and right binding power of the operator
+        let (left_bp, right_bp) = infix_binding_power(*operator);
 
-            if left_bp < min_bp {
-                break;
-            }
+        if left_bp < min_bp {
+            break;
+        }
 
-            // Consume the operator token
-            p.bump();
+        // Consume the operator token
+        p.bump();
 
-            let m = lhs.precede(p);
-            let parsed_rhs = expr(p, right_bp).is_some();
-            lhs = m.complete(p, SyntaxKind::Exp_Binary);
+        let m = lhs.precede(p);
+        let parsed_rhs = expr(p, right_bp).is_some();
+        lhs = m.complete(p, SyntaxKind::Exp_Binary);
 
-            if !parsed_rhs {
-                break;
-            }
-        } else {
-            // What we consumed wasn't an operator; we don't know what to do
-            // next, so we'll return and let the caller decide
+        if !parsed_rhs {
             break;
         }
     }
@@ -437,36 +431,36 @@ mod tests {
         println!("{}", tree.debug_tree());
     }
 
-//     #[test]
-//     fn test_parse_binary_expression_interspersed_with_comments() {
-//         check(
-//             "
-// 1 +
-//   1 + # Add one
-//     10 # Add ten",
-//             expect![[r##"
-//                 Root@0..35
-//                   Newline@0..1 "\n"
-//                   Exp_Binary@1..35
-//                     Exp_Binary@1..21
-//                       Exp_Literal@1..5
-//                         Lit_Integer@1..2 "1"
-//                         Indent@2..5 "\n  "
-//                       Sym_Plus@5..6 "+"
-//                       Whitespace@6..7 " "
-//                       Exp_Literal@7..21
-//                         Lit_Integer@7..8 "1"
-//                         Whitespace@8..9 " "
-//                         Comment@9..18 "# Add one"
-//                         Newline@18..21 "\n  "
-//                     Sym_Plus@21..22 "+"
-//                     Whitespace@22..23 " "
-//                     Exp_Literal@23..35
-//                       Lit_Integer@23..25 "10"
-//                       Whitespace@25..26 " "
-//                       Comment@26..35 "# Add ten"
-//                       Dedent@35..35 ""
-//             "##]],
-//         );
-//     }
+    //     #[test]
+    //     fn test_parse_binary_expression_interspersed_with_comments() {
+    //         check(
+    //             "
+    // 1 +
+    //   1 + # Add one
+    //     10 # Add ten",
+    //             expect![[r##"
+    //                 Root@0..35
+    //                   Newline@0..1 "\n"
+    //                   Exp_Binary@1..35
+    //                     Exp_Binary@1..21
+    //                       Exp_Literal@1..5
+    //                         Lit_Integer@1..2 "1"
+    //                         Indent@2..5 "\n  "
+    //                       Sym_Plus@5..6 "+"
+    //                       Whitespace@6..7 " "
+    //                       Exp_Literal@7..21
+    //                         Lit_Integer@7..8 "1"
+    //                         Whitespace@8..9 " "
+    //                         Comment@9..18 "# Add one"
+    //                         Newline@18..21 "\n  "
+    //                     Sym_Plus@21..22 "+"
+    //                     Whitespace@22..23 " "
+    //                     Exp_Literal@23..35
+    //                       Lit_Integer@23..25 "10"
+    //                       Whitespace@25..26 " "
+    //                       Comment@26..35 "# Add ten"
+    //                       Dedent@35..35 ""
+    //             "##]],
+    //         );
+    //     }
 }
